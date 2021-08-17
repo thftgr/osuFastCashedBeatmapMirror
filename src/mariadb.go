@@ -1,10 +1,9 @@
-package db
+package src
 
 import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"time"
 )
 
@@ -27,7 +26,7 @@ func QueryOnly(sql string, parm ...interface{}) error {
 
 func ConnectMaria() {
 
-	db, err := sql.Open("mysql", src.Setting.Sql.Id+":"+src.Setting.Sql.Passwd+"@tcp("+src.Setting.Sql.Url+")/")
+	db, err := sql.Open("mysql", Setting.Sql.Id+":"+Setting.Sql.Passwd+"@tcp("+Setting.Sql.Url+")/")
 	if Maria = db; db != nil {
 		Maria.SetMaxOpenConns(100)
 		fmt.Println("mariaDB connected")

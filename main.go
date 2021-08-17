@@ -4,30 +4,19 @@ import (
 	"bytes"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/Logger"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/Route"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/bootLoader"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/middleWareFunc"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 )
 
 var LogIO = bytes.Buffer{}
 
-func init() {
-	ch := make(chan struct{})
-
-	src.LoadSetting()
-
-	go src.StartIndex()
-	go src.LoadBancho(ch)
-	db.ConnectMaria()
-	go Logger.LoadLogger(&LogIO)
-	_ = <-ch
-	src.RunGetBeatmapDataASBancho()
 
 
-}
 func main() {
+	bootLoader.BootMirror()
+	return
 
 
 	e := echo.New()
