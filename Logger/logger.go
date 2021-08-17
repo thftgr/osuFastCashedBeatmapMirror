@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"time"
 )
 
@@ -37,7 +37,7 @@ func LoadLogger(b * bytes.Buffer) {
 		//{"time":"2021-07-02T22:11:37.391019+09:00","id":"De14R","remote_ip":"::1","host":"localhost","method":"GET","uri":"/search","user_agent":"","status":200,"error":"","latency":489638000,"latency_human":"489.638ms","bytes_in":0,"bytes_out":218561}
 
 		//time, request_id, remote_ip, host, method, uri, user_agent, status, error, latency, latency_human, bytes_in, bytes_out
-		err = src.InsertAPILog(
+		err = db.InsertAPILog(
 			t.Format("2006-01-02 15-04-05"),
 			js["id"],
 			js["remote_ip"],

@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/Logger"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/Route"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/middleWareFunc"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 )
@@ -19,9 +20,10 @@ func init() {
 
 	go src.StartIndex()
 	go src.LoadBancho(ch)
-	src.ConnectMaria()
+	db.ConnectMaria()
 	go Logger.LoadLogger(&LogIO)
 	_ = <-ch
+	src.RunGetBeatmapDataASBancho()
 
 
 }

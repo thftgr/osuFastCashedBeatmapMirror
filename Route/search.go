@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"net/http"
 	"strconv"
 	"strings"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 )
 
 //
@@ -93,24 +93,24 @@ func Search(c echo.Context) (err error) {
 	//fmt.Println(st) // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
 	var (
 		status = parseStatus(c.QueryParam("s"))
-		mode = parseMode(c.QueryParam("m"))
-		sort = parseSort(c.QueryParam("sort"))
-		page = parsePage(c.QueryParam("p"))
-		text = c.QueryParam("q")
+		mode   = parseMode(c.QueryParam("m"))
+		sort   = parseSort(c.QueryParam("sort"))
+		page   = parsePage(c.QueryParam("p"))
+		text   = c.QueryParam("q")
 	)
 
 	if c.QueryParam("q") == "" {
-		q = fmt.Sprintf(src.QuerySearchBeatmapSet,
+		q = fmt.Sprintf(db.QuerySearchBeatmapSet,
 			status, //ranked
 			status, //ranked
 			mode,   //osu,mania
 			sort,
 			page, //page
 		)
-		rows, err = src.Maria.Query(q)
+		rows, err = db.Maria.Query(q)
 
 	} else {
-		q = fmt.Sprintf(src.QuerySearchBeatmapSetWhitQueryText,
+		q = fmt.Sprintf(db.QuerySearchBeatmapSetWhitQueryText,
 			status, //ranked
 			status, //ranked
 			mode,   //osu,mania
@@ -118,7 +118,7 @@ func Search(c echo.Context) (err error) {
 			page, //page
 
 		)
-		rows, err = src.Maria.Query(q, text)
+		rows, err = db.Maria.Query(q, text)
 	}
 
 	if err != nil {
@@ -163,7 +163,7 @@ func Search(c echo.Context) (err error) {
 	}
 	st := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")
 
-	rows, err = src.Maria.Query(fmt.Sprintf(src.QueryBeatmap, st))
+	rows, err = db.Maria.Query(fmt.Sprintf(db.QueryBeatmap, st))
 	if err != nil {
 		c.NoContent(http.StatusInternalServerError)
 		return
