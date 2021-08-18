@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/pterm/pterm"
 	"io/ioutil"
+	"os"
 )
 
 type config struct {
@@ -47,12 +48,28 @@ func LoadConfig(c *pterm.SpinnerPrinter) {
 	defer func() {
 		if err != nil {
 			c.Fail(err)
+			panic(err)
 		}
 		c.Success()
 	}()
 	b, err := ioutil.ReadFile("./config.json")
 	if err != nil {
-		return
+		out, err := os.Create("./config.json")
+		if err != nil {
+			c.Fail("Can't create ./config.json")
+			panic(err)
+		}
+		defer out.Close()
+		body, err := json.MarshalIndent(Setting, "", "    ")
+		if err != nil {
+			c.Fail("Error. Marshal json")
+			panic(err)
+		}
+		// Write the body to file
+		if _, err = out.Write(body); err != nil {
+			c.Fail("Can't Write ./config.json")
+			panic(err)
+		}
 	}
 
 	err = json.Unmarshal(b, &Setting)
