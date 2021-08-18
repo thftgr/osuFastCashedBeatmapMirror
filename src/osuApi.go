@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/pterm/pterm"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -58,14 +59,15 @@ func parseTokenExpiraton() (t int64) {
 }
 
 func tryLogin() (err error) {
+	spinner ,_ := pterm.DefaultSpinner.Start("Trying Login Bancho...")
 	if err = login(true); err != nil {
-		fmt.Println("fail refresh Bancho Token")
+		spinner.Fail("fail refresh Bancho Token")
 		if err = login(false); err != nil {
 			return
 		}
-		fmt.Println("successful New Login Bancho")
+		spinner.Success("successful New Login Bancho")
 	} else {
-		fmt.Println("successful refresh Bancho Token")
+		spinner.Success("successful refresh Bancho Token")
 	}
 	Setting.Save()
 	return
@@ -74,7 +76,7 @@ func tryLogin() (err error) {
 func LoadBancho(ch chan struct{}) {
 	b := false
 	if parseTokenExpiraton() > 120 {
-		fmt.Println("bancho - token Alive")
+		pterm.Info.Println("Bancho Token Alive.")
 		b = true
 		ch <- struct{}{}
 	}
@@ -82,7 +84,7 @@ func LoadBancho(ch chan struct{}) {
 		if parseTokenExpiraton() < 3600 || pause { //1시간
 			err := tryLogin()
 			if err != nil {
-				fmt.Println("LoadBancho tryLogin(). :", err)
+				pterm.Error.Println("LoadBancho tryLogin(). :", err)
 			} else {
 				pause = false
 				if !b {
@@ -96,6 +98,7 @@ func LoadBancho(ch chan struct{}) {
 }
 
 func login(refresh bool) (err error) {
+
 	url := "https://osu.ppy.sh/oauth/token"
 	payload := &bytes.Buffer{}
 	writer := multipart.NewWriter(payload)

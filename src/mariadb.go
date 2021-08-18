@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"time"
+	"github.com/pterm/pterm"
 )
 
 var Maria *sql.DB
@@ -24,19 +24,20 @@ func QueryOnly(sql string, parm ...interface{}) error {
 	return raws.Close()
 }
 
-func ConnectMaria() {
+func ConnectMaria(c *pterm.SpinnerPrinter) {
 
 	db, err := sql.Open("mysql", Setting.Sql.Id+":"+Setting.Sql.Passwd+"@tcp("+Setting.Sql.Url+")/")
 	if Maria = db; db != nil {
 		Maria.SetMaxOpenConns(100)
-		fmt.Println("mariaDB connected")
+		c.UpdateText("RDBMS connected")
 
 		if _, err = Maria.Exec("SET SQL_SAFE_UPDATES = 0;");err != nil {
-			fmt.Println("SET SQL_SAFE_UPDATES FAIL")
+			c.Fail("SET SQL_SAFE_UPDATES FAIL.",err)
 			panic(err)
 		}
-		fmt.Println("SET SQL_SAFE_UPDATES PASS")
+		c.Success("RDBMS Connected.")
 	} else {
+		c.Fail("RDBMS Connect Fail",err)
 		panic(err)
 	}
 }
@@ -53,21 +54,21 @@ func Upsert(query string, data []interface{}) {
 	}
 }
 
-func ToDateTime(t interface{}) string {
-	if t == nil {
-		return "0000-00-00T00:00:00"
-	}
-	myDate, _ := time.Parse("2006-01-02T15:04:05-07:00", t.(string))
-	return myDate.Format("2006-01-02T15:04:05")
-}
-
-func InsertAPILog(s ...interface{}) (err error) {
-	rows, err := Maria.Query(QueryAPILog, s...)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-	return
-}
+//func ToDateTime(t interface{}) string {
+//	if t == nil {
+//		return "0000-00-00T00:00:00"
+//	}
+//	myDate, _ := time.Parse("2006-01-02T15:04:05-07:00", t.(string))
+//	return myDate.Format("2006-01-02T15:04:05")
+//}
+//
+//func InsertAPILog(s ...interface{}) (err error) {
+//	rows, err := Maria.Query(QueryAPILog, s...)
+//	if err != nil {
+//		return
+//	}
+//	defer rows.Close()
+//	return
+//}
 
 
