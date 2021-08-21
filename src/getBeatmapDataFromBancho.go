@@ -21,12 +21,16 @@ func stopGetBeatmapDataASBancho(){
 
 }
 func RunGetBeatmapDataASBancho() {
+	getUpdatedMapDesc()   //ALL desc limit 50
+	getUpdatedMapRanked() //Update Ranked DESC limit 50
+	getUpdatedMapLoved()  //Update Loved DESC limit 50
+	getGraveyardMap()     //Update Graveyard asc limit 50
+	getUpdatedMapAsc() //ALL asc
 
 	_ = gocron.Every(1).Minute().Do(getUpdatedMapDesc)   //ALL desc limit 50
 	_ = gocron.Every(1).Minute().Do(getUpdatedMapRanked) //Update Ranked DESC limit 50
 	_ = gocron.Every(1).Minute().Do(getUpdatedMapLoved)  //Update Loved DESC limit 50
 	_ = gocron.Every(1).Minute().Do(getGraveyardMap)     //Update Graveyard asc limit 50
-
 	_ = gocron.Every(1).Second().Do(getUpdatedMapAsc) //ALL asc
 	go gocron.Start()
 	pterm.Info.Println("Bancho cron started.")

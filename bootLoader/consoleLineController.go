@@ -10,10 +10,13 @@ func init() {
 
 	spinner, _ :=  pterm.DefaultSpinner.Start("Load Config File.")
 	src.LoadConfig(spinner)
+
 	spinner, _ =  pterm.DefaultSpinner.Start("Load Beatmap Files.")
 	src.StartIndex(spinner)
+
 	spinner, _ =  pterm.DefaultSpinner.Start("Load RDBMS.")
 	src.ConnectMaria(spinner)
+
 	go src.LoadBancho(ch)
 	_ = <-ch
 	go src.RunGetBeatmapDataASBancho()

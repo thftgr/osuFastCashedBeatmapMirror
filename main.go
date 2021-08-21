@@ -9,7 +9,6 @@ import (
 	"github.com/thftgr/osuFastCashedBeatmapMirror/middleWareFunc"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"log"
-	"net/http"
 )
 
 
@@ -26,13 +25,14 @@ func main() {
 		middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
 		middleware.RequestID(),
 	)
-
-	e.GET("/health", func(c echo.Context) error {
-		return c.NoContent(http.StatusOK)
-	})
-
+	// 서버상태 체크용 ====================================================================================================
+	e.GET("/health", Route.Health)
 	e.GET("/robots.txt", Route.Robots)
+
+	// 맵 파일 다운로드 ===================================================================================================
 	e.GET("/d/:id", Route.DownloadBeatmapSet)
+
+	// 비트맵 리스트 검색용 ================================================================================================
 	e.GET("/search", Route.Search)
 
 
