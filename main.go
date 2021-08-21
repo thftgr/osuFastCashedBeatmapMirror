@@ -5,15 +5,14 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/thftgr/osuFastCashedBeatmapMirror/Logger"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/Route"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/bootLoader"
+	_ "github.com/thftgr/osuFastCashedBeatmapMirror/bootLoader"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/middleWareFunc"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"log"
 )
 
+
 func main() {
-	bootLoader.BootMirror()
-	//return
 
 	e := echo.New()
 	e.HideBanner = true

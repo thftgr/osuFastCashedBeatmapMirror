@@ -5,7 +5,7 @@ import (
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 )
 
-func BootMirror() {
+func init() {
 	ch := make(chan struct{})
 
 	spinner, _ :=  pterm.DefaultSpinner.Start("Load Config File.")
@@ -16,5 +16,5 @@ func BootMirror() {
 	src.ConnectMaria(spinner)
 	go src.LoadBancho(ch)
 	_ = <-ch
-	src.RunGetBeatmapDataASBancho()
+	go src.RunGetBeatmapDataASBancho()
 }

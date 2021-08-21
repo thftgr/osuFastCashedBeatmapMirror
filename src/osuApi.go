@@ -86,7 +86,7 @@ func LoadBancho(ch chan struct{}) {
 			if err != nil {
 				pterm.Error.Println("LoadBancho tryLogin(). :", err)
 			} else {
-				pause = false
+				go RunGetBeatmapDataASBancho()
 				if !b {
 					b = true
 					ch <- struct{}{}

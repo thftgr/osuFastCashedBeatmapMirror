@@ -1,4 +1,4 @@
-package src
+package db
 
 
 const QueryBeatmap = `select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating desc;`

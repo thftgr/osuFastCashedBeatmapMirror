@@ -3,118 +3,58 @@ package src
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/jasonlvhit/gocron"
 	"github.com/pkg/errors"
+	"github.com/pterm/pterm"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"io/ioutil"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
-
-var api = struct {
-	count int
-	mutex sync.Mutex
-}{}
 var pause bool
+func stopGetBeatmapDataASBancho(){
+	gocron.Clear()
+	pause = true
+	pterm.Info.Println("Bancho cron Stop.")
 
-func apicountAdd() {
-	api.mutex.Lock()
-	api.count++
-	api.mutex.Unlock()
 }
-
-func apiCountReset() {
-	api.mutex.Lock()
-	api.count = 0
-	api.mutex.Unlock()
-}
-
 func RunGetBeatmapDataASBancho() {
 
-	go func() {
-		for {
-			time.Sleep(time.Minute)
-			if Maria.Ping() != nil {
-				continue
-			}
-			apiCountReset()
-			go Setting.Save()
-		}
-	}()
-	go func() { //ALL desc limit 50
-		for {
-			awaitApiCount()
-			time.Sleep(time.Second * 30)
-			if err := getUpdatedMapDesc(); err != nil {
-				fmt.Println(err)
-				continue
-			}
-		}
-	}()
-	go func() { //Update Ranked DESC limit 50
-		for {
-			awaitApiCount()
-			time.Sleep(time.Minute)
-			if err := getUpdatedMapRanked(); err != nil {
-				fmt.Println(err)
-				continue
-			}
-		}
-	}()
-	go func() { //Update Loved DESC limit 50
-		for {
-			awaitApiCount()
-			time.Sleep(time.Minute)
-			if err := getUpdatedMapLoved(); err != nil {
-				fmt.Println(err)
-				continue
-			}
-		}
-	}()
-	go func() { //Update Graveyard asc limit 50
-		for {
-			awaitApiCount()
-			time.Sleep(time.Minute)
-			if err := getGraveyardMap(); err != nil {
-				fmt.Println(err)
-				continue
-			}
-		}
-	}()
-	go func() { //ALL asc
-		for {
-			awaitApiCount()
-			if err := getUpdatedMapAsc(); err != nil {
-				fmt.Println(err)
-				continue
-			}
-		}
-	}()
+	_ = gocron.Every(1).Minute().Do(getUpdatedMapDesc)   //ALL desc limit 50
+	_ = gocron.Every(1).Minute().Do(getUpdatedMapRanked) //Update Ranked DESC limit 50
+	_ = gocron.Every(1).Minute().Do(getUpdatedMapLoved)  //Update Loved DESC limit 50
+	_ = gocron.Every(1).Minute().Do(getGraveyardMap)     //Update Graveyard asc limit 50
 
-}
-
-func awaitApiCount() {
-	for {
-		if api.count < 60 && !pause {
-			break
-		}
-		time.Sleep(time.Millisecond * 500)
-	}
+	_ = gocron.Every(1).Second().Do(getUpdatedMapAsc) //ALL asc
+	go gocron.Start()
+	pterm.Info.Println("Bancho cron started.")
 }
 
 func ManualUpdateBeatmapSet(id int) {
+	var err error
+	defer func() {
+		if err != nil {
+			pterm.Error.Println(err)
+		}
+	}()
 	url := fmt.Sprintf("https://osu.ppy.sh/api/v2/beatmapsets/%d", id)
 
 	var data osu.BeatmapSetsIN
-	if err := stdGETBancho(url, &data); err != nil {
+	if err = stdGETBancho(url, &data); err != nil {
 		return
 	}
-
 	updateMapset(&data)
 }
 
-func getUpdatedMapRanked() (err error) {
+func getUpdatedMapRanked() {
+	var err error
+	defer func() {
+		if err != nil {
+			pterm.Error.Println(err)
+		}
+	}()
 	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=ranked"
 
 	var data osu.BeatmapsetsSearch
@@ -128,7 +68,13 @@ func getUpdatedMapRanked() (err error) {
 	return
 }
 
-func getUpdatedMapLoved() (err error) {
+func getUpdatedMapLoved() {
+	var err error
+	defer func() {
+		if err != nil {
+			pterm.Error.Println(err)
+		}
+	}()
 	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=loved"
 
 	var data osu.BeatmapsetsSearch
@@ -141,8 +87,13 @@ func getUpdatedMapLoved() (err error) {
 	return
 }
 
-func getGraveyardMap() (err error) {
-
+func getGraveyardMap() {
+	var err error
+	defer func() {
+		if err != nil {
+			pterm.Error.Println(err)
+		}
+	}()
 	url := ""
 	lu := &Setting.Osu.BeatmapUpdate.GraveyardAsc.LastUpdate
 	id := &Setting.Osu.BeatmapUpdate.GraveyardAsc.Id
@@ -170,8 +121,13 @@ func getGraveyardMap() (err error) {
 	*id = *data.Cursor.Id
 	return
 }
-func getUpdatedMapDesc() (err error) {
-
+func getUpdatedMapDesc() {
+	var err error
+	defer func() {
+		if err != nil {
+			pterm.Error.Println(err)
+		}
+	}()
 	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_desc&s=any"
 
 	var data osu.BeatmapsetsSearch
@@ -189,8 +145,13 @@ func getUpdatedMapDesc() (err error) {
 	return
 }
 
-func getUpdatedMapAsc() (err error) {
-
+func getUpdatedMapAsc() {
+	var err error
+	defer func() {
+		if err != nil {
+			pterm.Error.Println(err)
+		}
+	}()
 	url := ""
 	lu := &Setting.Osu.BeatmapUpdate.UpdatedAsc.LastUpdate
 	id := &Setting.Osu.BeatmapUpdate.UpdatedAsc.Id
@@ -224,7 +185,6 @@ func stdGETBancho(url string, str interface{}) (err error) {
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
 
@@ -232,24 +192,21 @@ func stdGETBancho(url string, str interface{}) (err error) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
-	defer func() {
-		res.Body.Close()
-		apicountAdd()
-	}()
+	defer res.Body.Close()
+
 	if res.StatusCode != 200 {
 		if res.StatusCode == 401 {
-			pause = true
+			stopGetBeatmapDataASBancho()
 		}
 		return errors.New(res.Status)
 	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		fmt.Println(err)
 		return
 	}
+
 	return json.Unmarshal(body, &str)
 
 }
@@ -265,7 +222,7 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 	//	language_id,language_name,ratings
 
 	r := *s.Ratings
-	Upsert(UpsertBeatmapSet, []interface{}{
+	Upsert(db.UpsertBeatmapSet, []interface{}{
 		s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount,
 		s.Hype.Current, s.Hype.Required, s.Nsfw, s.PlayCount, s.Source,
 		s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video,
@@ -291,7 +248,7 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 
 func upsertMap(m osu.BeatmapIN, ch chan struct{}) {
 
-	Upsert(UpsertBeatmap, []interface{}{
+	Upsert(db.UpsertBeatmap, []interface{}{
 		m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version,
 		m.Accuracy, m.Ar, m.Cs, m.Drain, m.Bpm, m.Convert, m.CountCircles, m.CountSliders, m.CountSpinners, m.DeletedAt,
 		m.HitLength, m.IsScoreable, m.LastUpdated, m.Passcount, m.Playcount, m.Checksum, m.UserId,
@@ -387,13 +344,13 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	}
 	//맵셋
 	if _, err = Maria.Exec(fmt.Sprintf(setUpsert, buildSqlValues(setValues, len(beatmapSets))), setInsertBuf...); err != nil {
-		fmt.Println(err)
+		pterm.Error.Println(err)
 		return err
 	}
 
 	//맵
 	if _, err = Maria.Exec(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))), mapInsertBuf...); err != nil {
-		fmt.Println(err)
+		pterm.Error.Println(err)
 		return err
 	}
 
@@ -402,7 +359,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	maps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmaps)), ","), "[]")
 	rows, err := Maria.Query(fmt.Sprintf(selectDeletedMaps, sets, maps))
 	if err != nil {
-		fmt.Println(err)
+		pterm.Error.Println(err)
 		return err
 	}
 	defer rows.Close()
@@ -414,10 +371,9 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 		deletedMaps = append(deletedMaps, i)
 	}
 	if len(deletedMaps) > 1 {
-		fmt.Println(time.Now().Format("02 15:04:05"), "DELETED MAPS:", deletedMaps)
+		pterm.Info.Println(time.Now().Format("02 15:04:05"), "DELETED MAPS:", deletedMaps)
 		dmaps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(deletedMaps)), ","), "[]")
 		if _, err = Maria.Exec(fmt.Sprintf(deleteMap, dmaps)); err != nil {
-			fmt.Println(err)
 			return err
 		}
 	}
