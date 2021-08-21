@@ -9,6 +9,7 @@ import (
 	"github.com/thftgr/osuFastCashedBeatmapMirror/middleWareFunc"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"log"
+	"net/http"
 )
 
 
@@ -26,9 +27,14 @@ func main() {
 		middleware.RequestID(),
 	)
 
+	e.GET("/health", func(c echo.Context) error {
+		return c.NoContent(http.StatusOK)
+	})
+
 	e.GET("/robots.txt", Route.Robots)
 	e.GET("/d/:id", Route.DownloadBeatmapSet)
 	e.GET("/search", Route.Search)
+
 
 	e.Logger.Fatal(e.Start(":" + src.Setting.Port))
 
