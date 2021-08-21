@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/pterm/pterm"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"io"
@@ -41,7 +42,7 @@ func saveLocal(data *bytes.Buffer, path string, id int) (err error) {
 	}
 
 	src.FileList[id] = time.Now()
-	fmt.Println("beatmapSet Downloading Finished", path)
+	pterm.Info.Println("beatmapSet Downloading Finished", path)
 	return
 }
 
@@ -140,8 +141,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		c.NoContent(404)
 		return
 	}
-
-	fmt.Println("beatmapSet Downloading at", serverFileName)
+	pterm.Info.Println("beatmapSet Downloading at", serverFileName)
 
 	cLen, _ := strconv.Atoi(res.Header.Get("Content-Length"))
 	c.Response().Header().Set("Content-Type", "application/download")

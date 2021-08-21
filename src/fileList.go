@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/pterm/pterm"
 	"io/ioutil"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -45,7 +46,7 @@ func FileListUpdate(c ...*pterm.SpinnerPrinter) {
 		}
 
 	}()
-
+	checkDir()
 	files, err := ioutil.ReadDir(Setting.TargetDir)
 	if err != nil {
 		return
@@ -92,4 +93,13 @@ func totalFileSize() (s string) {
 	}
 
 	return fmt.Sprintf("%d%s", fileSize, "B")
+}
+func checkDir() {
+	if _, e := os.Stat(Setting.TargetDir); os.IsNotExist(e) {
+		err := os.MkdirAll(Setting.TargetDir, 666)
+		if err != nil {
+			pterm.Error.Println(err)
+			panic(err)
+		}
+	}
 }

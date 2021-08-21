@@ -17,6 +17,7 @@ func main() {
 	e := echo.New()
 	e.HideBanner = true
 
+
 	e.Pre(middleware.RemoveTrailingSlash())
 
 	e.Use(
