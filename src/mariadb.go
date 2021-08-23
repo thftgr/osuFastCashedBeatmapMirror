@@ -54,21 +54,5 @@ func Upsert(query string, data []interface{}) {
 	}
 }
 
-//func ToDateTime(t interface{}) string {
-//	if t == nil {
-//		return "0000-00-00T00:00:00"
-//	}
-//	myDate, _ := time.Parse("2006-01-02T15:04:05-07:00", t.(string))
-//	return myDate.Format("2006-01-02T15:04:05")
-//}
-//
-//func InsertAPILog(s ...interface{}) (err error) {
-//	rows, err := Maria.Query(QueryAPILog, s...)
-//	if err != nil {
-//		return
-//	}
-//	defer rows.Close()
-//	return
-//}
 
 

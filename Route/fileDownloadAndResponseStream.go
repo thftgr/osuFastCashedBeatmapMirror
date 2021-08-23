@@ -95,20 +95,19 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		c.NoContent(500)
 		return
 	}
+	c.Response().Header().Set("Content-Type", "application/download")
 
 	var serverFileName string
 	var url string
 	if a.Video && noVideo {
 		serverFileName = fmt.Sprintf("%s/-%d.osz", src.Setting.TargetDir, mid)
 		if src.FileList[mid*(-1)].Unix() >= lu.Unix() { // 맵이 최신인경우
-			c.Response().Header().Set("Content-Type", "application/download")
 			return c.Attachment(serverFileName, fmt.Sprintf("%s %s - %s [no video].osz",a.Id,a.Artist ,a.Title))
 		}
 		url = fmt.Sprintf("https://osu.ppy.sh/api/v2/beatmapsets/%d/download?noVideo=1",mid)
 	} else {
 		serverFileName = fmt.Sprintf("%s/%d.osz", src.Setting.TargetDir, mid)
 		if src.FileList[mid].Unix() >= lu.Unix() { // 맵이 최신인경우
-			c.Response().Header().Set("Content-Type", "application/download")
 			return c.Attachment(serverFileName, fmt.Sprintf("%s %s - %s.osz",a.Id,a.Artist ,a.Title))
 		}
 		url = fmt.Sprintf("https://osu.ppy.sh/api/v2/beatmapsets/%d/download",mid)
@@ -144,7 +143,6 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	pterm.Info.Println("beatmapSet Downloading at", serverFileName)
 
 	cLen, _ := strconv.Atoi(res.Header.Get("Content-Length"))
-	c.Response().Header().Set("Content-Type", "application/download")
 	c.Response().Header().Set("Content-Length", res.Header.Get("Content-Length"))
 	c.Response().Header().Set("Content-Disposition", res.Header.Get("Content-Disposition"))
 

@@ -3,7 +3,6 @@ package src
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/jasonlvhit/gocron"
 	"github.com/pkg/errors"
 	"github.com/pterm/pterm"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
@@ -11,31 +10,81 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
+var api = struct {
+	count int
+	mutex sync.Mutex
+}{}
 var pause bool
-func stopGetBeatmapDataASBancho(){
-	gocron.Clear()
-	pause = true
-	pterm.Info.Println("Bancho cron Stop.")
 
+func apicountAdd() {
+	api.mutex.Lock()
+	api.count++
+	api.mutex.Unlock()
+}
+
+func apiCountReset() {
+	api.mutex.Lock()
+	api.count = 0
+	api.mutex.Unlock()
 }
 func RunGetBeatmapDataASBancho() {
-	getUpdatedMapDesc()   //ALL desc limit 50
-	getUpdatedMapRanked() //Update Ranked DESC limit 50
-	getUpdatedMapLoved()  //Update Loved DESC limit 50
-	getGraveyardMap()     //Update Graveyard asc limit 50
-	getUpdatedMapAsc() //ALL asc
-
-	_ = gocron.Every(1).Minute().Do(getUpdatedMapDesc)   //ALL desc limit 50
-	_ = gocron.Every(1).Minute().Do(getUpdatedMapRanked) //Update Ranked DESC limit 50
-	_ = gocron.Every(1).Minute().Do(getUpdatedMapLoved)  //Update Loved DESC limit 50
-	_ = gocron.Every(1).Minute().Do(getGraveyardMap)     //Update Graveyard asc limit 50
-	_ = gocron.Every(1).Second().Do(getUpdatedMapAsc) //ALL asc
-	go gocron.Start()
+	go func() {
+		for {
+			time.Sleep(time.Minute)
+			if Maria.Ping() != nil {
+				continue
+			}
+			apiCountReset()
+			go Setting.Save()
+		}
+	}()
+	go func() { //ALL desc limit 50
+		for {
+			awaitApiCount()
+			time.Sleep(time.Second * 30)
+			getUpdatedMapDesc()
+		}
+	}()
+	go func() { //Update Ranked DESC limit 50
+		for {
+			awaitApiCount()
+			time.Sleep(time.Minute)
+			getUpdatedMapRanked()
+		}
+	}()
+	go func() { //Update Loved DESC limit 50
+		for {
+			awaitApiCount()
+			time.Sleep(time.Minute)
+			getUpdatedMapLoved()
+		}
+	}()
+	go func() { //Update Graveyard asc limit 50
+		for {
+			awaitApiCount()
+			time.Sleep(time.Minute)
+			getGraveyardMap();
+		}
+	}()
+	go func() { //ALL asc
+		for {
+			awaitApiCount()
+			getUpdatedMapAsc()
+		}
+	}()
 	pterm.Info.Println("Bancho cron started.")
 }
-
+func awaitApiCount() {
+	for {
+		if api.count < 60 && !pause {
+			break
+		}
+		time.Sleep(time.Millisecond * 500)
+	}
+}
 func ManualUpdateBeatmapSet(id int) {
 	var err error
 	defer func() {
@@ -195,6 +244,7 @@ func stdGETBancho(url string, str interface{}) (err error) {
 	req.Header.Add("Authorization", Setting.Osu.Token.TokenType+" "+Setting.Osu.Token.AccessToken)
 
 	res, err := client.Do(req)
+	apicountAdd()
 	if err != nil {
 		return
 	}
@@ -202,7 +252,7 @@ func stdGETBancho(url string, str interface{}) (err error) {
 
 	if res.StatusCode != 200 {
 		if res.StatusCode == 401 {
-			stopGetBeatmapDataASBancho()
+			pause = true
 		}
 		return errors.New(res.Status)
 	}
