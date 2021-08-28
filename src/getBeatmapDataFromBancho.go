@@ -3,6 +3,7 @@ package src
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"github.com/pterm/pterm"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
@@ -13,6 +14,7 @@ import (
 	"sync"
 	"time"
 )
+
 var api = struct {
 	count int
 	mutex sync.Mutex
@@ -66,7 +68,7 @@ func RunGetBeatmapDataASBancho() {
 		for {
 			awaitApiCount()
 			time.Sleep(time.Minute)
-			getGraveyardMap();
+			getGraveyardMap()
 		}
 	}()
 	go func() { //ALL asc
@@ -276,17 +278,30 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 	//	language_id,language_name,ratings
 
 	r := *s.Ratings
-	Upsert(db.UpsertBeatmapSet, []interface{}{
-		s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount,
+	_, err := Maria.Exec(db.UpsertBeatmapSet, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount,
 		s.Hype.Current, s.Hype.Required, s.Nsfw, s.PlayCount, s.Source,
 		s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video,
 		s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled,
 		s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current,
 		s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate,
 		s.Tags, s.HasFavourited, s.Description.Description, s.Genre.Id, s.Genre.Name,
-		s.Language.Id, s.Language.Name,
-		fmt.Sprintf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10]),
-	})
+		s.Language.Id, s.Language.Name, fmt.Sprintf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10]),
+	)
+	if err != nil {
+		log.Error(err)
+		pterm.Error.Println(err)
+	}
+	//Upsert(db.UpsertBeatmapSet, []interface{}{
+	//	s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount,
+	//	s.Hype.Current, s.Hype.Required, s.Nsfw, s.PlayCount, s.Source,
+	//	s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video,
+	//	s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled,
+	//	s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current,
+	//	s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate,
+	//	s.Tags, s.HasFavourited, s.Description.Description, s.Genre.Id, s.Genre.Name,
+	//	s.Language.Id, s.Language.Name,
+	//	fmt.Sprintf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10]),
+	//})
 
 	if *s.Beatmaps == nil {
 		return
@@ -301,12 +316,20 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 }
 
 func upsertMap(m osu.BeatmapIN, ch chan struct{}) {
-
-	Upsert(db.UpsertBeatmap, []interface{}{
-		m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version,
+	_, err := Maria.Exec(db.UpsertBeatmap, m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version,
 		m.Accuracy, m.Ar, m.Cs, m.Drain, m.Bpm, m.Convert, m.CountCircles, m.CountSliders, m.CountSpinners, m.DeletedAt,
 		m.HitLength, m.IsScoreable, m.LastUpdated, m.Passcount, m.Playcount, m.Checksum, m.UserId,
-	})
+	)
+	if err != nil {
+		log.Error(err)
+		pterm.Error.Println(err)
+	}
+
+	//Upsert(db.UpsertBeatmap, []interface{}{
+	//	m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version,
+	//	m.Accuracy, m.Ar, m.Cs, m.Drain, m.Bpm, m.Convert, m.CountCircles, m.CountSliders, m.CountSpinners, m.DeletedAt,
+	//	m.HitLength, m.IsScoreable, m.LastUpdated, m.Passcount, m.Playcount, m.Checksum, m.UserId,
+	//})
 	ch <- struct{}{}
 }
 
@@ -343,7 +366,7 @@ const (
 			ranked = VALUES(ranked), total_length = VALUES(total_length), max_combo = VALUES(max_combo), 
 			difficulty_rating = VALUES(difficulty_rating), version = VALUES(version), 
 			accuracy = VALUES(accuracy), ar = VALUES(ar), cs = VALUES(cs), drain = VALUES(drain), bpm = VALUES(bpm), 
-			` + "`convert`" + ` = VALUES(` + "`convert`" + `), count_circles = VALUES(count_circles), count_sliders = VALUES(count_sliders),
+			` + "`convert` = VALUES(`convert`" + `), count_circles = VALUES(count_circles), count_sliders = VALUES(count_sliders),
 			count_spinners = VALUES(count_spinners), deleted_at = VALUES(deleted_at), 
 			hit_length = VALUES(hit_length), is_scoreable = VALUES(is_scoreable), last_updated = VALUES(last_updated), 
 			passcount = VALUES(passcount), playcount = VALUES(playcount), 
@@ -403,6 +426,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	}
 
 	//맵
+	//fmt.Println(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))))
 	if _, err = Maria.Exec(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))), mapInsertBuf...); err != nil {
 		pterm.Error.Println(err)
 		return err
@@ -425,7 +449,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 		deletedMaps = append(deletedMaps, i)
 	}
 	if len(deletedMaps) > 1 {
-		pterm.Info.Println(time.Now().Format("02 15:04:05"), "DELETED MAPS:", deletedMaps)
+		pterm.Info.Println(time.Now().Format("02 15:04:05"), "DELETED MAPS:", pterm.LightYellow(deletedMaps))
 		dmaps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(deletedMaps)), ","), "[]")
 		if _, err = Maria.Exec(fmt.Sprintf(deleteMap, dmaps)); err != nil {
 			return err

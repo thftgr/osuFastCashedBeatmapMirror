@@ -87,6 +87,7 @@ func parseStatus(s string) (ss string) {
 }
 
 func Search(c echo.Context) (err error) {
+
 	var q string
 	var rows *sql.Rows
 	//A := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}

@@ -19,7 +19,7 @@ AND beatmapset_id in (select beatmapset_id from osu.search_index where MATCH(tex
 order by %s %s ;
 `
 
-const QueryAPILog = `INSERT INTO osu.api_log (time, request_id, remote_ip, host, method, uri, user_agent, status, error, latency, latency_human, bytes_in, bytes_out) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?);`
+//const QueryAPILog = `INSERT INTO osu.api_log (time, request_id, remote_ip, host, method, uri, user_agent, status, error, latency, latency_human, bytes_in, bytes_out) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?);`
 
 const UpsertBeatmap = `
 INSERT INTO osu.beatmap
@@ -32,12 +32,13 @@ INSERT INTO osu.beatmap
 	?,?,?,?,?,	?,?,?,?,?,
 	?,?,?,?,?,	?,?
 )ON DUPLICATE KEY UPDATE 
-	beatmapset_id = ?, mode = ?, mode_int = ?, status = ?, 
-	ranked = ?, total_length = ?, max_combo = ?, difficulty_rating = ?, version = ?, 
-	accuracy = ?, ar = ?, cs = ?, drain = ?, bpm = ?, 
-	`+"`convert`"+` = ?, count_circles = ?, count_sliders = ?, count_spinners = ?, deleted_at = ?, 
-	hit_length = ?, is_scoreable = ?, last_updated = ?, passcount = ?, playcount = ?, 
-	checksum = ?, user_id = ?
+	beatmapset_id = VALUES(beatmapset_id), mode = VALUES(mode), mode_int = VALUES(mode_int), status = VALUES(status), 
+	ranked = VALUES(ranked), total_length = VALUES(total_length), max_combo = VALUES(max_combo), difficulty_rating = VALUES(difficulty_rating), 
+	version = VALUES(version), 	accuracy = VALUES(accuracy), ar = VALUES(ar), cs = VALUES(cs), drain = VALUES(drain), bpm = VALUES(bpm), 
+	`+"`convert` = VALUES(`convert`"+`), count_circles = VALUES(count_circles), count_sliders = VALUES(count_sliders), 
+	count_spinners = VALUES(count_spinners), deleted_at = VALUES(deleted_at), 	hit_length = VALUES(hit_length), 
+	is_scoreable = VALUES(is_scoreable), last_updated = VALUES(last_updated), passcount = VALUES(passcount), playcount = VALUES(playcount), 
+	checksum = VALUES(checksum), user_id = VALUES(user_id)
 ;
 `
 
@@ -57,14 +58,16 @@ INSERT INTO osu.beatmapset(
 	?,?,?,?,?,	?,?,?,?,?,
 	?,?,?,?,?,	?,?,?
 )ON DUPLICATE KEY UPDATE 
-	artist= ?, artist_unicode= ?, creator= ?, favourite_count= ?, 
-	hype_current= ?, hype_required= ?, nsfw= ?, play_count= ?, source= ?, 
-	status= ?, title= ?, title_unicode= ?, user_id= ?, video= ?, 
-	availability_download_disabled= ?, availability_more_information= ?, bpm= ?, can_be_hyped= ?, discussion_enabled= ?, 
-	discussion_locked= ?, is_scoreable= ?, last_updated= ?, legacy_thread_url= ?, nominations_summary_current= ?, 
-	nominations_summary_required= ?, ranked= ?, ranked_date= ?, storyboard= ?, submitted_date= ?, 
-	tags= ?, has_favourited= ?, description= ?, genre_id= ?, genre_name= ?, 
-	language_id= ?, language_name= ?, ratings= ?
+	artist= VALUES(artist), artist_unicode= VALUES(artist_unicode), creator= VALUES(creator), favourite_count= VALUES(favourite_count), 
+	hype_current= VALUES(hype_current), hype_required= VALUES(hype_required), nsfw= VALUES(nsfw), play_count= VALUES(play_count), source= VALUES(source), 
+	status= VALUES(status), title= VALUES(title), title_unicode= VALUES(title_unicode), user_id= VALUES(user_id), video= VALUES(video), 
+	availability_download_disabled= VALUES(availability_download_disabled), availability_more_information= VALUES(availability_more_information), 
+	bpm= VALUES(bpm), can_be_hyped= VALUES(can_be_hyped), discussion_enabled= VALUES(discussion_enabled), 
+	discussion_locked= VALUES(discussion_locked), is_scoreable= VALUES(is_scoreable), last_updated= VALUES(last_updated), legacy_thread_url= VALUES(legacy_thread_url), 
+	nominations_summary_current= VALUES(nominations_summary_current), 	nominations_summary_required= VALUES(nominations_summary_required), 
+	ranked= VALUES(ranked), ranked_date= VALUES(ranked_date), storyboard= VALUES(storyboard), submitted_date= VALUES(submitted_date), 
+	tags= VALUES(tags), has_favourited= VALUES(has_favourited), description= VALUES(description), genre_id= VALUES(genre_id), genre_name= VALUES(genre_name), 
+	language_id= VALUES(language_id), language_name= VALUES(language_name), ratings= VALUES(ratings)
 ;
 `
 

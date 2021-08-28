@@ -15,6 +15,8 @@ import (
 
 
 func main() {
+
+
 	e := echo.New()
 	e.HideBanner = true
 
@@ -22,6 +24,7 @@ func main() {
 	e.Pre(middleware.RemoveTrailingSlash())
 
 	e.Use(
+		//middleware.Logger(),
 		middleware.LoggerWithConfig(middleware.LoggerConfig{Output: log.Writer()}),
 		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
 		middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),

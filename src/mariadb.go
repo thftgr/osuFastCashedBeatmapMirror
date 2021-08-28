@@ -2,7 +2,6 @@ package src
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pterm/pterm"
 )
@@ -11,18 +10,18 @@ var Maria *sql.DB
 
 
 
-func QueryOnly(sql string, parm ...interface{}) error {
-
-	raws, err := Maria.Query(sql, parm...)
-	if err != nil {
-		if raws != nil {
-			_ = raws.Close()
-		}
-		return err
-	}
-
-	return raws.Close()
-}
+//func QueryOnly(sql string, parm ...interface{}) error {
+//
+//	raws, err := Maria.Query(sql, parm...)
+//	if err != nil {
+//		if raws != nil {
+//			_ = raws.Close()
+//		}
+//		return err
+//	}
+//
+//	return raws.Close()
+//}
 
 func ConnectMaria(c *pterm.SpinnerPrinter) {
 
@@ -42,17 +41,17 @@ func ConnectMaria(c *pterm.SpinnerPrinter) {
 	}
 }
 
-func Upsert(query string, data []interface{}) {
-	data = append(data,data[1:]...)
-	err := QueryOnly(
-		query,
-		data...
-	)
-	if err != nil {
-		fmt.Println(err,query)
-		fmt.Println(err,fmt.Sprintf("%v",data))
-	}
-}
+//func Upsert(query string, data []interface{}) {
+//	data = append(data,data[1:]...)
+//	err := QueryOnly(
+//		query,
+//		data...
+//	)
+//	if err != nil {
+//		fmt.Println(err,query)
+//		fmt.Println(err,fmt.Sprintf("%v",data))
+//	}
+//}
 
 
 

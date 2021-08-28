@@ -43,9 +43,12 @@ func parseTokenExpiraton() (t int64) {
 	if err != nil {
 		decodeString, err = base64.StdEncoding.DecodeString(s[1])
 		if err != nil {
-			decodeString, err = base64.RawStdEncoding.DecodeString(s[1])
+			decodeString, err = base64.RawURLEncoding.DecodeString(s[1])
 			if err != nil {
-				return
+				decodeString, err = base64.URLEncoding.DecodeString(s[1])
+				if err != nil {
+					return
+				}
 			}
 		}
 	}

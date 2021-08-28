@@ -22,14 +22,21 @@ const (
 )
 
 func init() {
-	setLogFile()
-	checkLogFileLimit()
-	_ = gocron.Every(1).Day().At("00:00:00").Do(setLogFile)
-	_ = gocron.Every(1).Hours().Do(checkLogFileLimit)
-
 	go func() {
-		pterm.Info.Println("logfile Scheduler Started.")
-		<-gocron.Start() }()
+		setLogFile()
+		checkLogFileLimit()
+		_ = gocron.Every(1).Days().At("00:00:00").Do(setLogFile)
+		_ = gocron.Every(1).Hours().At("00:00").Do(checkLogFileLimit)
+		<- gocron.Start()
+		//for {
+		//	setLogFile()
+		//	checkLogFileLimit()
+		//	st, _ := time.Parse("20060102",time.Now().Add(time.Hour*24).Format("20060102"))
+		//	st = st.Add(-time.Hour *9)
+		//	time.Sleep(time.Duration(st.Unix() - time.Now().UTC().Unix())*time.Second)
+		//}
+	}()
+	pterm.Info.Println("logfile Scheduler Started.")
 
 }
 
@@ -41,7 +48,6 @@ func checkLogFileLimit() {
 		pterm.Error.Println(err)
 		return
 	}
-
 
 	sort.Slice(files, func(i, j int) (tf bool) {
 		fii, _ := strconv.Atoi(strings.Split(files[i].Name(), ".")[0])
@@ -65,8 +71,8 @@ func checkLogFileLimit() {
 			if err != nil {
 				pterm.Error.Println(err)
 
-			}else {
-				pterm.Info.Printf("logfile %s Deleted.",f.Name())
+			} else {
+				pterm.Info.Printf("logfile %s Deleted.", f.Name())
 			}
 
 		}
@@ -84,16 +90,19 @@ func checkDir() {
 }
 
 func setLogFile() {
+	fmt.Println("setLogFile")
 	if file != nil {
 		file.Close()
 	}
 	checkDir()
+
 	fileName := fmt.Sprintf("%s/%s.log", logPath, time.Now().Format("060102"))
-	fpLog, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	fpLog, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR|os.O_APPEND|os.O_SYNC, 0777)
 	if err != nil {
 		pterm.Error.Println(err)
 	}
 	file = fpLog
+
 	log.SetOutput(file)
 
 }
