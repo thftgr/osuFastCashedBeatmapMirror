@@ -5,6 +5,7 @@
 
 web/*
 beatmaps/*
+log/*
 *.log
 osuFastCashedBeatmapMirror
-*.log
+

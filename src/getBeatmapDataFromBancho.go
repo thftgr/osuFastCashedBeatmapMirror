@@ -113,6 +113,7 @@ func getUpdatedMapRanked() {
 	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=ranked"
 
 	var data osu.BeatmapsetsSearch
+
 	if err = stdGETBancho(url, &data); err != nil {
 		return
 	}
