@@ -6,7 +6,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"io"
 	"net/http"
@@ -68,7 +67,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 
 	go src.ManualUpdateBeatmapSet(mid)
 
-	rows, err := src.Maria.Query(db.GetDownloadBeatmapData, mid)
+	rows, err := src.Maria.Query(`SELECT beatmapset_id,artist,title,last_updated,video FROM osu.beatmapset WHERE beatmapset_id = ?`, mid)
 	if err != nil {
 		c.NoContent(500)
 		return

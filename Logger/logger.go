@@ -15,6 +15,7 @@ import (
 )
 
 var file *os.File
+var Ch = make(chan struct{}) //UpdateLogFile
 
 const (
 	logPath        = "./log"
@@ -27,7 +28,7 @@ func init() {
 		checkLogFileLimit()
 		_ = gocron.Every(1).Days().At("00:00:00").Do(setLogFile)
 		_ = gocron.Every(1).Hours().At("00:00").Do(checkLogFileLimit)
-		<- gocron.Start()
+		<-gocron.Start()
 		//for {
 		//	setLogFile()
 		//	checkLogFileLimit()
@@ -90,13 +91,14 @@ func checkDir() {
 }
 
 func setLogFile() {
-	fmt.Println("setLogFile")
+
 	if file != nil {
 		file.Close()
 	}
 	checkDir()
 
 	fileName := fmt.Sprintf("%s/%s.log", logPath, time.Now().Format("060102"))
+	pterm.Info.Println("SET LOG FILE: ", fileName)
 	fpLog, err := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR|os.O_APPEND|os.O_SYNC, 0777)
 	if err != nil {
 		pterm.Error.Println(err)
@@ -104,5 +106,6 @@ func setLogFile() {
 	file = fpLog
 
 	log.SetOutput(file)
+	Ch <- struct{}{}
 
 }

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"net/http"
@@ -85,14 +84,32 @@ func parseStatus(s string) (ss string) {
 
 	return
 }
+const QuerySearchBeatmapSet = `
+select * from osu.beatmapset 
+	where ranked in( %s ) 
+	AND
+	beatmapset_id in (select distinct beatmapset_id from osu.beatmap where ranked in( %s ) AND mode_int in ( %s ) ) 
+order by %s %s ;
+`
 
+const QuerySearchBeatmapSetWhitQueryText = `
+select * from osu.beatmapset 
+where  ranked in( %s ) 
+AND beatmapset_id in (select distinct beatmapset_id from osu.beatmap where ranked in( %s ) AND mode_int in ( %s ) ) 
+AND beatmapset_id in (select beatmapset_id from osu.search_index where MATCH(text) AGAINST(?))
+order by %s %s ;
+`
+type SearchQuery struct {
+	Status string
+	Mode string
+	Sort string
+	Page string
+	Text string
+}
 func Search(c echo.Context) (err error) {
 
 	var q string
 	var rows *sql.Rows
-	//A := []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-	//st := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(A)), " AND "), "[]")
-	//fmt.Println(st) // 0, 1, 2, 3, 4, 5, 6, 7, 8, 9
 	var (
 		status = parseStatus(c.QueryParam("s"))
 		mode   = parseMode(c.QueryParam("m"))
@@ -102,7 +119,7 @@ func Search(c echo.Context) (err error) {
 	)
 
 	if c.QueryParam("q") == "" {
-		q = fmt.Sprintf(db.QuerySearchBeatmapSet,
+		q = fmt.Sprintf(QuerySearchBeatmapSet,
 			status, //ranked
 			status, //ranked
 			mode,   //osu,mania
@@ -112,7 +129,7 @@ func Search(c echo.Context) (err error) {
 		rows, err = src.Maria.Query(q)
 
 	} else {
-		q = fmt.Sprintf(db.QuerySearchBeatmapSetWhitQueryText,
+		q = fmt.Sprintf(QuerySearchBeatmapSetWhitQueryText,
 			status, //ranked
 			status, //ranked
 			mode,   //osu,mania
@@ -165,7 +182,11 @@ func Search(c echo.Context) (err error) {
 	}
 	st := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")
 
-	rows, err = src.Maria.Query(fmt.Sprintf(db.QueryBeatmap, st))
+	rows, err = src.Maria.Query(fmt.Sprintf(
+		`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating desc;`,
+		st,
+	))
+
 	if err != nil {
 		c.NoContent(http.StatusInternalServerError)
 		return
