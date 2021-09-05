@@ -88,7 +88,6 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		return
 	}
 
-
 	lu, err := time.Parse("2006-01-02 15:04:05", a.LastUpdated)
 	if err != nil {
 		c.NoContent(500)
@@ -101,15 +100,15 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	if a.Video && noVideo {
 		serverFileName = fmt.Sprintf("%s/-%d.osz", src.Setting.TargetDir, mid)
 		if src.FileList[mid*(-1)].Unix() >= lu.Unix() { // 맵이 최신인경우
-			return c.Attachment(serverFileName, fmt.Sprintf("%s %s - %s [no video].osz",a.Id,a.Artist ,a.Title))
+			return c.Attachment(serverFileName, fmt.Sprintf("%s %s - %s [no video].osz", a.Id, a.Artist, a.Title))
 		}
-		url = fmt.Sprintf("https://osu.ppy.sh/api/v2/beatmapsets/%d/download?noVideo=1",mid)
+		url = fmt.Sprintf("https://osu.ppy.sh/api/v2/beatmapsets/%d/download?noVideo=1", mid)
 	} else {
 		serverFileName = fmt.Sprintf("%s/%d.osz", src.Setting.TargetDir, mid)
 		if src.FileList[mid].Unix() >= lu.Unix() { // 맵이 최신인경우
-			return c.Attachment(serverFileName, fmt.Sprintf("%s %s - %s.osz",a.Id,a.Artist ,a.Title))
+			return c.Attachment(serverFileName, fmt.Sprintf("%s %s - %s.osz", a.Id, a.Artist, a.Title))
 		}
-		url = fmt.Sprintf("https://osu.ppy.sh/api/v2/beatmapsets/%d/download",mid)
+		url = fmt.Sprintf("https://osu.ppy.sh/api/v2/beatmapsets/%d/download", mid)
 
 	}
 
@@ -145,23 +144,23 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	c.Response().Header().Set("Content-Length", res.Header.Get("Content-Length"))
 	c.Response().Header().Set("Content-Disposition", res.Header.Get("Content-Disposition"))
 
-	var buf = bytes.Buffer{} // 서버에 저장할 파일 버퍼
+	var buf bytes.Buffer // 서버에 저장할 파일 버퍼
 	//TODO https 응답 먼저 주고 file 저장은 버퍼로 진행
 
 	for i := 0; i < cLen; { // 읽을 데이터 사이즈 체크
 		var b = make([]byte, 64000) // 바이트 배열
-		n, err := res.Body.Read(b) // 반쵸 스트림에서 64k 읽어서 바이트 배열 b 에 넣음
+		n, err := res.Body.Read(b)  // 반쵸 스트림에서 64k 읽어서 바이트 배열 b 에 넣음
 
-		i += n // 현재까지 읽은 바이트
+		i += n           // 현재까지 읽은 바이트
 		buf.Write(b[:n]) // 서버에 저장할 파일 버퍼에 쓴다
 
 		if _, err := c.Response().Write(b[:n]); err != nil { // 클라이언트 리스폰스 스트림에 쓴다(클라이언트 버퍼라 보면 댐)
 			c.NoContent(500) //에러처리
-			return err //에러처리
+			return err       //에러처리
 		}
-		if err == io.EOF {  //에러처리
+		if err == io.EOF { //에러처리
 			break
-		} else if err != nil {  //에러처리
+		} else if err != nil { //에러처리
 			fmt.Println(err.Error())
 			break
 		}
