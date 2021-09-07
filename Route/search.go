@@ -84,6 +84,8 @@ func parseStatus(s string) (ss string) {
 
 	return
 }
+
+const QuerySearchAll = `select * from osu.beatmapset order by %s %s ;`
 const QuerySearchBeatmapSet = `
 select * from osu.beatmapset 
 	where ranked in( %s ) 
@@ -99,13 +101,15 @@ AND beatmapset_id in (select distinct beatmapset_id from osu.beatmap where ranke
 AND beatmapset_id in (select beatmapset_id from osu.search_index where MATCH(text) AGAINST(?))
 order by %s %s ;
 `
+
 type SearchQuery struct {
 	Status string
-	Mode string
-	Sort string
-	Page string
-	Text string
+	Mode   string
+	Sort   string
+	Page   string
+	Text   string
 }
+
 func Search(c echo.Context) (err error) {
 
 	var q string
@@ -117,8 +121,10 @@ func Search(c echo.Context) (err error) {
 		page   = parsePage(c.QueryParam("p"))
 		text   = c.QueryParam("q")
 	)
-
-	if c.QueryParam("q") == "" {
+	if c.QueryParam("s") == "any" {
+		q = fmt.Sprintf(QuerySearchAll, sort, page) //page
+		rows, err = src.Maria.Query(q)
+	} else if c.QueryParam("q") == "" {
 		q = fmt.Sprintf(QuerySearchBeatmapSet,
 			status, //ranked
 			status, //ranked
