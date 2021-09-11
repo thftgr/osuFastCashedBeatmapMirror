@@ -14,48 +14,10 @@ import (
 	"time"
 )
 
-func saveLocal(data *bytes.Buffer, path string, id int) (err error) {
 
-	file, err := os.Create(path + ".down")
-	if err != nil {
-		return
-	}
-	if file == nil {
-		return errors.New("")
-	}
-	_, err = file.Write(data.Bytes())
-	if err != nil {
-		return
-	}
-	file.Close()
-
-	if _, err = os.Stat(path); !os.IsNotExist(err) {
-		err = os.Remove(path)
-		if err != nil {
-			return
-		}
-	}
-	err = os.Rename(path+".down", path)
-	if err != nil {
-		return
-	}
-
-	src.FileList[id] = time.Now()
-	pterm.Info.Println("beatmapSet Downloading Finished", path)
-	return
-}
-
-// DownloadBeatmapSet CollectHost godoc
-//@Summary .
-//@Description 비트맵셋 다운로드.
-//@Success 200
-//@failure 500 body null "InternalServerError"
-//@failure 500 body null "InternalServerError"
-//@param nv query boolean false "download without video"
-//@param noVideo query boolean false "download without video"
-//@param map_set_id path int true "beatmap set id"
-//@Router /d/{map_set_id} [get]
 func DownloadBeatmapSet(c echo.Context) (err error) {
+
+
 	noVideo, err := strconv.ParseBool(c.QueryParam("noVideo")) //1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.
 	if err != nil {
 		noVideo = false
@@ -71,7 +33,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 
 	mid, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.NoContent(500)
+		c.NoContent(http.StatusInternalServerError)
 		return
 	}
 
@@ -79,7 +41,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 
 	rows, err := src.Maria.Query(`SELECT beatmapset_id,artist,title,last_updated,video FROM osu.beatmapset WHERE beatmapset_id = ?`, mid)
 	if err != nil {
-		c.NoContent(500)
+		c.NoContent(http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
@@ -103,7 +65,8 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		c.NoContent(http.StatusInternalServerError)
 		return
 	}
-	c.Response().Header().Set("Content-Type", "application/download")
+	c.Response().Header().Set("Content-Type", "application/x-osu-beatmap-archive")
+	//c.Response().Header().Set("Content-Type", "application/download")
 
 	var serverFileName string
 	var url string
@@ -145,7 +108,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != 200 {
-		c.NoContent(404)
+		c.NoContent(http.StatusNotFound)
 		return
 	}
 	pterm.Info.Println("beatmapSet Downloading at", serverFileName)
@@ -166,7 +129,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 
 		if _, err := c.Response().Write(b[:n]); err != nil { // 클라이언트 리스폰스 스트림에 쓴다(클라이언트 버퍼라 보면 댐)
 			c.NoContent(http.StatusInternalServerError) //에러처리
-			return err       //에러처리
+			return err                                  //에러처리
 		}
 		if err == io.EOF { //에러처리
 			break
@@ -181,4 +144,34 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	}
 	return saveLocal(&buf, serverFileName, mid) // 서버에 파일버퍼를 쓴다
 
+}
+func saveLocal(data *bytes.Buffer, path string, id int) (err error) {
+
+	file, err := os.Create(path + ".down")
+	if err != nil {
+		return
+	}
+	if file == nil {
+		return errors.New("")
+	}
+	_, err = file.Write(data.Bytes())
+	if err != nil {
+		return
+	}
+	file.Close()
+
+	if _, err = os.Stat(path); !os.IsNotExist(err) {
+		err = os.Remove(path)
+		if err != nil {
+			return
+		}
+	}
+	err = os.Rename(path+".down", path)
+	if err != nil {
+		return
+	}
+
+	src.FileList[id] = time.Now()
+	pterm.Info.Println("beatmapSet Downloading Finished", path)
+	return
 }

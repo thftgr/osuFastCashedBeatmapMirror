@@ -20,6 +20,7 @@ func parseSort(s string) (ss string) { //sort
 
 	s = strings.ToLower(s)
 	switch s {
+
 	case "ranked_asc":
 		ss += "ranked_date ASC"
 	case "favourites_asc":

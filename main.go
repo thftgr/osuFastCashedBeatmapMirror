@@ -4,35 +4,15 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pterm/pterm"
-	"github.com/swaggo/echo-swagger"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/Logger"
-	_ "github.com/thftgr/osuFastCashedBeatmapMirror/Logger"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/Route"
 	_ "github.com/thftgr/osuFastCashedBeatmapMirror/bootLoader"
-	_ "github.com/thftgr/osuFastCashedBeatmapMirror/docs"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/middleWareFunc"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"log"
 )
-//https://github.com/swaggo/swag#declarative-comments-format
-//https://github.com/swaggo/swag/blob/master/example/celler/controller/examples.go
 
-// @title Swagger Example API
-// @version 1.0
-// @description thftgr's fast cached osu beatmap mirror.
-// @termsOfService https://github.com/thftgr/osuFastCashedBeatmapMirror
-
-// @contact.name API Support
-// @contact.email thftgr@gmail.com
-
-// @license.name GNU General Public License v3.0
-// @license.url https://github.com/thftgr/osuFastCashedBeatmapMirror/blob/master/LICENSE
-
-// @host xiiov.com
-// @BasePath /
-// @schemes http https
 func main() {
-
 	e := echo.New()
 	e.HideBanner = true
 	go func() {
@@ -47,16 +27,14 @@ func main() {
 
 	e.Use(
 		middleware.Logger(),
-		//middleware.LoggerWithConfig(middleware.LoggerConfig{Output: log.Writer()}),
 		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
 		middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
 		middleware.RequestID(),
 	)
-	// SWAGGER =========================================================================================================
-	e.GET("/swagger/*", echoSwagger.WrapHandler)
+	// docs ============================================================================================================
+	e.GET("/", Route.Wiki)
 
 	// 서버상태 체크용 ====================================================================================================
-
 
 	e.GET("/health", Route.Health)
 

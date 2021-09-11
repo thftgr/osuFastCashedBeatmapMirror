@@ -3,6 +3,7 @@ package bootLoader
 import (
 	"github.com/pterm/pterm"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
+	"os"
 )
 
 func init() {
@@ -19,5 +20,7 @@ func init() {
 
 	go src.LoadBancho(ch)
 	_ = <-ch
-	go src.RunGetBeatmapDataASBancho()
+	if os.Getenv("debug") != "true" {
+		go src.RunGetBeatmapDataASBancho()
+	}
 }

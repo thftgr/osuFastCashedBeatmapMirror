@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"github.com/pterm/pterm"
 	"io/ioutil"
 	"mime/multipart"
@@ -62,7 +61,7 @@ func parseTokenExpiraton() (t int64) {
 }
 
 func tryLogin() (err error) {
-	spinner ,_ := pterm.DefaultSpinner.Start("Trying Login Bancho...")
+	spinner, _ := pterm.DefaultSpinner.Start("Trying Login Bancho...")
 	if err = login(true); err != nil {
 		spinner.Fail("fail refresh Bancho Token")
 		if err = login(false); err != nil {
@@ -131,7 +130,7 @@ func login(refresh bool) (err error) {
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	if refresh {
-		req.Header.Set("Authorization", fmt.Sprintf("%s %s", Setting.Osu.Token.TokenType, Setting.Osu.Token.AccessToken))
+		req.Header.Set("Authorization", Setting.Osu.Token.TokenType+" "+Setting.Osu.Token.AccessToken)
 	}
 
 	res, err := client.Do(req)
