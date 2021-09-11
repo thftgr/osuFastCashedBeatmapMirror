@@ -1,14 +1,18 @@
 package Route
 
 import (
-	"database/sql"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/pterm/pterm"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 //
@@ -17,21 +21,29 @@ func parseSort(s string) (ss string) { //sort
 	s = strings.ToLower(s)
 	switch s {
 	case "ranked_asc":
-		ss += "ranked_date asc"
+		ss += "ranked_date ASC"
 	case "favourites_asc":
-		ss += "favourite_count asc"
+		ss += "favourite_count ASC"
 	case "favourites_desc":
-		ss += "favourite_count desc"
+		ss += "favourite_count DESC"
 	case "plays_asc":
-		ss += "play_count asc"
+		ss += "play_count ASC"
 	case "plays_desc":
-		ss += "play_count desc"
+		ss += "play_count DESC"
 	case "updated_asc":
-		ss += "last_updated asc"
+		ss += "last_updated ASC"
 	case "updated_desc":
-		ss += "last_updated desc"
+		ss += "last_updated DESC"
+	case "title_desc":
+		ss += "title DESC"
+	case "title_asc":
+		ss += "title ASC"
+	case "artist_desc":
+		ss += "artist DESC"
+	case "artist_asc":
+		ss += "artist ASC"
 	default:
-		ss += "ranked_date desc"
+		ss += "ranked_date DESC"
 	}
 
 	return
@@ -40,9 +52,9 @@ func parseSort(s string) (ss string) { //sort
 func parsePage(s string) (ss string) {
 	atoi, err := strconv.Atoi(s)
 	if err != nil || atoi <= 0 {
-		return " limit 50 "
+		return "LIMIT 50"
 	}
-	return fmt.Sprintf("limit %d,50", atoi*50)
+	return fmt.Sprintf("LIMIT %d,50", atoi*50)
 }
 
 func parseMode(s string) (ss string) {
@@ -56,7 +68,7 @@ func parseMode(s string) (ss string) {
 	case "3":
 		ss = "3"
 	default:
-		ss = "0,1,2,3"
+		ss = "all"
 	}
 	return
 }
@@ -76,7 +88,7 @@ func parseStatus(s string) (ss string) {
 	case "graveyard":
 		ss = "-2"
 	case "any":
-		ss = "4,3,2,1,0,-1,-2"
+		ss = "all"
 	default:
 		ss = "4,2,1"
 
@@ -85,67 +97,81 @@ func parseStatus(s string) (ss string) {
 	return
 }
 
-const QuerySearchAll = `select * from osu.beatmapset order by %s %s ;`
-const QuerySearchBeatmapSet = `
-select * from osu.beatmapset 
-	where ranked in( %s ) 
-	AND
-	beatmapset_id in (select distinct beatmapset_id from osu.beatmap where ranked in( %s ) AND mode_int in ( %s ) ) 
-order by %s %s ;
-`
+func queryBuilder(s *SearchQuery) (qs string, i []interface{}) {
 
-const QuerySearchBeatmapSetWhitQueryText = `
-select * from osu.beatmapset 
-where  ranked in( %s ) 
-AND beatmapset_id in (select distinct beatmapset_id from osu.beatmap where ranked in( %s ) AND mode_int in ( %s ) ) 
-AND beatmapset_id in (select beatmapset_id from osu.search_index where MATCH(text) AGAINST(?))
-order by %s %s ;
-`
+	(*s).Status = parseStatus((*s).Status)
+	(*s).Mode = parseMode((*s).Mode)
+	(*s).Sort = parseSort((*s).Sort)
+	(*s).Page = parsePage((*s).Page)
+
+	var query bytes.Buffer
+	var buf1 []string
+	var buf2 []string
+	query.WriteString("SELECT * FROM osu.beatmapset ")
+	//ranked
+
+	if (*s).Status != "all" {
+		buf1 = append(buf1, "RANKED IN("+(*s).Status+")")
+		buf2 = append(buf2, "RANKED IN("+(*s).Status+")")
+	}
+
+	if (*s).Mode != "all" {
+		buf2 = append(buf2, "mode_int IN("+(*s).Mode+")")
+	}
+
+	if len(buf2) > 0 {
+		buf1 = append(buf1, "beatmapset_id IN (SELECT DISTINCT beatmapset_id FROM osu.beatmap WHERE "+strings.Join(buf2, " AND ")+" )")
+	}
+
+	if (*s).Text != "" {
+		buf1 = append(buf1, "beatmapset_id IN (SELECT beatmapset_id FROM osu.search_index WHERE MATCH(text) AGAINST(?))")
+		i = append(i, (*s).Text)
+
+	}
+
+	if len(buf1) > 0 {
+		query.WriteString("WHERE ")
+		query.WriteString(strings.Join(buf1, " AND "))
+	}
+	query.WriteString("ORDER BY ")
+	query.WriteString((*s).Sort)
+	query.WriteString(" ")
+	query.WriteString((*s).Page)
+	query.WriteString(";")
+	qs = query.String()
+
+	return
+
+}
 
 type SearchQuery struct {
-	Status string
-	Mode   string
-	Sort   string
-	Page   string
-	Text   string
+	Status string `query:"s" json:"s"`
+	Mode   string `query:"m" json:"m"`
+	Sort   string `query:"sort" json:"sort"`
+	Page   string `query:"p" json:"p"`
+	Text   string `query:"q" json:"q"`
 }
 
 func Search(c echo.Context) (err error) {
-
-	var q string
-	var rows *sql.Rows
-	var (
-		status = parseStatus(c.QueryParam("s"))
-		mode   = parseMode(c.QueryParam("m"))
-		sort   = parseSort(c.QueryParam("sort"))
-		page   = parsePage(c.QueryParam("p"))
-		text   = c.QueryParam("q")
-	)
-	if c.QueryParam("s") == "any" {
-		q = fmt.Sprintf(QuerySearchAll, sort, page) //page
-		rows, err = src.Maria.Query(q)
-	} else if c.QueryParam("q") == "" {
-		q = fmt.Sprintf(QuerySearchBeatmapSet,
-			status, //ranked
-			status, //ranked
-			mode,   //osu,mania
-			sort,
-			page, //page
-		)
-		rows, err = src.Maria.Query(q)
-
-	} else {
-		q = fmt.Sprintf(QuerySearchBeatmapSetWhitQueryText,
-			status, //ranked
-			status, //ranked
-			mode,   //osu,mania
-			sort,
-			page, //page
-
-		)
-		rows, err = src.Maria.Query(q, text)
+	var sq SearchQuery
+	err = c.Bind(&sq)
+	if err != nil {
+		pterm.Error.Println(err)
+		c.NoContent(http.StatusInternalServerError)
+		return
 	}
 
+	q, qs := queryBuilder(&sq)
+	go func() {
+		b, _ := json.Marshal(sq)
+		log.Println("REBUILDED REQUEST", string(b))
+		log.Println("GENERATED QUERY", q, qs)
+		t := time.Now().Format("2006/01/02 15:01:05") //2021/09/10 22:30:38
+		pterm.Info.Println(t,"REBUILDED REQUEST:", pterm.LightYellow(string(b)) )
+		pterm.Info.Println(t,"GENERATED QUERY:", pterm.LightYellow(q), "ARGS:",pterm.LightYellow(qs))
+	}()
+
+	rows, err := src.Maria.Query(q, qs...)
 	if err != nil {
 		c.NoContent(http.StatusInternalServerError)
 		return
