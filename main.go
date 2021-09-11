@@ -15,6 +15,8 @@ import (
 	"log"
 )
 //https://github.com/swaggo/swag#declarative-comments-format
+//https://github.com/swaggo/swag/blob/master/example/celler/controller/examples.go
+
 // @title Swagger Example API
 // @version 1.0
 // @description thftgr's fast cached osu beatmap mirror.
@@ -28,6 +30,7 @@ import (
 
 // @host xiiov.com
 // @BasePath /
+// @schemes http https
 func main() {
 
 	e := echo.New()
@@ -50,7 +53,7 @@ func main() {
 		middleware.RequestID(),
 	)
 	// SWAGGER =========================================================================================================
-	e.GET("/*", echoSwagger.WrapHandler)
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	// 서버상태 체크용 ====================================================================================================
 

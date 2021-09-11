@@ -45,6 +45,16 @@ func saveLocal(data *bytes.Buffer, path string, id int) (err error) {
 	return
 }
 
+// DownloadBeatmapSet CollectHost godoc
+//@Summary .
+//@Description 비트맵셋 다운로드.
+//@Success 200
+//@failure 500 body null "InternalServerError"
+//@failure 500 body null "InternalServerError"
+//@param nv query boolean false "download without video"
+//@param noVideo query boolean false "download without video"
+//@param map_set_id path int true "beatmap set id"
+//@Router /d/{map_set_id} [get]
 func DownloadBeatmapSet(c echo.Context) (err error) {
 	noVideo, err := strconv.ParseBool(c.QueryParam("noVideo")) //1, t, T, TRUE, true, True, 0, f, F, FALSE, false, False.
 	if err != nil {
@@ -84,13 +94,13 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		Video       bool
 	}
 	if err = rows.Scan(&a.Id, &a.Artist, &a.Title, &a.LastUpdated, &a.Video); err != nil {
-		c.NoContent(500)
+		c.NoContent(http.StatusInternalServerError)
 		return
 	}
 
 	lu, err := time.Parse("2006-01-02 15:04:05", a.LastUpdated)
 	if err != nil {
-		c.NoContent(500)
+		c.NoContent(http.StatusInternalServerError)
 		return
 	}
 	c.Response().Header().Set("Content-Type", "application/download")
@@ -121,7 +131,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		c.NoContent(500)
+		c.NoContent(http.StatusInternalServerError)
 		return
 	}
 	req.Header.Add("Authorization", src.Setting.Osu.Token.TokenType+" "+src.Setting.Osu.Token.AccessToken)
@@ -129,7 +139,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	res, err := client.Do(req)
 
 	if err != nil {
-		c.NoContent(500)
+		c.NoContent(http.StatusInternalServerError)
 		return
 	}
 	defer res.Body.Close()
@@ -155,7 +165,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		buf.Write(b[:n]) // 서버에 저장할 파일 버퍼에 쓴다
 
 		if _, err := c.Response().Write(b[:n]); err != nil { // 클라이언트 리스폰스 스트림에 쓴다(클라이언트 버퍼라 보면 댐)
-			c.NoContent(500) //에러처리
+			c.NoContent(http.StatusInternalServerError) //에러처리
 			return err       //에러처리
 		}
 		if err == io.EOF { //에러처리

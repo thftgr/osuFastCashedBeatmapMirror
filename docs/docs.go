@@ -31,6 +31,44 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/d/{map_set_id}": {
+            "get": {
+                "description": "비트맵셋 다운로드.",
+                "summary": ".",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "download without video",
+                        "name": "nv",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "download without video",
+                        "name": "noVideo",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "beatmap set id",
+                        "name": "map_set_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    },
+                    "500": {
+                        "description": "InternalServerError",
+                        "schema": {
+                            "type": "body"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "서버 상태 체크.",
@@ -59,7 +97,7 @@ var SwaggerInfo = swaggerInfo{
 	Version:     "1.0",
 	Host:        "xiiov.com",
 	BasePath:    "/",
-	Schemes:     []string{},
+	Schemes:     []string{"http", "https"},
 	Title:       "Swagger Example API",
 	Description: "thftgr's fast cached osu beatmap mirror.",
 }
