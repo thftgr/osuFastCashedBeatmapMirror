@@ -165,11 +165,11 @@ func Search(c echo.Context) (err error) {
 	q, qs := queryBuilder(&sq)
 	go func() {
 		b, _ := json.Marshal(sq)
-		log.Println("REBUILDED REQUEST", string(b))
-		log.Println("GENERATED QUERY", q, qs)
+		log.Println("REBUILDED REQUEST:", string(b))
+		log.Println("GENERATED QUERY:", q, "ARGS:", qs)
 		t := time.Now().Format("2006/01/02 15:01:05") //2021/09/10 22:30:38
-		pterm.Info.Println(t,"REBUILDED REQUEST:", pterm.LightYellow(string(b)) )
-		pterm.Info.Println(t,"GENERATED QUERY:", pterm.LightYellow(q), "ARGS:",pterm.LightYellow(qs))
+		pterm.Info.Println(t, "REBUILDED REQUEST:", pterm.LightYellow(string(b)))
+		pterm.Info.Println(t, "GENERATED QUERY:", pterm.LightYellow(q), "ARGS:", pterm.LightYellow(qs))
 	}()
 
 	rows, err := src.Maria.Query(q, qs...)
@@ -213,11 +213,10 @@ func Search(c echo.Context) (err error) {
 		c.NoContent(http.StatusNotFound)
 		return
 	}
-	st := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")
 
 	rows, err = src.Maria.Query(fmt.Sprintf(
 		`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating desc;`,
-		st,
+		strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]"),
 	))
 
 	if err != nil {

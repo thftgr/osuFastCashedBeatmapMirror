@@ -7,7 +7,6 @@ import (
 	"github.com/thftgr/osuFastCashedBeatmapMirror/Logger"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/Route"
 	_ "github.com/thftgr/osuFastCashedBeatmapMirror/bootLoader"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/middleWareFunc"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"log"
 )
@@ -28,7 +27,7 @@ func main() {
 	e.Use(
 		middleware.Logger(),
 		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
-		middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
+		//middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
 		middleware.RequestID(),
 	)
 	// docs ============================================================================================================

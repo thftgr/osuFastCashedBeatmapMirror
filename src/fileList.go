@@ -69,47 +69,7 @@ func FileListUpdate(c ...*pterm.SpinnerPrinter) {
 	)
 
 }
-func FileListUpdate2(c ...*pterm.SpinnerPrinter) {
-	var err error
-	var msg string
-	defer func() {
 
-		if c != nil {
-			if err != nil {
-				c[0].Fail(err)
-				return
-			}
-			c[0].Success()
-		}
-		if msg != "" {
-			pterm.Info.Println(msg)
-		}
-
-	}()
-	checkDir()
-	files, err := ioutil.ReadDir(Setting.TargetDir)
-	if err != nil {
-		return
-	}
-
-	tmp := make(FileIndex)
-	fileSize = 0
-	for _, file := range files {
-		if sid, err := strconv.Atoi(strings.Replace(file.Name(), ".osz", "", -1)); err == nil {
-			tmp[sid] = file.ModTime()
-			fileSize += uint64(file.Size())
-		}
-	}
-
-	FileList = tmp
-	msg = fmt.Sprintf(
-		"%s File List Indexing : %s files [%s]\n",
-		time.Now().Format("2006-01-02 15:04:05"),
-		pterm.LightYellow(strconv.Itoa(len(FileList))),
-		pterm.LightYellow(totalFileSize()),
-	)
-
-}
 func totalFileSize() (s string) {
 	if goos == "windows" {
 		if fileSize > 1099511627776 { //TB
