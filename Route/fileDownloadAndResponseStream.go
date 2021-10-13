@@ -130,8 +130,12 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 			return err
 		}
 	}
-
-	return saveLocal(&buf, serverFileName, mid) // 서버에 파일버퍼를 쓴다
+	if cLen == buf.Len() {
+		return saveLocal(&buf, serverFileName, mid)
+	}
+	errMsg := fmt.Sprintf("filesize not match: bancho response bytes : %d | downloaded bytes : %d",cLen,buf.Len())
+	pterm.Error.Printfln(errMsg)
+	return errors.New(errMsg)
 
 }
 func saveLocal(data *bytes.Buffer, path string, id int) (err error) {
