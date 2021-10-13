@@ -102,25 +102,33 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	c.Response().Header().Set("Content-Length", res.Header.Get("Content-Length"))
 	c.Response().Header().Set("Content-Disposition", res.Header.Get("Content-Disposition"))
 
-	var buf bytes.Buffer // 서버에 저장할 파일 버퍼
+	var buf bytes.Buffer
 
+	//http://localhost/d/1573058
+	//http://localhost/d/1469677
 	for i := 0; i < cLen; { // 읽을 데이터 사이즈 체크
 		var b = make([]byte, 64000) // 바이트 배열
 		n, err := res.Body.Read(b)  // 반쵸 스트림에서 64k 읽어서 바이트 배열 b 에 넣음
-		if err == io.EOF {          //에러처리
+
+
+		i += n           // 현재까지 읽은 바이트
+		if n > 0 {
+			buf.Write(b[:n]) // 서버에 저장할 파일 버퍼에 쓴다
+
+			if _, err := c.Response().Write(b[:n]); err != nil {
+				c.NoContent(http.StatusInternalServerError)
+				return err
+			}
+		}
+
+
+		if err == io.EOF {
 			break
 		} else if err != nil { //에러처리
 			fmt.Println(err.Error())
 			break
 		}
 
-		i += n           // 현재까지 읽은 바이트
-		buf.Write(b[:n]) // 서버에 저장할 파일 버퍼에 쓴다
-
-		if _, err := c.Response().Write(b[:n]); err != nil { // 클라이언트 리스폰스 스트림에 쓴다(클라이언트 버퍼라 보면 댐)
-			c.NoContent(http.StatusInternalServerError) //에러처리
-			return err                                  //에러처리
-		}
 
 	}
 	c.Response().Flush()
