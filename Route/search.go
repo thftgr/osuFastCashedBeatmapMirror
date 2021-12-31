@@ -146,11 +146,13 @@ func queryBuilder(s *SearchQuery) (qs string, i []interface{}) {
 }
 
 type SearchQuery struct {
-	Status string `query:"s" json:"s"`
-	Mode   string `query:"m" json:"m"`
-	Sort   string `query:"sort" json:"sort"`
-	Page   string `query:"p" json:"p"`
-	Text   string `query:"q" json:"q"`
+	Status   string `query:"s" json:"s"`       // 랭크상태
+	Mode     string `query:"m" json:"m"`       // 게임모드
+	Sort     string `query:"sort" json:"sort"` // 정렬
+	Page     string `query:"p" json:"p"`       // 페이지
+	Text     string `query:"q" json:"q"`       // 문자열 검색
+	MapSetId int    `param:"si"`               // 맵셋id로 검색
+	MapId    int    `param:"mi"`               // 맵id로 검색
 }
 
 func Search(c echo.Context) (err error) {
@@ -198,8 +200,8 @@ func Search(c echo.Context) (err error) {
 			&set.Video, &set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped,
 			&set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl,
 			&set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard,
-			&set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name,
-			&set.Language.Id, &set.Language.Name, &set.RatingsString)
+			&set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString,
+		)
 		if err != nil {
 			c.NoContent(http.StatusInternalServerError)
 			return
@@ -214,10 +216,7 @@ func Search(c echo.Context) (err error) {
 		return
 	}
 
-	rows, err = src.Maria.Query(fmt.Sprintf(
-		`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating desc;`,
-		strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]"),
-	))
+	rows, err = src.Maria.Query(fmt.Sprintf(`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating asc;`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
 
 	if err != nil {
 		c.NoContent(http.StatusInternalServerError)
@@ -231,10 +230,7 @@ func Search(c echo.Context) (err error) {
 			//beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating,
 			//version, accuracy, ar, cs, drain, bpm, convert, count_circles, count_sliders, count_spinners, deleted_at,
 			//hit_length, is_scoreable, last_updated, passcount, playcount, checksum, user_id
-			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating,
-			&Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt,
-			&Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId,
-		)
+			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId)
 		if err != nil {
 			c.NoContent(http.StatusInternalServerError)
 			return

@@ -29,6 +29,7 @@ func main() {
 		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
 		//middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
 		middleware.RequestID(),
+		middleware.Recover(),
 	)
 	// docs ============================================================================================================
 	e.GET("/", Route.Wiki)
@@ -44,8 +45,37 @@ func main() {
 
 	// 비트맵 리스트 검색용 ================================================================================================
 	e.GET("/search", Route.Search)
+	e.GET("/search/beatmap/:mi", Route.SearchByBeatmapId)
+	e.GET("/search/beatmapset/:si", Route.SearchByBeatmapSetId)
 
 	pterm.Info.Println("ECHO STARTED AT", src.Setting.Port)
 	e.Logger.Fatal(e.Start(":" + src.Setting.Port))
 
 }
+
+//var (
+//	upgrader = websocket.Upgrader{}
+//)
+
+//func hello(c echo.Context) error {
+//	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+//	if err != nil {
+//		return err
+//	}
+//	defer ws.Close()
+//
+//	for {
+//		// Write
+//		err := ws.WriteMessage(websocket.TextMessage, []byte("Hello, Client!"))
+//		if err != nil {
+//			c.Logger().Error(err)
+//		}
+//
+//		// Read
+//		_, msg, err := ws.ReadMessage()
+//		if err != nil {
+//			c.Logger().Error(err)
+//		}
+//		fmt.Printf("%s\n", msg)
+//	}
+//}
