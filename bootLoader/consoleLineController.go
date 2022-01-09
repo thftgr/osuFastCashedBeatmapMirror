@@ -9,13 +9,13 @@ import (
 func init() {
 	ch := make(chan struct{})
 
-	spinner, _ :=  pterm.DefaultSpinner.Start("Load Config File.")
+	spinner, _ := pterm.DefaultSpinner.Start("Load Config File.")
 	src.LoadConfig(spinner)
 
-	spinner, _ =  pterm.DefaultSpinner.Start("Load Beatmap Files.")
+	spinner, _ = pterm.DefaultSpinner.Start("Load Beatmap Files.")
 	src.StartIndex(spinner)
 
-	spinner, _ =  pterm.DefaultSpinner.Start("Load RDBMS.")
+	spinner, _ = pterm.DefaultSpinner.Start("Load RDBMS.")
 	src.ConnectMaria(spinner)
 
 	go src.LoadBancho(ch)
