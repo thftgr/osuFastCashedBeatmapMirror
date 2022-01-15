@@ -30,6 +30,8 @@ func init() {
 	_ = <-ch
 	if os.Getenv("debug") != "true" {
 		go src.RunGetBeatmapDataASBancho()
+	} else {
+		go db.LoadIndex()
 	}
 }
 
@@ -85,6 +87,13 @@ func main() {
 		//src.ManualUpdateBeatmapSet()
 		return nil
 	})
+
+	// 개발중 || 테스트중 ===================================================================================================
+	e.GET("/dev/search", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, db.SearchIndex(c.QueryParam("q")))
+	})
+
+	// 개발중 || 테스트중 ===================================================================================================
 
 	pterm.Info.Println("ECHO STARTED AT", config.Setting.Port)
 	e.Logger.Fatal(e.Start(":" + config.Setting.Port))
