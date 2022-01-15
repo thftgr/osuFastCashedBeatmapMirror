@@ -6,6 +6,8 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"github.com/pterm/pterm"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/config"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"io/ioutil"
 	"net/http"
@@ -35,11 +37,11 @@ func RunGetBeatmapDataASBancho() {
 	go func() {
 		for {
 			time.Sleep(time.Minute)
-			if Maria.Ping() != nil {
+			if db.Maria.Ping() != nil {
 				continue
 			}
 			apiCountReset()
-			go Setting.Save()
+			go config.Setting.Save()
 		}
 	}()
 	go func() { //ALL desc limit 50
@@ -150,8 +152,8 @@ func getGraveyardMap() {
 		}
 	}()
 	url := ""
-	lu := &Setting.Osu.BeatmapUpdate.GraveyardAsc.LastUpdate
-	id := &Setting.Osu.BeatmapUpdate.GraveyardAsc.Id
+	lu := &config.Setting.Osu.BeatmapUpdate.GraveyardAsc.LastUpdate
+	id := &config.Setting.Osu.BeatmapUpdate.GraveyardAsc.Id
 	if *lu+*id != "" {
 		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor%5Blast_update%5D=" + *lu + "&cursor%5B_id%5D=" + *id
 	} else {
@@ -194,8 +196,8 @@ func getUpdatedMapDesc() {
 	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
 		return
 	}
-	Setting.Osu.BeatmapUpdate.UpdatedDesc.LastUpdate = *data.Cursor.LastUpdate
-	Setting.Osu.BeatmapUpdate.UpdatedDesc.Id = *data.Cursor.Id
+	config.Setting.Osu.BeatmapUpdate.UpdatedDesc.LastUpdate = *data.Cursor.LastUpdate
+	config.Setting.Osu.BeatmapUpdate.UpdatedDesc.Id = *data.Cursor.Id
 
 	return
 }
@@ -208,8 +210,8 @@ func getUpdatedMapAsc() {
 		}
 	}()
 	url := ""
-	lu := &Setting.Osu.BeatmapUpdate.UpdatedAsc.LastUpdate
-	id := &Setting.Osu.BeatmapUpdate.UpdatedAsc.Id
+	lu := &config.Setting.Osu.BeatmapUpdate.UpdatedAsc.LastUpdate
+	id := &config.Setting.Osu.BeatmapUpdate.UpdatedAsc.Id
 	if *lu+*id != "" {
 		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any&cursor%5Blast_update%5D=" + *lu + "&cursor%5B_id%5D=" + *id
 	} else {
@@ -243,7 +245,7 @@ func stdGETBancho(url string, str interface{}) (err error) {
 		return
 	}
 
-	req.Header.Add("Authorization", Setting.Osu.Token.TokenType+" "+Setting.Osu.Token.AccessToken)
+	req.Header.Add("Authorization", config.Setting.Osu.Token.TokenType+" "+config.Setting.Osu.Token.AccessToken)
 
 	res, err := client.Do(req)
 	apicountAdd()
@@ -278,7 +280,7 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 	//	language_id,language_name,ratings
 
 	r := *s.Ratings
-	_, err := Maria.Exec(UpsertBeatmapSet, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount,
+	_, err := db.Maria.Exec(UpsertBeatmapSet, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount,
 		s.Hype.Current, s.Hype.Required, s.Nsfw, s.PlayCount, s.Source,
 		s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video,
 		s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled,
@@ -291,7 +293,6 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 		log.Error(err)
 		pterm.Error.Println(err)
 	}
-
 
 	if *s.Beatmaps == nil {
 		return
@@ -306,7 +307,7 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 }
 
 func upsertMap(m osu.BeatmapIN, ch chan struct{}) {
-	_, err := Maria.Exec(UpsertBeatmap, m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version,
+	_, err := db.Maria.Exec(UpsertBeatmap, m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version,
 		m.Accuracy, m.Ar, m.Cs, m.Drain, m.Bpm, m.Convert, m.CountCircles, m.CountSliders, m.CountSpinners, m.DeletedAt,
 		m.HitLength, m.IsScoreable, m.LastUpdated, m.Passcount, m.Playcount, m.Checksum, m.UserId,
 	)
@@ -452,14 +453,14 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 		}
 	}
 	//맵셋
-	if _, err = Maria.Exec(fmt.Sprintf(setUpsert, buildSqlValues(setValues, len(beatmapSets))), setInsertBuf...); err != nil {
+	if _, err = db.Maria.Exec(fmt.Sprintf(setUpsert, buildSqlValues(setValues, len(beatmapSets))), setInsertBuf...); err != nil {
 		pterm.Error.Println(err)
 		return err
 	}
 
 	//맵
 	//fmt.Println(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))))
-	if _, err = Maria.Exec(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))), mapInsertBuf...); err != nil {
+	if _, err = db.Maria.Exec(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))), mapInsertBuf...); err != nil {
 		pterm.Error.Println(err)
 		return err
 	}
@@ -467,7 +468,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	//삭제된 맵 제거
 	sets := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmapSets)), ","), "[]")
 	maps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmaps)), ","), "[]")
-	rows, err := Maria.Query(fmt.Sprintf(selectDeletedMaps, sets, maps))
+	rows, err := db.Maria.Query(fmt.Sprintf(selectDeletedMaps, sets, maps))
 	if err != nil {
 		pterm.Error.Println(err)
 		return err
@@ -483,7 +484,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	if len(deletedMaps) > 1 {
 		pterm.Info.Println(time.Now().Format("02 15:04:05"), "DELETED MAPS:", pterm.LightYellow(deletedMaps))
 		dmaps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(deletedMaps)), ","), "[]")
-		if _, err = Maria.Exec(fmt.Sprintf(deleteMap, dmaps)); err != nil {
+		if _, err = db.Maria.Exec(fmt.Sprintf(deleteMap, dmaps)); err != nil {
 			return err
 		}
 	}

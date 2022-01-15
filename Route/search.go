@@ -2,12 +2,14 @@ package Route
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/bodyStruct"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"log"
 	"net/http"
 	"strconv"
@@ -174,10 +176,25 @@ func Search(c echo.Context) (err error) {
 		pterm.Info.Println(t, "GENERATED QUERY:", pterm.LightYellow(q), "ARGS:", pterm.LightYellow(qs))
 	}()
 
-	rows, err := src.Maria.Query(q, qs...)
+	rows, err := db.Maria.Query(q, qs...)
 	if err != nil {
-		c.NoContent(http.StatusInternalServerError)
-		return
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, &bodyStruct.ErrorStruct{
+				Code:      "SEARCH-001",
+				Path:      c.Path(),
+				RequestId: c.Request().Header.Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   http.StatusText(http.StatusNotFound),
+			})
+
+		}
+		return c.JSON(http.StatusInternalServerError, &bodyStruct.ErrorStruct{
+			Code:      "SEARCH-001",
+			Path:      c.Path(),
+			RequestId: c.Request().Header.Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   http.StatusText(http.StatusInternalServerError),
+		})
 	}
 	defer rows.Close()
 	var sets []osu.BeatmapSetsOUT
@@ -216,7 +233,7 @@ func Search(c echo.Context) (err error) {
 		return
 	}
 
-	rows, err = src.Maria.Query(fmt.Sprintf(`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating asc;`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
+	rows, err = db.Maria.Query(fmt.Sprintf(`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating asc;`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
 
 	if err != nil {
 		c.NoContent(http.StatusInternalServerError)

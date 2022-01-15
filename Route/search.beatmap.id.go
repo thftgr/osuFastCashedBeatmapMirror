@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"net/http"
 )
 
@@ -18,7 +18,7 @@ func SearchByBeatmapId(c echo.Context) (err error) {
 		return
 	}
 	fmt.Println(sq.MapId)
-	row := src.Maria.QueryRow(`select * from osu.beatmap where beatmap_id = ?;`, sq.MapId)
+	row := db.Maria.QueryRow(`select * from osu.beatmap where beatmap_id = ?;`, sq.MapId)
 	var Map osu.BeatmapOUT
 	err = row.Scan(
 		//beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating,

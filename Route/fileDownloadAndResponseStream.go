@@ -7,6 +7,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 	"github.com/pterm/pterm"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/config"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"io"
 	"log"
@@ -31,7 +33,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 
 	go src.ManualUpdateBeatmapSet(mid)
 
-	row := src.Maria.QueryRow(`SELECT beatmapset_id,artist,title,last_updated,video FROM osu.beatmapset WHERE beatmapset_id = ?`, mid)
+	row := db.Maria.QueryRow(`SELECT beatmapset_id,artist,title,last_updated,video FROM osu.beatmapset WHERE beatmapset_id = ?`, mid)
 	if row.Err() != nil {
 		if row.Err() == sql.ErrNoRows {
 			return c.String(http.StatusNotFound, "Please try again in a few seconds. OR map is not alive. check beatmapset id.")
@@ -69,7 +71,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		url += "?noVideo=1"
 	}
 
-	serverFileName := fmt.Sprintf("%s/%d.osz", src.Setting.TargetDir, mid)
+	serverFileName := fmt.Sprintf("%s/%d.osz", config.Setting.TargetDir, mid)
 
 	if src.FileList[mid].Unix() >= lu.Unix() { // 맵이 최신인경우
 		c.Response().Header().Set("Content-Type", "application/x-osu-beatmap-archive")
@@ -87,7 +89,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		c.NoContent(http.StatusInternalServerError)
 		return
 	}
-	req.Header.Add("Authorization", src.Setting.Osu.Token.TokenType+" "+src.Setting.Osu.Token.AccessToken)
+	req.Header.Add("Authorization", config.Setting.Osu.Token.TokenType+" "+config.Setting.Osu.Token.AccessToken)
 
 	res, err := client.Do(req)
 	if err != nil {

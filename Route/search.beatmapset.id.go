@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
 	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"net/http"
 	"strings"
 )
@@ -19,7 +19,7 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 		return
 	}
 	fmt.Println(sq.MapId)
-	row := src.Maria.QueryRow(`select * from osu.beatmapset where beatmapset_id = ?;`, sq.MapSetId)
+	row := db.Maria.QueryRow(`select * from osu.beatmapset where beatmapset_id = ?;`, sq.MapSetId)
 	var set osu.BeatmapSetsOUT
 
 	var mapids []int
@@ -44,7 +44,7 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 		return
 	}
 
-	rows, err := src.Maria.Query(fmt.Sprintf(`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating asc;`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
+	rows, err := db.Maria.Query(fmt.Sprintf(`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating asc;`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
 
 	if err != nil {
 		c.NoContent(http.StatusInternalServerError)

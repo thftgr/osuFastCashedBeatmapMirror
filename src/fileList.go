@@ -3,6 +3,7 @@ package src
 import (
 	"fmt"
 	"github.com/pterm/pterm"
+	"github.com/thftgr/osuFastCashedBeatmapMirror/config"
 	"io/ioutil"
 	"os"
 	"runtime"
@@ -18,8 +19,8 @@ var fileSize uint64
 
 const goos = runtime.GOOS
 
-func StartIndex(c *pterm.SpinnerPrinter) {
-	FileListUpdate(c)
+func StartIndex() {
+	FileListUpdate()
 	go func() {
 		time.Sleep(time.Second * 60 * 5)
 		for {
@@ -29,25 +30,11 @@ func StartIndex(c *pterm.SpinnerPrinter) {
 	}()
 
 }
-func FileListUpdate(c ...*pterm.SpinnerPrinter) {
+func FileListUpdate() {
 	var err error
-	var msg string
-	defer func() {
 
-		if c != nil {
-			if err != nil {
-				c[0].Fail(err)
-				return
-			}
-			c[0].Success()
-		}
-		if msg != "" {
-			pterm.Info.Println(msg)
-		}
-
-	}()
 	checkDir()
-	files, err := ioutil.ReadDir(Setting.TargetDir)
+	files, err := ioutil.ReadDir(config.Setting.TargetDir)
 	if err != nil {
 		return
 	}
@@ -61,7 +48,7 @@ func FileListUpdate(c ...*pterm.SpinnerPrinter) {
 		}
 	}
 	FileList = tmp
-	msg = fmt.Sprintf(
+	pterm.Sprintf(
 		"%s File List Indexing : %s files [%s]\n",
 		time.Now().Format("2006-01-02 15:04:05"),
 		pterm.LightYellow(strconv.Itoa(len(FileList))),
@@ -96,8 +83,8 @@ func totalFileSize() (s string) {
 	return fmt.Sprintf("%d%s", fileSize, "B")
 }
 func checkDir() {
-	if _, e := os.Stat(Setting.TargetDir); os.IsNotExist(e) {
-		err := os.MkdirAll(Setting.TargetDir, 666)
+	if _, e := os.Stat(config.Setting.TargetDir); os.IsNotExist(e) {
+		err := os.MkdirAll(config.Setting.TargetDir, 666)
 		if err != nil {
 			pterm.Error.Println(err)
 			panic(err)
