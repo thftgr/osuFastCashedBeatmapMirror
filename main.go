@@ -54,7 +54,9 @@ func main() {
 		middleware.Recover(),
 	)
 	// docs ============================================================================================================
-	e.GET("/", Route.Wiki)
+	e.GET("/", func(c echo.Context) error {
+		return c.Redirect(http.StatusPermanentRedirect, `https://nerinyan.stoplight.io/studio/nerinyan-api`)
+	})
 
 	// 서버상태 체크용 ====================================================================================================
 	e.GET("/health", Route.Health)
@@ -72,13 +74,13 @@ func main() {
 	//e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.LoadBalancer)
 
 	// 비트맵 리스트 검색용 ================================================================================================
-	e.GET("/api/search", Route.Search)
-	e.GET("/api/search/beatmap/:mi", Route.SearchByBeatmapId)
-	e.GET("/api/search/beatmapset/:si", Route.SearchByBeatmapSetId)
+	e.GET("/search", Route.Search)
+	e.GET("/search/beatmap/:mi", Route.SearchByBeatmapId)
+	e.GET("/search/beatmapset/:si", Route.SearchByBeatmapSetId)
 
 	// 서버 데이터 강제 업데이트용. ==========================================================================================
 	// TODO 맵 굳이 한개씩 강제업데이트할 이유가 없음. 맵셋으로 업데이트만 지원
-	e.GET("/api/update/beatmapset/:id", func(c echo.Context) error {
+	e.GET("/update/beatmapset/:id", func(c echo.Context) error {
 
 		//src.ManualUpdateBeatmapSet()
 		return nil
