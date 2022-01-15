@@ -58,6 +58,13 @@ func RunGetBeatmapDataASBancho() {
 			getUpdatedMapRanked()
 		}
 	}()
+	go func() { //Update Qualified desc limit 50
+		for {
+			awaitApiCount()
+			time.Sleep(time.Minute)
+			getUpdatedMapQualified()
+		}
+	}()
 	go func() { //Update Loved DESC limit 50
 		for {
 			awaitApiCount()
@@ -133,6 +140,24 @@ func getUpdatedMapLoved() {
 		}
 	}()
 	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=loved"
+
+	var data osu.BeatmapsetsSearch
+	if err = stdGETBancho(url, &data); err != nil {
+		return
+	}
+	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
+		return
+	}
+	return
+}
+func getUpdatedMapQualified() {
+	var err error
+	defer func() {
+		if err != nil {
+			pterm.Error.Println(err)
+		}
+	}()
+	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=qualified"
 
 	var data osu.BeatmapsetsSearch
 	if err = stdGETBancho(url, &data); err != nil {
