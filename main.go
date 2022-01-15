@@ -20,7 +20,7 @@ import (
 // TODO 서버끼리 서로 비트맵파일 동기화 시킬수 있게
 // TODO 헤더로 프론트인지 api 인지 구분할수있게
 // TODO 에러 핸들러.
-// TODO
+// TODO 검색엔진 버그 체크하고 쿼리문 수정
 func init() {
 	ch := make(chan struct{})
 	config.LoadConfig()
