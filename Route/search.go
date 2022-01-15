@@ -5,11 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
+	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
+	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/bodyStruct"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"log"
 	"net/http"
 	"strconv"
@@ -158,12 +159,18 @@ type SearchQuery struct {
 }
 
 func Search(c echo.Context) (err error) {
+
 	var sq SearchQuery
 	err = c.Bind(&sq)
 	if err != nil {
-		pterm.Error.Println(err)
-		c.NoContent(http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SEARCH-001",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "request parse error",
+		}))
+
 	}
 
 	q, qs := queryBuilder(&sq)
@@ -179,22 +186,23 @@ func Search(c echo.Context) (err error) {
 	rows, err := db.Maria.Query(q, qs...)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, &bodyStruct.ErrorStruct{
-				Code:      "SEARCH-001",
+			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-002",
 				Path:      c.Path(),
-				RequestId: c.Request().Header.Get("X-Request-ID"),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
 				Error:     err.Error(),
-				Message:   http.StatusText(http.StatusNotFound),
-			})
+				Message:   "not in database",
+			}))
 
 		}
-		return c.JSON(http.StatusInternalServerError, &bodyStruct.ErrorStruct{
-			Code:      "SEARCH-001",
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SEARCH-003",
 			Path:      c.Path(),
-			RequestId: c.Request().Header.Get("X-Request-ID"),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
 			Error:     err.Error(),
-			Message:   http.StatusText(http.StatusInternalServerError),
-		})
+			Message:   "database Query error",
+		}))
+
 	}
 	defer rows.Close()
 	var sets []osu.BeatmapSetsOUT
@@ -220,8 +228,13 @@ func Search(c echo.Context) (err error) {
 			&set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString,
 		)
 		if err != nil {
-			c.NoContent(http.StatusInternalServerError)
-			return
+			return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-005",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "database Query scan error",
+			}))
 		}
 		index[*set.Id] = len(sets)
 		mapids = append(mapids, *set.Id)
@@ -229,15 +242,35 @@ func Search(c echo.Context) (err error) {
 	}
 
 	if len(sets) < 1 {
-		c.NoContent(http.StatusNotFound)
-		return
+		return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SEARCH-006",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     http.StatusText(http.StatusNotFound),
+			Message:   "not in database",
+		}))
+
 	}
 
 	rows, err = db.Maria.Query(fmt.Sprintf(`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating asc;`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
-
 	if err != nil {
-		c.NoContent(http.StatusInternalServerError)
-		return
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-007",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "not in database",
+			}))
+
+		}
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SEARCH-008",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "database Query error",
+		}))
 	}
 	defer rows.Close()
 
@@ -249,8 +282,13 @@ func Search(c echo.Context) (err error) {
 			//hit_length, is_scoreable, last_updated, passcount, playcount, checksum, user_id
 			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId)
 		if err != nil {
-			c.NoContent(http.StatusInternalServerError)
-			return
+			return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-009",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "database Query scan error",
+			}))
 		}
 		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
 

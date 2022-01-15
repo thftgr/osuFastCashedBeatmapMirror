@@ -2,9 +2,9 @@ package db
 
 import (
 	"database/sql"
+	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/config"
 )
 
 var Maria *sql.DB

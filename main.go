@@ -1,14 +1,14 @@
 package main
 
 import (
+	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
+	"github.com/Nerinyan/Nerinyan-APIV2/Route"
+	"github.com/Nerinyan/Nerinyan-APIV2/config"
+	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/Logger"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/Route"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/config"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"log"
 	"net/http"
 	"os"
@@ -18,7 +18,7 @@ import (
 // TODO DB 테이블 없으면 자동으로 생성하게
 // TODO 로그 디비에 넣을때 어떤 데이터 넣을지.
 // TODO 서버끼리 서로 비트맵파일 동기화 시킬수 있게
-// TODO
+// TODO 헤더로 프론트인지 api 인지 구분할수있게
 // TODO
 // TODO
 func init() {
@@ -61,7 +61,7 @@ func main() {
 	// 서버상태 체크용 ====================================================================================================
 	e.GET("/health", Route.Health)
 	e.GET("/robots.txt", Route.Robots)
-	e.GET("/api/status", func(c echo.Context) error {
+	e.GET("/status", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"Cpu Thread Count":     runtime.NumCPU(),
 			"Running Thread Count": runtime.NumGoroutine(),
@@ -85,7 +85,7 @@ func main() {
 		//src.ManualUpdateBeatmapSet()
 		return nil
 	})
-
+	
 	pterm.Info.Println("ECHO STARTED AT", config.Setting.Port)
 	e.Logger.Fatal(e.Start(":" + config.Setting.Port))
 

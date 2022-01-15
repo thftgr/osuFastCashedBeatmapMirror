@@ -2,10 +2,10 @@ package Route
 
 import (
 	"fmt"
+	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"net/http"
 )
 

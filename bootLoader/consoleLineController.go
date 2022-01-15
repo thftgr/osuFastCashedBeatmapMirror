@@ -1,10 +1,10 @@
 package bootLoader
 
 import (
+	"github.com/Nerinyan/Nerinyan-APIV2/config"
+	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/config"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/src"
 	"os"
 )
 
