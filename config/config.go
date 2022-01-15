@@ -15,6 +15,12 @@ type config struct {
 		Id     string `json:"id"`
 		Passwd string `json:"passwd"`
 		Url    string `json:"url"`
+		Table  struct {
+			Log         string `json:"log"`
+			Beatmap     string `json:"beatmap"`
+			BeatmapSet  string `json:"beatmapSet"`
+			SearchIndex string `json:"searchIndex"`
+		} `json:"table"`
 	} `json:"sql"`
 	Osu struct {
 		Username string `json:"username"`
