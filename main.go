@@ -19,7 +19,7 @@ import (
 // TODO 로그 디비에 넣을때 어떤 데이터 넣을지.
 // TODO 서버끼리 서로 비트맵파일 동기화 시킬수 있게
 // TODO 헤더로 프론트인지 api 인지 구분할수있게
-// TODO
+// TODO 에러 핸들러.
 // TODO
 func init() {
 	ch := make(chan struct{})
@@ -85,7 +85,7 @@ func main() {
 		//src.ManualUpdateBeatmapSet()
 		return nil
 	})
-	
+
 	pterm.Info.Println("ECHO STARTED AT", config.Setting.Port)
 	e.Logger.Fatal(e.Start(":" + config.Setting.Port))
 
