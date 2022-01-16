@@ -21,6 +21,7 @@ import (
 // TODO 헤더로 프론트인지 api 인지 구분할수있게
 // TODO 에러 핸들러.
 // TODO 검색엔진 버그 체크하고 쿼리문 수정
+// TODO 반쵸 비트맵 다운로드 제한 10분간 약 200건 10분 정지. (429 too many request)
 func init() {
 	ch := make(chan struct{})
 	config.LoadConfig()
@@ -31,7 +32,7 @@ func init() {
 	if os.Getenv("debug") != "true" {
 		go src.RunGetBeatmapDataASBancho()
 	} else {
-		go db.LoadIndex()
+		//go db.LoadIndex()
 	}
 }
 
@@ -49,6 +50,7 @@ func main() {
 	e.Pre(middleware.RemoveTrailingSlash())
 
 	e.Use(
+
 		middleware.Logger(),
 		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
 		//middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
@@ -91,6 +93,47 @@ func main() {
 	// 개발중 || 테스트중 ===================================================================================================
 	e.GET("/dev/search", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, db.SearchIndex(c.QueryParam("q")))
+	})
+	e.GET("/dev/test1", func(c echo.Context) error {
+
+		type minMax struct {
+			Min float32 `json:"min"`
+			Max float32 `json:"max"`
+		}
+		type SearchQuery struct {
+			// global
+			Extra string `query:"e" json:"extra"` // 스토리보드 비디오.
+
+			// set
+			Ranked     string `query:"s" json:"ranked"`        // 랭크상태 			set.ranked
+			Nsfw       string `query:"nsfw" json:"nsfw"`       // R18				set.nsfw
+			Video      string `query:"v" json:"video"`         // 비디오				set.video
+			Storyboard string `query:"sb" json:"storyboard"`   // 스토리보드			set.storyboard
+			Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
+
+			// map
+			Mode             string `query:"m" json:"m"`      // 게임모드			map.mode_int
+			TotalLength      minMax `json:"totalLength"`      // 플레이시간			map.totalLength
+			MaxCombo         minMax `json:"maxCombo"`         // 콤보				map.maxCombo
+			DifficultyRating minMax `json:"difficultyRating"` // 난이도				map.difficultyRating
+			Accuracy         minMax `json:"accuracy"`         // od					map.accuracy
+			Ar               minMax `json:"ar"`               // ar					map.ar
+			Cs               minMax `json:"cs"`               // cs					map.cs
+			Drain            minMax `json:"drain"`            // hp					map.drain
+			Bpm              minMax `json:"bpm"`              // bpm				map.bpm
+
+			// query
+			Sort string `query:"sort" json:"sort"` // 정렬				order by
+			Page string `query:"p" json:"page"`    // 페이지				limit
+			Text string `query:"q" json:"query"`   // 문자열 검색
+
+			//etc
+			MapSetId int `param:"si"` // 맵셋id로 검색
+			MapId    int `param:"mi"` // 맵id로 검색
+		}
+		var b SearchQuery
+
+		return c.JSON(http.StatusOK, b)
 	})
 
 	// 개발중 || 테스트중 ===================================================================================================
