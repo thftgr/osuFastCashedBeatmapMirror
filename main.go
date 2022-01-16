@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/Route"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
@@ -13,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 )
 
 // TODO DB 테이블 없으면 자동으로 생성하게
@@ -32,7 +34,7 @@ func init() {
 	if os.Getenv("debug") != "true" {
 		go src.RunGetBeatmapDataASBancho()
 	} else {
-		//go db.LoadIndex()
+		go db.LoadIndex()
 	}
 }
 
@@ -134,6 +136,12 @@ func main() {
 		var b SearchQuery
 
 		return c.JSON(http.StatusOK, b)
+	})
+	e.GET("/dev/test2", func(c echo.Context) error {
+
+		b := []int{1}
+
+		return c.String(http.StatusOK, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(b)), ","), "[]"))
 	})
 
 	// 개발중 || 테스트중 ===================================================================================================

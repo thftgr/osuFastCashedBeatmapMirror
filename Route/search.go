@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
+	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/labstack/echo/v4"
@@ -215,39 +216,92 @@ type SearchQuery struct {
 	MapId    int `param:"mi"` // 맵id로 검색
 }
 
+// queryBuilder build dynamic mariadb query
 func queryBuilder(s *SearchQuery) (qs string, i []interface{}) {
 	s.parseQuery()
 
 	var query bytes.Buffer
-	var buf1 []string
-	var buf2 []string
-	query.WriteString("SELECT * FROM osu.beatmapset ")
-	//ranked
+	var setAnd []string // 맵셋 	AND 문
+	var mapAnd []string // 맵	AND 문
 
-	if s.Ranked != "all" {
-		buf1 = append(buf1, "RANKED IN("+s.Ranked+")")
-		buf2 = append(buf2, "RANKED IN("+s.Ranked+")")
-	}
+	query.WriteString(`select * from ` + config.Setting.Sql.Table.BeatmapSet)
 
-	if s.Mode != "all" {
-		buf2 = append(buf2, "mode_int IN("+s.Mode+")")
-	}
-
-	if len(buf2) > 0 {
-		buf1 = append(buf1, "beatmapset_id IN (SELECT DISTINCT beatmapset_id FROM osu.beatmap WHERE "+strings.Join(buf2, " AND ")+" )")
-	}
+	// Text string `query:"q" json:"query"`   // 문자열 검색
+	//	Ranked     string `query:"s" json:"ranked"`        // 랭크상태 			set.ranked
+	//	Nsfw       string `query:"nsfw" json:"nsfw"`       // R18				set.nsfw
+	//	Video      string `query:"v" json:"video"`         // 비디오				set.video
+	//	Storyboard string `query:"sb" json:"storyboard"`   // 스토리보드			set.storyboard
+	//	Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
 
 	if s.Text != "" {
-		buf1 = append(buf1, "beatmapset_id IN (SELECT beatmapset_id FROM osu.search_index WHERE MATCH(text) AGAINST(?))")
-		i = append(i, s.Text)
-
+		si := db.SearchIndex(s.Text)
+		if len(si) > 0 {
+			setAnd = append(setAnd, "beatmapset_id IN ("+strings.Trim(strings.Join(strings.Fields(fmt.Sprint(si)), ","), "[]")+")")
+		}
+	}
+	if s.Ranked != "all" {
+		setAnd = append(setAnd, "ranked IN("+s.Ranked+")")
+	}
+	if s.Nsfw != "all" {
+		setAnd = append(setAnd, "nsfw = "+s.Nsfw)
+	}
+	if s.Video != "all" {
+		setAnd = append(setAnd, "video = "+s.Video)
+	}
+	if s.Storyboard != "all" {
+		setAnd = append(setAnd, "storyboard = "+s.Storyboard)
+	}
+	if s.Creator != "" {
+		setAnd = append(setAnd, "creator = '"+s.Creator+"'")
 	}
 
-	if len(buf1) > 0 {
-		query.WriteString("WHERE ")
-		query.WriteString(strings.Join(buf1, " AND "))
+	//	Mode             string `query:"m" json:"m"`      // 게임모드				map.mode_int
+	//	TotalLength      minMax `json:"totalLength"`      // 플레이시간			map.totalLength
+	//	MaxCombo         minMax `json:"maxCombo"`         // 콤보				map.maxCombo
+	//	DifficultyRating minMax `json:"difficultyRating"` // 난이도				map.difficultyRating
+	//	Accuracy         minMax `json:"od"`         // od						map.accuracy
+	//	Ar               minMax `json:"ar"`               // ar					map.ar
+	//	Cs               minMax `json:"cs"`               // cs					map.cs
+	//	Drain            minMax `json:"hp"`            // hp					map.drain
+	//	Bpm              minMax `json:"bpm"`              // bpm				map.bpm
+	if s.Mode != "all" {
+		mapAnd = append(mapAnd, "mode_int IN ("+s.Mode+")")
 	}
-	query.WriteString("ORDER BY ")
+	if q := s.TotalLength.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `total_length `+q)
+	}
+	if q := s.MaxCombo.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `max_combo `+q)
+	}
+	if q := s.DifficultyRating.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `difficulty_rating `+q)
+	}
+	if q := s.Accuracy.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `accuracy `+q)
+	}
+	if q := s.Ar.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `ar `+q)
+	}
+	if q := s.Cs.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `cs `+q)
+	}
+	if q := s.Drain.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `drain `+q)
+	}
+	if q := s.Bpm.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `bpm `+q)
+	}
+	if len(mapAnd) > 0 { // beatmapset_id IN ()
+		setAnd = append(setAnd,
+			"beatmapset_id IN (select beatmapset_id from "+config.Setting.Sql.Table.Beatmap+
+				" where "+strings.Join(mapAnd, " AND ")+" )")
+	}
+	if len(setAnd) > 0 { // SELECT * FROM osu.beatmapset WHERE ranked in (4,2,1) AND nsfw = 1 ...
+		query.WriteString(" WHERE ")
+		query.WriteString(strings.Join(setAnd, " AND "))
+	}
+
+	query.WriteString(" ORDER BY ")
 	query.WriteString(s.Sort)
 	query.WriteString(" ")
 	query.WriteString(s.Page)
@@ -272,7 +326,6 @@ func Search(c echo.Context) (err error) {
 		}))
 
 	}
-
 	q, qs := queryBuilder(&sq)
 	go func() {
 		b, _ := json.Marshal(sq)
@@ -282,6 +335,7 @@ func Search(c echo.Context) (err error) {
 		pterm.Info.Println(t, "REBUILDED REQUEST:", pterm.LightYellow(string(b)))
 		pterm.Info.Println(t, "GENERATED QUERY:", pterm.LightYellow(q), "ARGS:", pterm.LightYellow(qs))
 	}()
+	//return c.JSON(http.StatusOK, "")
 
 	rows, err := db.Maria.Query(q, qs...)
 	if err != nil {
