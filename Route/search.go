@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
+	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
+	"github.com/Nerinyan/Nerinyan-APIV2/config"
+	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/bodyStruct"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"log"
 	"net/http"
 	"strconv"
@@ -18,128 +20,291 @@ import (
 )
 
 //
-func parseSort(s string) (ss string) { //sort
+func (s *SearchQuery) parseSort() { //sort
 
-	s = strings.ToLower(s)
-	switch s {
+	ss := strings.ToLower(s.Sort)
+	switch ss {
+	case "ranked_asc", "ranked_date ASC":
+		s.Sort = "ranked_date ASC"
 
-	case "ranked_asc":
-		ss += "ranked_date ASC"
-	case "favourites_asc":
-		ss += "favourite_count ASC"
-	case "favourites_desc":
-		ss += "favourite_count DESC"
-	case "plays_asc":
-		ss += "play_count ASC"
-	case "plays_desc":
-		ss += "play_count DESC"
-	case "updated_asc":
-		ss += "last_updated ASC"
-	case "updated_desc":
-		ss += "last_updated DESC"
-	case "title_desc":
-		ss += "title DESC"
-	case "title_asc":
-		ss += "title ASC"
-	case "artist_desc":
-		ss += "artist DESC"
-	case "artist_asc":
-		ss += "artist ASC"
+	case "ranked_desc", "ranked_date DESC":
+		s.Sort = "ranked_date DESC"
+
+	case "favourites_asc", "favourite_count ASC":
+		s.Sort = "favourite_count ASC"
+
+	case "favourites_desc", "favourite_count DESC":
+		s.Sort = "favourite_count DESC"
+
+	case "plays_asc", "play_count ASC":
+		s.Sort = "play_count ASC"
+
+	case "plays_desc", "play_count DESC":
+		s.Sort = "play_count DESC"
+
+	case "updated_asc", "last_updated ASC":
+		s.Sort = "last_updated ASC"
+
+	case "updated_desc", "last_updated DESC":
+		s.Sort = "last_updated DESC"
+
+	case "title_desc", "title DESC":
+		s.Sort = "title DESC"
+
+	case "title_asc", "title ASC":
+		s.Sort = "title ASC"
+
+	case "artist_desc", "artist DESC":
+		s.Sort = "artist DESC"
+
+	case "artist_asc", "artist ASC":
+		s.Sort = "artist ASC"
 	default:
-		ss += "ranked_date DESC"
+		s.Sort = "ranked_date DESC"
 	}
-
-	return
 }
 
-func parsePage(s string) (ss string) {
-	atoi, err := strconv.Atoi(s)
+func (s *SearchQuery) parsePage() {
+	atoi, err := strconv.Atoi(s.Page)
 	if err != nil || atoi <= 0 {
-		return "LIMIT 50"
+		s.Page = "LIMIT 50"
+	} else {
+		s.Page = fmt.Sprintf("LIMIT %d,50", atoi*50)
 	}
-	return fmt.Sprintf("LIMIT %d,50", atoi*50)
+	return
 }
 
-func parseMode(s string) (ss string) {
-	switch s {
+func (s *SearchQuery) parseMode() {
+	switch s.Mode {
 	case "0":
-		ss = "0"
+		s.Mode = "0"
 	case "1":
-		ss = "1"
+		s.Mode = "1"
 	case "2":
-		ss = "2"
+		s.Mode = "2"
 	case "3":
-		ss = "3"
+		s.Mode = "3"
 	default:
-		ss = "all"
+		s.Mode = "all"
 	}
-	return
 }
 
-func parseStatus(s string) (ss string) {
-	switch s {
-	case "ranked":
-		ss = "1,2"
+func (s *SearchQuery) parseRanked() {
+	ss := strings.ToLower(s.Ranked)
+	switch ss {
+	case "ranked", "1,2":
+		s.Ranked = "1,2"
+
 	case "qualified":
-		ss = "3"
+		s.Ranked = "3"
+
 	case "loved":
-		ss = "4"
+		s.Ranked = "4"
+
 	case "pending":
-		ss = "0"
+		s.Ranked = "0"
+
 	case "wip":
-		ss = "-1"
+		s.Ranked = "-1"
+
 	case "graveyard":
-		ss = "-2"
+		s.Ranked = "-2"
+
+	case "unranked", "0,-1,-2":
+		s.Ranked = "0,-1,-2"
+
 	case "any":
-		ss = "all"
+		s.Ranked = "all"
+
+	case "-2", "-1", "0", "1", "2", "3", "4":
+		s.Ranked = ss
+
 	default:
-		ss = "4,2,1"
+		s.Ranked = "4,2,1"
 
 	}
-
+}
+func (s *SearchQuery) parseNsfw() {
+	ss := strings.ToLower(s.Ranked)
+	switch ss {
+	case "1":
+		s.Nsfw = "all"
+	default:
+		s.Nsfw = "0"
+	}
 	return
 }
 
-func queryBuilder(s *SearchQuery) (qs string, i []interface{}) {
+func (s *SearchQuery) parseExtra() {
+	s.Extra = strings.ToLower(strings.TrimSpace(s.Extra))
+	if s.Storyboard != "1" && s.Storyboard != "all" {
+		if strings.Contains(s.Extra, "storyboard") {
+			s.Storyboard = "1"
+		} else {
+			s.Storyboard = "all"
+		}
+	}
+	if s.Video != "1" && s.Video != "all" {
+		if strings.Contains(s.Extra, "video") {
+			s.Video = "1"
+		} else {
+			s.Video = "all"
+		}
+	}
+}
 
-	(*s).Status = parseStatus((*s).Status)
-	(*s).Mode = parseMode((*s).Mode)
-	(*s).Sort = parseSort((*s).Sort)
-	(*s).Page = parsePage((*s).Page)
+type minMax struct {
+	Min float32 `json:"min"`
+	Max float32 `json:"max"`
+}
+
+func (v *minMax) minAsString() string {
+	return fmt.Sprintf("%.1f", v.Min)
+}
+func (v *minMax) maxAsString() string {
+	return fmt.Sprintf("%.1f", v.Max)
+}
+func (v *minMax) minMaxAsQuery() (query string) {
+	if v == nil || (v.Min == 0 && v.Max == 0) {
+		return
+	} else if v.Min != 0 && v.Max == 0 {
+		return fmt.Sprintf("> %.1f", v.Min)
+	} else if v.Min == 0 && v.Max != 0 {
+		return fmt.Sprintf("< %.1f", v.Max)
+	}
+	return fmt.Sprintf("BETWEEN %.1f AND %.1f", v.Min, v.Max)
+
+}
+func (s *SearchQuery) parseQuery() {
+	s.parseRanked()
+	s.parseMode()
+	s.parseSort()
+	s.parseNsfw()
+	s.parsePage()
+	s.parseExtra()
+}
+
+type SearchQuery struct {
+	// global
+	Extra string `query:"e" json:"extra"` // 스토리보드 비디오.
+
+	// set
+	Ranked     string `query:"s" json:"ranked"`        // 랭크상태 			set.ranked
+	Nsfw       string `query:"nsfw" json:"nsfw"`       // R18				set.nsfw
+	Video      string `query:"v" json:"video"`         // 비디오				set.video
+	Storyboard string `query:"sb" json:"storyboard"`   // 스토리보드			set.storyboard
+	Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
+
+	// map
+	Mode             string `query:"m" json:"m"`      // 게임모드			map.mode_int
+	TotalLength      minMax `json:"totalLength"`      // 플레이시간			map.totalLength
+	MaxCombo         minMax `json:"maxCombo"`         // 콤보				map.maxCombo
+	DifficultyRating minMax `json:"difficultyRating"` // 난이도				map.difficultyRating
+	Accuracy         minMax `json:"accuracy"`         // od					map.accuracy
+	Ar               minMax `json:"ar"`               // ar					map.ar
+	Cs               minMax `json:"cs"`               // cs					map.cs
+	Drain            minMax `json:"drain"`            // hp					map.drain
+	Bpm              minMax `json:"bpm"`              // bpm				map.bpm
+
+	// query
+	Sort string `query:"sort" json:"sort"` // 정렬				order by
+	Page string `query:"p" json:"page"`    // 페이지				limit
+	Text string `query:"q" json:"query"`   // 문자열 검색
+
+	//etc
+	MapSetId int `param:"si"` // 맵셋id로 검색
+	MapId    int `param:"mi"` // 맵id로 검색
+}
+
+// queryBuilder build dynamic mariadb query
+func queryBuilder(s *SearchQuery) (qs string, i []interface{}) {
+	s.parseQuery()
 
 	var query bytes.Buffer
-	var buf1 []string
-	var buf2 []string
-	query.WriteString("SELECT * FROM osu.beatmapset ")
-	//ranked
+	var setAnd []string // 맵셋 	AND 문
+	var mapAnd []string // 맵	AND 문
 
-	if (*s).Status != "all" {
-		buf1 = append(buf1, "RANKED IN("+(*s).Status+")")
-		buf2 = append(buf2, "RANKED IN("+(*s).Status+")")
+	query.WriteString(`select * from ` + config.Setting.Sql.Table.BeatmapSet)
+
+	// Text string `query:"q" json:"query"`   // 문자열 검색
+	//	Ranked     string `query:"s" json:"ranked"`        // 랭크상태 			set.ranked
+	//	Nsfw       string `query:"nsfw" json:"nsfw"`       // R18				set.nsfw
+	//	Video      string `query:"v" json:"video"`         // 비디오				set.video
+	//	Storyboard string `query:"sb" json:"storyboard"`   // 스토리보드			set.storyboard
+	//	Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
+
+	if s.Text != "" {
+		si := db.SearchIndex(s.Text)
+		if len(si) > 0 {
+			setAnd = append(setAnd, "beatmapset_id IN ("+strings.Trim(strings.Join(strings.Fields(fmt.Sprint(si)), ","), "[]")+")")
+		}
+	}
+	if s.Ranked != "all" {
+		setAnd = append(setAnd, "ranked IN("+s.Ranked+")")
+	}
+	if s.Nsfw != "all" {
+		setAnd = append(setAnd, "nsfw = "+s.Nsfw)
+	}
+	if s.Video != "all" {
+		setAnd = append(setAnd, "video = "+s.Video)
+	}
+	if s.Storyboard != "all" {
+		setAnd = append(setAnd, "storyboard = "+s.Storyboard)
+	}
+	if s.Creator != "" {
+		setAnd = append(setAnd, "creator = '"+s.Creator+"'")
 	}
 
-	if (*s).Mode != "all" {
-		buf2 = append(buf2, "mode_int IN("+(*s).Mode+")")
+	//	Mode             string `query:"m" json:"m"`      // 게임모드				map.mode_int
+	//	TotalLength      minMax `json:"totalLength"`      // 플레이시간			map.totalLength
+	//	MaxCombo         minMax `json:"maxCombo"`         // 콤보				map.maxCombo
+	//	DifficultyRating minMax `json:"difficultyRating"` // 난이도				map.difficultyRating
+	//	Accuracy         minMax `json:"od"`         // od						map.accuracy
+	//	Ar               minMax `json:"ar"`               // ar					map.ar
+	//	Cs               minMax `json:"cs"`               // cs					map.cs
+	//	Drain            minMax `json:"hp"`            // hp					map.drain
+	//	Bpm              minMax `json:"bpm"`              // bpm				map.bpm
+	if s.Mode != "all" {
+		mapAnd = append(mapAnd, "mode_int IN ("+s.Mode+")")
+	}
+	if q := s.TotalLength.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `total_length `+q)
+	}
+	if q := s.MaxCombo.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `max_combo `+q)
+	}
+	if q := s.DifficultyRating.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `difficulty_rating `+q)
+	}
+	if q := s.Accuracy.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `accuracy `+q)
+	}
+	if q := s.Ar.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `ar `+q)
+	}
+	if q := s.Cs.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `cs `+q)
+	}
+	if q := s.Drain.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `drain `+q)
+	}
+	if q := s.Bpm.minMaxAsQuery(); q != "" {
+		mapAnd = append(mapAnd, `bpm `+q)
+	}
+	if len(mapAnd) > 0 { // beatmapset_id IN ()
+		setAnd = append(setAnd,
+			"beatmapset_id IN (select beatmapset_id from "+config.Setting.Sql.Table.Beatmap+
+				" where "+strings.Join(mapAnd, " AND ")+" )")
+	}
+	if len(setAnd) > 0 { // SELECT * FROM osu.beatmapset WHERE ranked in (4,2,1) AND nsfw = 1 ...
+		query.WriteString(" WHERE ")
+		query.WriteString(strings.Join(setAnd, " AND "))
 	}
 
-	if len(buf2) > 0 {
-		buf1 = append(buf1, "beatmapset_id IN (SELECT DISTINCT beatmapset_id FROM osu.beatmap WHERE "+strings.Join(buf2, " AND ")+" )")
-	}
-
-	if (*s).Text != "" {
-		buf1 = append(buf1, "beatmapset_id IN (SELECT beatmapset_id FROM osu.search_index WHERE MATCH(text) AGAINST(?))")
-		i = append(i, (*s).Text)
-
-	}
-
-	if len(buf1) > 0 {
-		query.WriteString("WHERE ")
-		query.WriteString(strings.Join(buf1, " AND "))
-	}
-	query.WriteString("ORDER BY ")
-	query.WriteString((*s).Sort)
+	query.WriteString(" ORDER BY ")
+	query.WriteString(s.Sort)
 	query.WriteString(" ")
-	query.WriteString((*s).Page)
+	query.WriteString(s.Page)
 	query.WriteString(";")
 	qs = query.String()
 
@@ -147,25 +312,20 @@ func queryBuilder(s *SearchQuery) (qs string, i []interface{}) {
 
 }
 
-type SearchQuery struct {
-	Status   string `query:"s" json:"s"`       // 랭크상태
-	Mode     string `query:"m" json:"m"`       // 게임모드
-	Sort     string `query:"sort" json:"sort"` // 정렬
-	Page     string `query:"p" json:"p"`       // 페이지
-	Text     string `query:"q" json:"q"`       // 문자열 검색
-	MapSetId int    `param:"si"`               // 맵셋id로 검색
-	MapId    int    `param:"mi"`               // 맵id로 검색
-}
-
 func Search(c echo.Context) (err error) {
+
 	var sq SearchQuery
 	err = c.Bind(&sq)
 	if err != nil {
-		pterm.Error.Println(err)
-		c.NoContent(http.StatusInternalServerError)
-		return
-	}
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SEARCH-001",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "request parse error",
+		}))
 
+	}
 	q, qs := queryBuilder(&sq)
 	go func() {
 		b, _ := json.Marshal(sq)
@@ -175,26 +335,28 @@ func Search(c echo.Context) (err error) {
 		pterm.Info.Println(t, "REBUILDED REQUEST:", pterm.LightYellow(string(b)))
 		pterm.Info.Println(t, "GENERATED QUERY:", pterm.LightYellow(q), "ARGS:", pterm.LightYellow(qs))
 	}()
+	//return c.JSON(http.StatusOK, "")
 
 	rows, err := db.Maria.Query(q, qs...)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, &bodyStruct.ErrorStruct{
-				Code:      "SEARCH-001",
+			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-002",
 				Path:      c.Path(),
-				RequestId: c.Request().Header.Get("X-Request-ID"),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
 				Error:     err.Error(),
-				Message:   http.StatusText(http.StatusNotFound),
-			})
+				Message:   "not in database",
+			}))
 
 		}
-		return c.JSON(http.StatusInternalServerError, &bodyStruct.ErrorStruct{
-			Code:      "SEARCH-001",
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SEARCH-003",
 			Path:      c.Path(),
-			RequestId: c.Request().Header.Get("X-Request-ID"),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
 			Error:     err.Error(),
-			Message:   http.StatusText(http.StatusInternalServerError),
-		})
+			Message:   "database Query error",
+		}))
+
 	}
 	defer rows.Close()
 	var sets []osu.BeatmapSetsOUT
@@ -212,16 +374,15 @@ func Search(c echo.Context) (err error) {
 			//nominations_summary_current, nominations_summary_required, ranked, ranked_date, storyboard,
 			//submitted_date, tags, has_favourited, description, genre_id, genre_name, language_id, language_name, ratings
 
-			&set.Id, &set.Artist, &set.ArtistUnicode, &set.Creator, &set.FavouriteCount, &set.Hype.Current,
-			&set.Hype.Required, &set.Nsfw, &set.PlayCount, &set.Source, &set.Status, &set.Title, &set.TitleUnicode, &set.UserId,
-			&set.Video, &set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped,
-			&set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl,
-			&set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard,
-			&set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString,
-		)
+			&set.Id, &set.Artist, &set.ArtistUnicode, &set.Creator, &set.FavouriteCount, &set.Hype.Current, &set.Hype.Required, &set.Nsfw, &set.PlayCount, &set.Source, &set.Status, &set.Title, &set.TitleUnicode, &set.UserId, &set.Video, &set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped, &set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl, &set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard, &set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString)
 		if err != nil {
-			c.NoContent(http.StatusInternalServerError)
-			return
+			return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-005",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "database Query scan error",
+			}))
 		}
 		index[*set.Id] = len(sets)
 		mapids = append(mapids, *set.Id)
@@ -229,15 +390,35 @@ func Search(c echo.Context) (err error) {
 	}
 
 	if len(sets) < 1 {
-		c.NoContent(http.StatusNotFound)
-		return
+		return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SEARCH-006",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     http.StatusText(http.StatusNotFound),
+			Message:   "not in database",
+		}))
+
 	}
 
 	rows, err = db.Maria.Query(fmt.Sprintf(`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating asc;`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
-
 	if err != nil {
-		c.NoContent(http.StatusInternalServerError)
-		return
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-007",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "not in database",
+			}))
+
+		}
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SEARCH-008",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "database Query error",
+		}))
 	}
 	defer rows.Close()
 
@@ -249,8 +430,13 @@ func Search(c echo.Context) (err error) {
 			//hit_length, is_scoreable, last_updated, passcount, playcount, checksum, user_id
 			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId)
 		if err != nil {
-			c.NoContent(http.StatusInternalServerError)
-			return
+			return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-009",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "database Query scan error",
+			}))
 		}
 		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
 

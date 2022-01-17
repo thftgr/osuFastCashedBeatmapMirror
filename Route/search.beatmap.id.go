@@ -1,11 +1,13 @@
 package Route
 
 import (
+	"database/sql"
 	"fmt"
+	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
+	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
+	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/labstack/echo/v4"
-	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"net/http"
 )
 
@@ -13,9 +15,13 @@ func SearchByBeatmapId(c echo.Context) (err error) {
 	var sq SearchQuery
 	err = c.Bind(&sq)
 	if err != nil {
-		pterm.Error.Println(err)
-		c.NoContent(http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SearchByBeatmapId-001",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "request parse error",
+		}))
 	}
 	fmt.Println(sq.MapId)
 	row := db.Maria.QueryRow(`select * from osu.beatmap where beatmap_id = ?;`, sq.MapId)
@@ -29,9 +35,23 @@ func SearchByBeatmapId(c echo.Context) (err error) {
 		&Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId,
 	)
 	if err != nil {
-		pterm.Error.Println(err)
-		c.NoContent(http.StatusInternalServerError)
-		return
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SearchByBeatmapId-002",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "not in database",
+			}))
+
+		}
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SearchByBeatmapId-003",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "database Query error",
+		}))
 	}
 
 	return c.JSON(http.StatusOK, Map)

@@ -3,12 +3,12 @@ package src
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Nerinyan/Nerinyan-APIV2/config"
+	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/config"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -56,6 +56,13 @@ func RunGetBeatmapDataASBancho() {
 			awaitApiCount()
 			time.Sleep(time.Minute)
 			getUpdatedMapRanked()
+		}
+	}()
+	go func() { //Update Qualified desc limit 50
+		for {
+			awaitApiCount()
+			time.Sleep(time.Minute)
+			getUpdatedMapQualified()
 		}
 	}()
 	go func() { //Update Loved DESC limit 50
@@ -133,6 +140,24 @@ func getUpdatedMapLoved() {
 		}
 	}()
 	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=loved"
+
+	var data osu.BeatmapsetsSearch
+	if err = stdGETBancho(url, &data); err != nil {
+		return
+	}
+	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
+		return
+	}
+	return
+}
+func getUpdatedMapQualified() {
+	var err error
+	defer func() {
+		if err != nil {
+			pterm.Error.Println(err)
+		}
+	}()
+	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=qualified"
 
 	var data osu.BeatmapsetsSearch
 	if err = stdGETBancho(url, &data); err != nil {

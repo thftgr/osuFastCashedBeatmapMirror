@@ -16,10 +16,9 @@ type config struct {
 		Passwd string `json:"passwd"`
 		Url    string `json:"url"`
 		Table  struct {
-			Log         string `json:"log"`
-			Beatmap     string `json:"beatmap"`
-			BeatmapSet  string `json:"beatmapSet"`
-			SearchIndex string `json:"searchIndex"`
+			Log        string `json:"log"`
+			Beatmap    string `json:"beatmap"`
+			BeatmapSet string `json:"beatmapSet"`
 		} `json:"table"`
 	} `json:"sql"`
 	Osu struct {

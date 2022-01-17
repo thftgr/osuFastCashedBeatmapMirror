@@ -2,8 +2,8 @@ package src
 
 import (
 	"fmt"
+	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/config"
 	"io/ioutil"
 	"os"
 	"runtime"

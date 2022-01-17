@@ -1,11 +1,13 @@
 package Route
 
 import (
+	"database/sql"
 	"fmt"
+	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
+	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
+	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/labstack/echo/v4"
-	"github.com/pterm/pterm"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/db"
-	"github.com/thftgr/osuFastCashedBeatmapMirror/osu"
 	"net/http"
 	"strings"
 )
@@ -14,16 +16,17 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 	var sq SearchQuery
 	err = c.Bind(&sq)
 	if err != nil {
-		pterm.Error.Println(err)
-		c.NoContent(http.StatusInternalServerError)
-		return
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SearchByBeatmapSetId-001",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "request parse error",
+		}))
 	}
-	fmt.Println(sq.MapId)
 	row := db.Maria.QueryRow(`select * from osu.beatmapset where beatmapset_id = ?;`, sq.MapSetId)
 	var set osu.BeatmapSetsOUT
-
 	var mapids []int
-
 	err = row.Scan(
 		// beatmapset_id, artist, artist_unicode, creator, favourite_count, hype_current,
 		//hype_required, nsfw, play_count, source, status, title, title_unicode, user_id,
@@ -34,21 +37,56 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 
 		&set.Id, &set.Artist, &set.ArtistUnicode, &set.Creator, &set.FavouriteCount, &set.Hype.Current, &set.Hype.Required, &set.Nsfw, &set.PlayCount, &set.Source, &set.Status, &set.Title, &set.TitleUnicode, &set.UserId, &set.Video, &set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped, &set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl, &set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard, &set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString)
 	if err != nil {
-		c.NoContent(http.StatusInternalServerError)
-		return
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SearchByBeatmapSetId-002",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "not in database",
+			}))
+
+		}
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SearchByBeatmapSetId-003",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "database Query error",
+		}))
 	}
 	mapids = append(mapids, *set.Id)
 
 	if *set.Id == 0 {
-		c.NoContent(http.StatusNotFound)
-		return
+		return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SearchByBeatmapSetId-004",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "not in database",
+		}))
 	}
 
 	rows, err := db.Maria.Query(fmt.Sprintf(`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating asc;`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
 
 	if err != nil {
-		c.NoContent(http.StatusInternalServerError)
-		return
+		if err == sql.ErrNoRows {
+			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SearchByBeatmapSetId-005",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "not in database",
+			}))
+
+		}
+		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SearchByBeatmapSetId-006",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "database Query error",
+		}))
 	}
 	defer rows.Close()
 
@@ -60,8 +98,13 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 			//hit_length, is_scoreable, last_updated, passcount, playcount, checksum, user_id
 			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId)
 		if err != nil {
-			c.NoContent(http.StatusInternalServerError)
-			return
+			return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SearchByBeatmapSetId-007",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "database Query scan error",
+			}))
 		}
 		set.Beatmaps = append(set.Beatmaps, Map)
 

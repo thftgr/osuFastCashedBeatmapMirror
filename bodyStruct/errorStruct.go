@@ -6,4 +6,5 @@ type ErrorStruct struct {
 	RequestId string `json:"requestId"`
 	Error     string `json:"error"`
 	Message   string `json:"devMessage"`
+	// TODO 시간정보?
 }
