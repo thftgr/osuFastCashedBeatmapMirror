@@ -1,7 +1,9 @@
-package Logger
+package logger
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
 	"github.com/jasonlvhit/gocron"
 	"github.com/pterm/pterm"
 	"io/ioutil"
@@ -16,6 +18,7 @@ import (
 
 var file *os.File
 var Ch = make(chan struct{}) //UpdateLogFile
+var LOG = make(chan interface{})
 
 const (
 	logPath        = "./log"
@@ -24,18 +27,17 @@ const (
 
 func init() {
 	go func() {
+		for elem := range LOG {
+			fmt.Println(elem)
+		}
+	}()
+	go func() {
 		setLogFile()
 		checkLogFileLimit()
 		_ = gocron.Every(1).Days().At("00:00:00").Do(setLogFile)
 		_ = gocron.Every(1).Hours().At("00:00").Do(checkLogFileLimit)
 		<-gocron.Start()
-		//for {
-		//	setLogFile()
-		//	checkLogFileLimit()
-		//	st, _ := time.Parse("20060102",time.Now().Add(time.Hour*24).Format("20060102"))
-		//	st = st.Add(-time.Hour *9)
-		//	time.Sleep(time.Duration(st.Unix() - time.Now().UTC().Unix())*time.Second)
-		//}
+
 	}()
 	pterm.Info.Println("logfile Scheduler Started.")
 
@@ -107,5 +109,27 @@ func setLogFile() {
 
 	log.SetOutput(file)
 	Ch <- struct{}{}
+
+}
+
+func Error(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
+	go func() {
+		b, _ := json.Marshal(v)
+		pterm.Error.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
+	}()
+
+	//TODO DB 에 저장
+	return v
+
+}
+
+func Info(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
+	go func() {
+		b, _ := json.Marshal(v)
+		pterm.Info.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
+	}()
+
+	//TODO DB 에 저장
+	return v
 
 }

@@ -41,7 +41,7 @@ func main() {
 	e.HideBanner = true
 	go func() {
 		for {
-			<-Logger.Ch
+			<-logger.Ch
 			e.Logger.SetOutput(log.Writer())
 			pterm.Info.Println("UPDATED ECHO LOGGER.")
 		}
@@ -94,47 +94,7 @@ func main() {
 	//e.GET("/dev/search", func(c echo.Context) error {
 	//	return c.JSON(http.StatusOK, db.SearchIndex(c.QueryParam("q")))
 	//})
-	//e.GET("/dev/test1", func(c echo.Context) error {
-	//
-	//	type minMax struct {
-	//		Min float32 `json:"min"`
-	//		Max float32 `json:"max"`
-	//	}
-	//	type SearchQuery struct {
-	//		// global
-	//		Extra string `query:"e" json:"extra"` // 스토리보드 비디오.
-	//
-	//		// set
-	//		Ranked     string `query:"s" json:"ranked"`        // 랭크상태 			set.ranked
-	//		Nsfw       string `query:"nsfw" json:"nsfw"`       // R18				set.nsfw
-	//		Video      string `query:"v" json:"video"`         // 비디오				set.video
-	//		Storyboard string `query:"sb" json:"storyboard"`   // 스토리보드			set.storyboard
-	//		Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
-	//
-	//		// map
-	//		Mode             string `query:"m" json:"m"`      // 게임모드			map.mode_int
-	//		TotalLength      minMax `json:"totalLength"`      // 플레이시간			map.totalLength
-	//		MaxCombo         minMax `json:"maxCombo"`         // 콤보				map.maxCombo
-	//		DifficultyRating minMax `json:"difficultyRating"` // 난이도				map.difficultyRating
-	//		Accuracy         minMax `json:"accuracy"`         // od					map.accuracy
-	//		Ar               minMax `json:"ar"`               // ar					map.ar
-	//		Cs               minMax `json:"cs"`               // cs					map.cs
-	//		Drain            minMax `json:"drain"`            // hp					map.drain
-	//		Bpm              minMax `json:"bpm"`              // bpm				map.bpm
-	//
-	//		// query
-	//		Sort string `query:"sort" json:"sort"` // 정렬				order by
-	//		Page string `query:"p" json:"page"`    // 페이지				limit
-	//		Text string `query:"q" json:"query"`   // 문자열 검색
-	//
-	//		//etc
-	//		MapSetId int `param:"si"` // 맵셋id로 검색
-	//		MapId    int `param:"mi"` // 맵id로 검색
-	//	}
-	//	var b SearchQuery
-	//
-	//	return c.JSON(http.StatusOK, b)
-	//})
+
 	//e.GET("/dev/test2", func(c echo.Context) error {
 	//
 	//	b := []int{1}

@@ -12,10 +12,10 @@ import (
 )
 
 func SearchByBeatmapId(c echo.Context) (err error) {
-	var sq SearchQuery
+	var sq searchQuery
 	err = c.Bind(&sq)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
 			Code:      "SearchByBeatmapId-001",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
@@ -24,7 +24,7 @@ func SearchByBeatmapId(c echo.Context) (err error) {
 		}))
 	}
 	fmt.Println(sq.MapId)
-	row := db.Maria.QueryRow(`select * from osu.beatmap where beatmap_id = ?;`, sq.MapId)
+	row := db.Maria.QueryRow("select beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating, version, accuracy, ar, cs, drain, bpm, `convert`, count_circles, count_sliders, count_spinners, deleted_at, hit_length, is_scoreable, last_updated, passcount, playcount, checksum, user_id from osu.beatmap where beatmap_id = ?;", sq.MapId)
 	var Map osu.BeatmapOUT
 	err = row.Scan(
 		//beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating,
@@ -36,7 +36,7 @@ func SearchByBeatmapId(c echo.Context) (err error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+			return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
 				Code:      "SearchByBeatmapId-002",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),
@@ -45,7 +45,7 @@ func SearchByBeatmapId(c echo.Context) (err error) {
 			}))
 
 		}
-		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
 			Code:      "SearchByBeatmapId-003",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
