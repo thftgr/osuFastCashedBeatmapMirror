@@ -70,6 +70,15 @@ func (s *searchQuery) parsePage() {
 	// 에러 발생시 int value = 0
 	page, _ := strconv.Atoi(s.Page)
 	pageSize, _ := strconv.Atoi(s.PageSize)
+	if page < 0 {
+		page = 0
+	}
+	if pageSize < 10 {
+		pageSize = 50
+	}
+	if pageSize > 1000 {
+		pageSize = 1000
+	}
 	if page == 0 && pageSize == 0 {
 		s.Page = "LIMIT 50"
 	} else if page != 0 && pageSize == 0 {
@@ -229,7 +238,7 @@ type searchQuery struct {
 }
 
 // queryBuilder build dynamic mariadb query
-func queryBuilder(s *searchQuery) (qs string, i []interface{}, err error) {
+func queryBuilder(s *searchQuery) (qs string, err error) {
 	s.parseQuery()
 
 	var query bytes.Buffer
@@ -372,7 +381,7 @@ func Search(c echo.Context) (err error) {
 			Message:   "request parse error",
 		}))
 	}
-	q, qs, err := queryBuilder(&sq)
+	q, err := queryBuilder(&sq)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
 			Code:      "SEARCH-002",
@@ -385,14 +394,14 @@ func Search(c echo.Context) (err error) {
 	go func() {
 		b, _ := json.Marshal(sq)
 		log.Println("REBUILDED REQUEST:", string(b))
-		log.Println("GENERATED QUERY:", q, "ARGS:", qs)
+		log.Println("GENERATED QUERY:", q)
 		t := time.Now().Format("2006/01/02 15:01:05") //2021/09/10 22:30:38
 		pterm.Info.Println(t, "REBUILDED REQUEST:", pterm.LightYellow(string(b)))
-		pterm.Info.Println(t, "GENERATED QUERY:", pterm.LightYellow(q), "ARGS:", pterm.LightYellow(qs))
+		pterm.Info.Println(t, "GENERATED QUERY:", pterm.LightYellow(q))
 	}()
 	//return c.JSON(http.StatusOK, "")
 
-	rows, err := db.Maria.Query(q, qs...)
+	rows, err := db.Maria.Query(q)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
@@ -497,7 +506,6 @@ func Search(c echo.Context) (err error) {
 			}))
 		}
 		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
-
 	}
 
 	return c.JSON(http.StatusOK, sets)
