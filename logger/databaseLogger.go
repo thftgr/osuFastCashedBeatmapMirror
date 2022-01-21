@@ -1,14 +1,13 @@
-package Logger
+package logger
 
 import (
-	"bytes"
 	"encoding/json"
 	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
 	"github.com/pterm/pterm"
 	"time"
 )
 
-var LogBuffer bytes.Buffer
+//var LogBuffer bytes.Buffer
 
 //func LoadLogger() {
 //	time.Sleep(time.Second)
@@ -59,10 +58,21 @@ var LogBuffer bytes.Buffer
 //	}
 //
 //}
+
 func Error(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
 	go func() {
 		b, _ := json.Marshal(v)
 		pterm.Error.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
+	}()
+
+	//TODO DB 에 저장
+	return v
+
+}
+func Info(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
+	go func() {
+		b, _ := json.Marshal(v)
+		pterm.Info.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
 	}()
 
 	//TODO DB 에 저장

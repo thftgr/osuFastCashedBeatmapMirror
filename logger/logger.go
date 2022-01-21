@@ -1,4 +1,4 @@
-package Logger
+package logger
 
 import (
 	"fmt"
@@ -16,6 +16,7 @@ import (
 
 var file *os.File
 var Ch = make(chan struct{}) //UpdateLogFile
+var LOG = make(chan interface{})
 
 const (
 	logPath        = "./log"
@@ -24,18 +25,17 @@ const (
 
 func init() {
 	go func() {
+		for elem := range LOG {
+			fmt.Println(elem)
+		}
+	}()
+	go func() {
 		setLogFile()
 		checkLogFileLimit()
 		_ = gocron.Every(1).Days().At("00:00:00").Do(setLogFile)
 		_ = gocron.Every(1).Hours().At("00:00").Do(checkLogFileLimit)
 		<-gocron.Start()
-		//for {
-		//	setLogFile()
-		//	checkLogFileLimit()
-		//	st, _ := time.Parse("20060102",time.Now().Add(time.Hour*24).Format("20060102"))
-		//	st = st.Add(-time.Hour *9)
-		//	time.Sleep(time.Duration(st.Unix() - time.Now().UTC().Unix())*time.Second)
-		//}
+
 	}()
 	pterm.Info.Println("logfile Scheduler Started.")
 

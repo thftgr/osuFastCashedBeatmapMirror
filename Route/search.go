@@ -3,6 +3,7 @@ package Route
 import (
 	"bytes"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,7 +22,7 @@ import (
 )
 
 //
-func (s *SearchQuery) parseSort() { //sort
+func (s *searchQuery) parseSort() { //sort
 
 	ss := strings.ToLower(s.Sort)
 	switch ss {
@@ -65,32 +66,40 @@ func (s *SearchQuery) parseSort() { //sort
 	}
 }
 
-func (s *SearchQuery) parsePage() {
-	atoi, err := strconv.Atoi(s.Page)
-	if err != nil || atoi <= 0 {
+func (s *searchQuery) parsePage() {
+	// 에러 발생시 int value = 0
+	page, _ := strconv.Atoi(s.Page)
+	pageSize, _ := strconv.Atoi(s.PageSize)
+	if page == 0 && pageSize == 0 {
 		s.Page = "LIMIT 50"
-	} else {
-		s.Page = fmt.Sprintf("LIMIT %d,50", atoi*50)
+	} else if page != 0 && pageSize == 0 {
+		s.Page = fmt.Sprintf("LIMIT %d,50", page*50)
+	} else if page == 0 && pageSize != 0 {
+		s.Page = fmt.Sprintf("LIMIT 0,%d", pageSize)
+	} else if page != 0 && pageSize != 0 {
+		s.Page = fmt.Sprintf("LIMIT %d,%d", page*pageSize, pageSize)
 	}
+
 	return
 }
 
-func (s *SearchQuery) parseMode() {
+func (s *searchQuery) parseMode() {
+	s.Mode = strings.ToLower(strings.TrimSpace(s.Mode))
 	switch s.Mode {
-	case "0":
+	case "0", "o", "std", "osu", "osu!", "standard":
 		s.Mode = "0"
-	case "1":
+	case "1", "t", "taiko", "osu!taiko":
 		s.Mode = "1"
-	case "2":
+	case "2", "c", "ctb", "catch", "osu!catch":
 		s.Mode = "2"
-	case "3":
+	case "3", "m", "mania", "osu!mania":
 		s.Mode = "3"
 	default:
 		s.Mode = "all"
 	}
 }
 
-func (s *SearchQuery) parseRanked() {
+func (s *searchQuery) parseRanked() {
 	ss := strings.ToLower(s.Ranked)
 	switch ss {
 	case "ranked", "1,2":
@@ -114,7 +123,7 @@ func (s *SearchQuery) parseRanked() {
 	case "unranked", "0,-1,-2":
 		s.Ranked = "0,-1,-2"
 
-	case "any":
+	case "any", "all":
 		s.Ranked = "all"
 
 	case "-2", "-1", "0", "1", "2", "3", "4":
@@ -125,10 +134,10 @@ func (s *SearchQuery) parseRanked() {
 
 	}
 }
-func (s *SearchQuery) parseNsfw() {
+func (s *searchQuery) parseNsfw() {
 	ss := strings.ToLower(s.Ranked)
 	switch ss {
-	case "1":
+	case "1", "all":
 		s.Nsfw = "all"
 	default:
 		s.Nsfw = "0"
@@ -136,7 +145,7 @@ func (s *SearchQuery) parseNsfw() {
 	return
 }
 
-func (s *SearchQuery) parseExtra() {
+func (s *searchQuery) parseExtra() {
 	s.Extra = strings.ToLower(strings.TrimSpace(s.Extra))
 	if s.Storyboard != "1" && s.Storyboard != "all" {
 		if strings.Contains(s.Extra, "storyboard") {
@@ -176,7 +185,7 @@ func (v *minMax) minMaxAsQuery() (query string) {
 	return fmt.Sprintf("BETWEEN %.1f AND %.1f", v.Min, v.Max)
 
 }
-func (s *SearchQuery) parseQuery() {
+func (s *searchQuery) parseQuery() {
 	s.parseRanked()
 	s.parseMode()
 	s.parseSort()
@@ -185,7 +194,7 @@ func (s *SearchQuery) parseQuery() {
 	s.parseExtra()
 }
 
-type SearchQuery struct {
+type searchQuery struct {
 	// global
 	Extra string `query:"e" json:"extra"` // 스토리보드 비디오.
 
@@ -208,9 +217,11 @@ type SearchQuery struct {
 	Bpm              minMax `json:"bpm"`              // bpm				map.bpm
 
 	// query
-	Sort string `query:"sort" json:"sort"` // 정렬				order by
-	Page string `query:"p" json:"page"`    // 페이지				limit
-	Text string `query:"q" json:"query"`   // 문자열 검색
+	Sort     string `query:"sort" json:"sort"`   // 정렬	  order by
+	Page     string `query:"p" json:"page"`      // 페이지 limit
+	PageSize string `query:"ps" json:"pageSize"` // 페이지 당 크기
+	Text     string `query:"q" json:"query"`     // 문자열 검색
+	B64      string `query:"b64"`                // body
 
 	//etc
 	MapSetId int `param:"si"` // 맵셋id로 검색
@@ -218,14 +229,24 @@ type SearchQuery struct {
 }
 
 // queryBuilder build dynamic mariadb query
-func queryBuilder(s *SearchQuery) (qs string, i []interface{}, err error) {
+func queryBuilder(s *searchQuery) (qs string, i []interface{}, err error) {
 	s.parseQuery()
 
 	var query bytes.Buffer
 	var setAnd []string // 맵셋 	AND 문
 	var mapAnd []string // 맵	AND 문
 
-	query.WriteString(`select * from ` + config.Setting.Sql.Table.BeatmapSet)
+	query.WriteString(`select `)
+	query.WriteString(`beatmapset_id, artist, artist_unicode, creator, favourite_count,`)
+	query.WriteString(`hype_current, hype_required, nsfw, play_count, source, status,`)
+	query.WriteString(`title, title_unicode, user_id, video, availability_download_disabled,`)
+	query.WriteString(`availability_more_information, bpm, can_be_hyped, discussion_enabled,`)
+	query.WriteString(`discussion_locked, is_scoreable, last_updated, legacy_thread_url,`)
+	query.WriteString(`nominations_summary_current, nominations_summary_required, ranked,`)
+	query.WriteString(`ranked_date, storyboard, submitted_date, tags, has_favourited,`)
+	query.WriteString(`description, genre_id, genre_name, language_id, language_name, ratings`)
+	query.WriteString(` from `)
+	query.WriteString(config.Setting.Sql.Table.BeatmapSet)
 
 	// Text string `query:"q" json:"query"`   // 문자열 검색
 	//	Ranked     string `query:"s" json:"ranked"`        // 랭크상태 			set.ranked
@@ -239,7 +260,7 @@ func queryBuilder(s *SearchQuery) (qs string, i []interface{}, err error) {
 		if len(si) > 0 {
 			setAnd = append(setAnd, "beatmapset_id IN ("+strings.Trim(strings.Join(strings.Fields(fmt.Sprint(si)), ","), "[]")+")")
 		} else {
-			err = errors.New("test search data not found")
+			err = errors.New("text search data not found")
 		}
 	}
 	if s.Ranked != "all" {
@@ -317,21 +338,43 @@ func queryBuilder(s *SearchQuery) (qs string, i []interface{}, err error) {
 
 func Search(c echo.Context) (err error) {
 
-	var sq SearchQuery
+	var sq searchQuery
+
 	err = c.Bind(&sq)
+	if sq.B64 != "" {
+		b6, err := base64.StdEncoding.DecodeString(sq.B64)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-000-0",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "request parm 'b64' base64 decode fail.",
+			}))
+		}
+		err = json.Unmarshal(b6, &sq)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-000-1",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "request parm 'b64' json parse fail.",
+			}))
+		}
+	}
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
 			Code:      "SEARCH-001",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
 			Error:     err.Error(),
 			Message:   "request parse error",
 		}))
-
 	}
 	q, qs, err := queryBuilder(&sq)
 	if err != nil {
-		return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
 			Code:      "SEARCH-002",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
@@ -352,7 +395,7 @@ func Search(c echo.Context) (err error) {
 	rows, err := db.Maria.Query(q, qs...)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+			return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
 				Code:      "SEARCH-003",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),
@@ -361,7 +404,7 @@ func Search(c echo.Context) (err error) {
 			}))
 
 		}
-		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
 			Code:      "SEARCH-004",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
@@ -388,7 +431,7 @@ func Search(c echo.Context) (err error) {
 
 			&set.Id, &set.Artist, &set.ArtistUnicode, &set.Creator, &set.FavouriteCount, &set.Hype.Current, &set.Hype.Required, &set.Nsfw, &set.PlayCount, &set.Source, &set.Status, &set.Title, &set.TitleUnicode, &set.UserId, &set.Video, &set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped, &set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl, &set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard, &set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
 				Code:      "SEARCH-005",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),
@@ -402,7 +445,7 @@ func Search(c echo.Context) (err error) {
 	}
 
 	if len(sets) < 1 {
-		return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
 			Code:      "SEARCH-006",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
@@ -412,10 +455,13 @@ func Search(c echo.Context) (err error) {
 
 	}
 
-	rows, err = db.Maria.Query(fmt.Sprintf(`select * from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating asc;`, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
+	rows, err = db.Maria.Query(fmt.Sprintf("select beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating, version, accuracy, ar, cs, drain, bpm, "+
+		"`convert`, "+
+		"count_circles, count_sliders, count_spinners, deleted_at, hit_length, is_scoreable, last_updated, passcount, playcount, checksum, "+
+		"user_id from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating;", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+			return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
 				Code:      "SEARCH-007",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),
@@ -424,7 +470,7 @@ func Search(c echo.Context) (err error) {
 			}))
 
 		}
-		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
 			Code:      "SEARCH-008",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
@@ -442,7 +488,7 @@ func Search(c echo.Context) (err error) {
 			//hit_length, is_scoreable, last_updated, passcount, playcount, checksum, user_id
 			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
+			return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
 				Code:      "SEARCH-009",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),

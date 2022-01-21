@@ -27,6 +27,7 @@ func LoadIndex() {
 
 //TODO 맵셋 인덱싱 + 맵 인덱싱
 func doIndex() {
+
 	pterm.Info.Println("started database indexing")
 	rows, err := Maria.Query(`select beatmapset_id, concat_ws(' ',artist, creator, title ) from osu.beatmapset order by beatmapset_id desc;`)
 	if err != nil {
@@ -60,6 +61,7 @@ func doIndex() {
 	}
 	a := int(unsafe.Sizeof(map[string][]int{})) * countKey
 	b := int(unsafe.Sizeof([]int{})) * countValue
+	SearchCache = map[string][]int{}
 	pterm.Success.Printfln("end database indexing %d keys. %d links.using %d bytes of memory", countKey, countValue, a+b)
 }
 func SearchIndex(q string) (d []int) {
