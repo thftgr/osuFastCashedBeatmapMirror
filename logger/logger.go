@@ -1,7 +1,9 @@
 package logger
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
 	"github.com/jasonlvhit/gocron"
 	"github.com/pterm/pterm"
 	"io/ioutil"
@@ -107,5 +109,27 @@ func setLogFile() {
 
 	log.SetOutput(file)
 	Ch <- struct{}{}
+
+}
+
+func Error(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
+	go func() {
+		b, _ := json.Marshal(v)
+		pterm.Error.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
+	}()
+
+	//TODO DB 에 저장
+	return v
+
+}
+
+func Info(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
+	go func() {
+		b, _ := json.Marshal(v)
+		pterm.Info.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
+	}()
+
+	//TODO DB 에 저장
+	return v
 
 }
