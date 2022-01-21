@@ -10,6 +10,7 @@ import (
 )
 
 var Index = map[string][]int{}
+var SearchCache = map[string][]int{}
 
 type searchIndexTDS struct {
 	id   int
@@ -27,7 +28,7 @@ func LoadIndex() {
 //TODO 맵셋 인덱싱 + 맵 인덱싱
 func doIndex() {
 	pterm.Info.Println("started database indexing")
-	rows, err := Maria.Query(`select beatmapset_id, concat_ws(' ',artist, creator, title, tags, source) from osu.beatmapset order by beatmapset_id desc;`)
+	rows, err := Maria.Query(`select beatmapset_id, concat_ws(' ',artist, creator, title ) from osu.beatmapset order by beatmapset_id desc;`)
 	if err != nil {
 		pterm.Error.Println(err)
 	}
@@ -62,6 +63,10 @@ func doIndex() {
 	pterm.Success.Printfln("end database indexing %d keys. %d links.using %d bytes of memory", countKey, countValue, a+b)
 }
 func SearchIndex(q string) (d []int) {
+	t := SearchCache[q]
+	if len(t) > 0 {
+		return t
+	}
 	data := strings.Split(strings.ToLower(strings.TrimSpace(q)), " ")
 	dataSize := len(data)
 	var ids = map[int]int{}
@@ -81,6 +86,7 @@ func SearchIndex(q string) (d []int) {
 			d = append(d, k)
 		}
 	}
+	SearchCache[q] = d
 	return
 }
 

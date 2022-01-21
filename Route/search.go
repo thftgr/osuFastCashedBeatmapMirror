@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
@@ -217,7 +218,7 @@ type SearchQuery struct {
 }
 
 // queryBuilder build dynamic mariadb query
-func queryBuilder(s *SearchQuery) (qs string, i []interface{}) {
+func queryBuilder(s *SearchQuery) (qs string, i []interface{}, err error) {
 	s.parseQuery()
 
 	var query bytes.Buffer
@@ -237,6 +238,8 @@ func queryBuilder(s *SearchQuery) (qs string, i []interface{}) {
 		si := db.SearchIndex(s.Text)
 		if len(si) > 0 {
 			setAnd = append(setAnd, "beatmapset_id IN ("+strings.Trim(strings.Join(strings.Fields(fmt.Sprint(si)), ","), "[]")+")")
+		} else {
+			err = errors.New("test search data not found")
 		}
 	}
 	if s.Ranked != "all" {
@@ -326,7 +329,16 @@ func Search(c echo.Context) (err error) {
 		}))
 
 	}
-	q, qs := queryBuilder(&sq)
+	q, qs, err := queryBuilder(&sq)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
+			Code:      "SEARCH-002",
+			Path:      c.Path(),
+			RequestId: c.Response().Header().Get("X-Request-ID"),
+			Error:     err.Error(),
+			Message:   "text search data not found",
+		}))
+	}
 	go func() {
 		b, _ := json.Marshal(sq)
 		log.Println("REBUILDED REQUEST:", string(b))
@@ -341,7 +353,7 @@ func Search(c echo.Context) (err error) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusNotFound, Logger.Error(&bodyStruct.ErrorStruct{
-				Code:      "SEARCH-002",
+				Code:      "SEARCH-003",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),
 				Error:     err.Error(),
@@ -350,7 +362,7 @@ func Search(c echo.Context) (err error) {
 
 		}
 		return c.JSON(http.StatusInternalServerError, Logger.Error(&bodyStruct.ErrorStruct{
-			Code:      "SEARCH-003",
+			Code:      "SEARCH-004",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
 			Error:     err.Error(),
