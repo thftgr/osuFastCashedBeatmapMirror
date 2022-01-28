@@ -16,15 +16,16 @@ import (
 	"runtime"
 )
 
-// TODO DONG DB 테이블 없으면 자동으로 생성하게
-// TODO DONG 로그 디비에 넣을때 어떤 데이터 넣을지.
-// TODO DONG 서버끼리 서로 비트맵파일 동기화 시킬수 있게
-// TODO DONG 헤더로 프론트인지 api 인지 구분할수있게
-//  	END  에러 핸들러.
-//  	END  검색엔진 버그 체크하고 쿼리문 수정
-//  	END  비트맵 반쵸에서 다운로드중에 클라이언트가 취소해도 서버는 계속 다운로드.
-// TODO DONG 반쵸 비트맵 다운로드 제한 10분간 약 200건 10분 정지. (429 too many request)
-// TODO DONG 검색 쿼리시 서버에 캐싱되어있는 비트맵인지 여부
+// TODO DOING DB 테이블 없으면 자동으로 생성하게
+// TODO DOING 로그 디비에 넣을때 어떤 데이터 넣을지.
+// TODO DOING 서버끼리 서로 비트맵파일 동기화 시킬수 있게
+// TODO DOING 헤더로 프론트인지 api 인지 구분할수있게
+//  	END   에러 핸들러.
+//  	END   검색엔진 버그 체크하고 쿼리문 수정
+//  	END   비트맵 반쵸에서 다운로드중에 클라이언트가 취소해도 서버는 계속 다운로드.
+// TODO DOING 서버간 비트맵파일 해시값 비교해서 서로 다른경우 둘다 서버에서 삭제.
+// TODO DOING 반쵸 비트맵 다운로드 제한 10분간 약 200건 10분 정지. (429 too many request)
+// TODO DOING 검색 쿼리시 서버에 캐싱되어있는 비트맵인지 여부
 func init() {
 	ch := make(chan struct{})
 	config.LoadConfig()

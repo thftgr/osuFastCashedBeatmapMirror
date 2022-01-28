@@ -29,7 +29,7 @@ func LoadIndex() {
 func doIndex() {
 
 	pterm.Info.Println("started database indexing")
-	rows, err := Maria.Query(`select beatmapset_id, concat_ws(' ',artist, creator, title ) from osu.beatmapset order by beatmapset_id desc;`)
+	rows, err := Maria.Query(`select beatmapset_id, concat_ws(' ',artist, creator, title, tags ) from osu.beatmapset order by beatmapset_id desc;`)
 	if err != nil {
 		pterm.Error.Println(err)
 	}

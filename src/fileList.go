@@ -48,7 +48,7 @@ func FileListUpdate() {
 		}
 	}
 	FileList = tmp
-	pterm.Sprintf(
+	pterm.Info.Printfln(
 		"%s File List Indexing : %s files [%s]\n",
 		time.Now().Format("2006-01-02 15:04:05"),
 		pterm.LightYellow(strconv.Itoa(len(FileList))),
