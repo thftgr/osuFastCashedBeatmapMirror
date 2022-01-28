@@ -5,6 +5,7 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/Route"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/middleWareFunc"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -15,13 +16,15 @@ import (
 	"runtime"
 )
 
-// TODO DB 테이블 없으면 자동으로 생성하게
-// TODO 로그 디비에 넣을때 어떤 데이터 넣을지.
-// TODO 서버끼리 서로 비트맵파일 동기화 시킬수 있게
-// TODO 헤더로 프론트인지 api 인지 구분할수있게
-// TODO 에러 핸들러.
-// TODO 검색엔진 버그 체크하고 쿼리문 수정
-// TODO 반쵸 비트맵 다운로드 제한 10분간 약 200건 10분 정지. (429 too many request)
+// TODO DONG DB 테이블 없으면 자동으로 생성하게
+// TODO DONG 로그 디비에 넣을때 어떤 데이터 넣을지.
+// TODO DONG 서버끼리 서로 비트맵파일 동기화 시킬수 있게
+// TODO DONG 헤더로 프론트인지 api 인지 구분할수있게
+//  	END  에러 핸들러.
+//  	END  검색엔진 버그 체크하고 쿼리문 수정
+//  	END  비트맵 반쵸에서 다운로드중에 클라이언트가 취소해도 서버는 계속 다운로드.
+// TODO DONG 반쵸 비트맵 다운로드 제한 10분간 약 200건 10분 정지. (429 too many request)
+// TODO DONG 검색 쿼리시 서버에 캐싱되어있는 비트맵인지 여부
 func init() {
 	ch := make(chan struct{})
 	config.LoadConfig()
@@ -53,7 +56,7 @@ func main() {
 
 		middleware.Logger(),
 		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
-		//middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
+		middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
 		middleware.RequestID(),
 		middleware.Recover(),
 	)
@@ -73,7 +76,7 @@ func main() {
 	})
 
 	// 맵 파일 다운로드 ===================================================================================================
-	e.GET("/d/:id", Route.DownloadBeatmapSet)
+	e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.BanchoBeatmapDownloadLimiter)
 	//TODO 맵아이디, 맵셋아이디 지원
 	//e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.LoadBalancer)
 
