@@ -12,6 +12,7 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
+	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"
 	"log"
@@ -153,6 +154,27 @@ func (s *searchQuery) parseNsfw() {
 	}
 	return
 }
+func (s *searchQuery) parseOption() {
+	ss := strings.ToLower(s.Option)
+	if ss == "" {
+		s.OptionB |= 0xFF
+		return
+	}
+	sss := strings.Split(ss, ",")
+	for i := 0; i < len(sss); i++ {
+		switch ss {
+		case "artist", "a":
+			s.OptionB |= 0x01
+		case "creator", "c":
+			s.OptionB |= 0x02
+		case "tag", "tg":
+			s.OptionB |= 0x04
+		case "title", "t":
+			s.OptionB |= 0x08
+		}
+	}
+	return
+}
 
 func (s *searchQuery) parseExtra() {
 	s.Extra = strings.ToLower(strings.TrimSpace(s.Extra))
@@ -201,6 +223,7 @@ func (s *searchQuery) parseQuery() {
 	s.parseNsfw()
 	s.parsePage()
 	s.parseExtra()
+	s.parseOption()
 }
 
 type searchQuery struct {
@@ -208,11 +231,11 @@ type searchQuery struct {
 	Extra string `query:"e" json:"extra"` // 스토리보드 비디오.
 
 	// set
-	Ranked     string `query:"s" json:"ranked"`        // 랭크상태 			set.ranked
-	Nsfw       string `query:"nsfw" json:"nsfw"`       // R18				set.nsfw
-	Video      string `query:"v" json:"video"`         // 비디오				set.video
-	Storyboard string `query:"sb" json:"storyboard"`   // 스토리보드			set.storyboard
-	Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
+	Ranked     string `query:"s" json:"ranked"`      // 랭크상태 			set.ranked
+	Nsfw       string `query:"nsfw" json:"nsfw"`     // R18				set.nsfw
+	Video      string `query:"v" json:"video"`       // 비디오				set.video
+	Storyboard string `query:"sb" json:"storyboard"` // 스토리보드			set.storyboard
+	//Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
 
 	// map
 	Mode             string `query:"m" json:"m"`      // 게임모드			map.mode_int
@@ -230,7 +253,9 @@ type searchQuery struct {
 	Page     string `query:"p" json:"page"`      // 페이지 limit
 	PageSize string `query:"ps" json:"pageSize"` // 페이지 당 크기
 	Text     string `query:"q" json:"query"`     // 문자열 검색
-	B64      string `query:"b64"`                // body
+	Option   string `query:"option" json:"option"`
+	OptionB  byte   //artist 1,creator 2,tags 4 ,title 8
+	B64      string `query:"b64"` // body
 
 	//etc
 	MapSetId int `param:"si"` // 맵셋id로 검색
@@ -265,7 +290,7 @@ func queryBuilder(s *searchQuery) (qs string, err error) {
 	//	Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
 
 	if s.Text != "" {
-		si := db.SearchIndex(s.Text)
+		si := db.SearchIndex(s.Text, s.OptionB)
 		if len(si) > 0 {
 			setAnd = append(setAnd, "beatmapset_id IN ("+strings.Trim(strings.Join(strings.Fields(fmt.Sprint(si)), ","), "[]")+")")
 		} else {
@@ -284,9 +309,9 @@ func queryBuilder(s *searchQuery) (qs string, err error) {
 	if s.Storyboard != "all" {
 		setAnd = append(setAnd, "storyboard = "+s.Storyboard)
 	}
-	if s.Creator != "" {
-		setAnd = append(setAnd, "creator = '"+s.Creator+"'")
-	}
+	//if s.Creator != "" {
+	//	setAnd = append(setAnd, "creator = '"+s.Creator+"'")
+	//}
 
 	//	Mode             string `query:"m" json:"m"`      // 게임모드				map.mode_int
 	//	TotalLength      minMax `json:"totalLength"`      // 플레이시간			map.totalLength
@@ -448,9 +473,26 @@ func Search(c echo.Context) (err error) {
 				Message:   "database Query scan error",
 			}))
 		}
+
+		lu, err := time.Parse("2006-01-02 15:04:05", *set.LastUpdated)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
+				Code:      "SEARCH-005-1",
+				Path:      c.Path(),
+				RequestId: c.Response().Header().Get("X-Request-ID"),
+				Error:     err.Error(),
+				Message:   "time Parse error",
+			}))
+		}
+		//pterm.Info.Println(*set.Id, src.FileList[*set.Id].Unix() >= lu.Unix())
+		//pterm.Info.Println((*set.Id)*-1, src.FileList[(*set.Id)*-1].Unix() >= lu.Unix())
+		set.Cache.Video = src.FileList[*set.Id].Unix() >= lu.Unix()
+		set.Cache.NoVideo = src.FileList[(*set.Id)*-1].Unix() >= lu.Unix()
+
 		index[*set.Id] = len(sets)
 		mapids = append(mapids, *set.Id)
 		sets = append(sets, set)
+
 	}
 
 	if len(sets) < 1 {
