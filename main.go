@@ -74,8 +74,9 @@ func main() {
 	e.GET("/robots.txt", Route.Robots)
 	e.GET("/status", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"Cpu Thread Count":     runtime.NumCPU(),
-			"Running Thread Count": runtime.NumGoroutine(),
+			"CpuThreadCount":        runtime.NumCPU(),
+			"RunningGoroutineCount": runtime.NumGoroutine(),
+			"apiCount":              *src.ApiCount,
 		})
 	})
 
