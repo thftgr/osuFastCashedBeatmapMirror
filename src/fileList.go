@@ -48,8 +48,8 @@ func FileListUpdate() {
 		}
 	}
 	FileList = tmp
-	pterm.Sprintf(
-		"%s File List Indexing : %s files [%s]\n",
+	pterm.Info.Printfln(
+		"%s File List Indexing : %s files [%s]",
 		time.Now().Format("2006-01-02 15:04:05"),
 		pterm.LightYellow(strconv.Itoa(len(FileList))),
 		pterm.LightYellow(totalFileSize()),

@@ -145,14 +145,15 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
 			Code:      "DownloadBeatmapSet-009",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     http.StatusText(http.StatusOK),
-			Message:   "Bancho request Error. " + res.Status,
+			Error:     http.StatusText(res.StatusCode),
+			Message:   "Bancho request Error. :" + res.Status,
 		}))
 	}
+
 	pterm.Info.Println("beatmapSet Downloading at", serverFileName)
 
 	cLen, _ := strconv.Atoi(res.Header.Get("Content-Length"))
@@ -166,33 +167,37 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	//http://localhost/d/1469677
 
 	defer c.Response().Flush()
-
+	clientError := false
 	for i := 0; i < cLen; { // 읽을 데이터 사이즈 체크
 		var b = make([]byte, 64000) // 바이트 배열
-		n, err := res.Body.Read(b)  // 반쵸 스트림에서 64k 읽어서 바이트 배열 b 에 넣음
+		n, e := res.Body.Read(b)    // 반쵸 스트림에서 64k 읽어서 바이트 배열 b 에 넣음
 
 		i += n // 현재까지 읽은 바이트
 		if n > 0 {
 			buf.Write(b[:n]) // 서버에 저장할 파일 버퍼에 쓴다
-			if _, err := c.Response().Write(b[:n]); err != nil {
-				return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
-					Code:      "DownloadBeatmapSet-010",
-					Path:      c.Path(),
-					RequestId: c.Response().Header().Get("X-Request-ID"),
-					Error:     err.Error(),
-					Message:   "write response stream error",
-				}))
+			if !clientError {
+				if _, ee := c.Response().Write(b[:n]); ee != nil {
+					clientError = true // write response 에러 발생시
+					err = c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
+						Code:      "DownloadBeatmapSet-010",
+						Path:      c.Path(),
+						RequestId: c.Response().Header().Get("X-Request-ID"),
+						Error:     ee.Error(),
+						Message:   "write response stream error",
+					}))
+				}
 			}
+
 		}
 
-		if err == io.EOF {
+		if e == io.EOF {
 			break
-		} else if err != nil { //에러처리
+		} else if e != nil { //에러처리
 			return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
 				Code:      "DownloadBeatmapSet-011",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err.Error(),
+				Error:     e.Error(),
 				Message:   "fail to read Bancho Stream",
 			}))
 		}
@@ -205,6 +210,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	return errors.New(errMsg)
 
 }
+
 func saveLocal(data *bytes.Buffer, path string, id int) (err error) {
 	tmp := path + ".down"
 	file, err := os.Create(tmp)
@@ -235,3 +241,5 @@ func saveLocal(data *bytes.Buffer, path string, id int) (err error) {
 	pterm.Info.Println("beatmapSet Downloading Finished", path)
 	return
 }
+
+//

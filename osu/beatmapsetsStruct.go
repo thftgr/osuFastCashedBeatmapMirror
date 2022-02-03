@@ -65,9 +65,9 @@ type BeatmapSetsIN struct {
 		Id   int     `json:"id"`
 		Name *string `json:"name"`
 	} `json:"language"`
-	Ratings *[]int `json:"ratings"`
+	Ratings       *[]int `json:"ratings"`
 	RatingsString *[]int `json:"ratings_string"`
-	User    *struct {
+	User          *struct {
 		AvatarUrl     *string      `json:"avatar_url"`
 		CountryCode   *string      `json:"country_code"`
 		DefaultGroup  *string      `json:"default_group"`
@@ -85,35 +85,35 @@ type BeatmapSetsIN struct {
 }
 
 type BeatmapSetsOUT struct {
-	Artist        *string `json:"artist"`
-	ArtistUnicode *string `json:"artist_unicode"`
+	Artist         *string `json:"artist"`
+	ArtistUnicode  *string `json:"artist_unicode"`
 	Creator        *string `json:"creator"`
-	FavouriteCount *int     `json:"favourite_count"`
+	FavouriteCount *int    `json:"favourite_count"`
 	Hype           struct {
 		Current  *int `json:"current"`
 		Required *int `json:"required"`
 	} `json:"hype"`
-	Id           *int     `json:"id"`
-	Nsfw         *bool    `json:"nsfw"`
-	PlayCount    *int     `json:"play_count"`
+	Id           *int    `json:"id"`
+	Nsfw         *bool   `json:"nsfw"`
+	PlayCount    *int    `json:"play_count"`
 	PreviewUrl   *string `json:"preview_url"`
 	Source       *string `json:"source"`
 	Status       *string `json:"status"`
 	Title        *string `json:"title"`
 	TitleUnicode *string `json:"title_unicode"`
-	UserId       *int     `json:"user_id"`
-	Video        *bool    `json:"video"`
+	UserId       *int    `json:"user_id"`
+	Video        *bool   `json:"video"`
 	Availability struct {
-		DownloadDisabled *bool    `json:"download_disabled"`
+		DownloadDisabled *bool   `json:"download_disabled"`
 		MoreInformation  *string `json:"more_information"`
 	} `json:"availability"`
-	Bpm                *string    `json:"bpm"`
-	CanBeHyped         *bool       `json:"can_be_hyped"`
-	DiscussionEnabled  *bool       `json:"discussion_enabled"`
-	DiscussionLocked   *bool       `json:"discussion_locked"`
-	IsScoreable        *bool       `json:"is_scoreable"`
+	Bpm                *string `json:"bpm"`
+	CanBeHyped         *bool   `json:"can_be_hyped"`
+	DiscussionEnabled  *bool   `json:"discussion_enabled"`
+	DiscussionLocked   *bool   `json:"discussion_locked"`
+	IsScoreable        *bool   `json:"is_scoreable"`
 	LastUpdated        *string `json:"last_updated"`
-	LegacyThreadUrl    *string    `json:"legacy_thread_url"`
+	LegacyThreadUrl    *string `json:"legacy_thread_url"`
 	NominationsSummary struct {
 		Current  *int `json:"current"`
 		Required *int `json:"required"`
@@ -130,13 +130,17 @@ type BeatmapSetsOUT struct {
 		Description *string `json:"description"`
 	} `json:"description"`
 	Genre struct {
-		Id   *int     `json:"id"`
+		Id   *int    `json:"id"`
 		Name *string `json:"name"`
 	} `json:"genre"`
 	Language struct {
-		Id   *int     `json:"id"`
+		Id   *int    `json:"id"`
 		Name *string `json:"name"`
 	} `json:"language"`
 	RatingsString *string `json:"ratings_string"`
 
+	Cache struct {
+		Video   bool `json:"video"`
+		NoVideo bool `json:"noVideo"`
+	} `json:"cache"`
 }

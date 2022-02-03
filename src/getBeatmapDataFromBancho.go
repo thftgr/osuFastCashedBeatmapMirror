@@ -22,6 +22,8 @@ var api = struct {
 }{}
 var pause bool
 
+var ApiCount = &api.count
+
 func apicountAdd() {
 	api.mutex.Lock()
 	api.count++
@@ -305,20 +307,16 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 	//	language_id,language_name,ratings
 
 	r := *s.Ratings
-	_, err := db.Maria.Exec(UpsertBeatmapSet, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount,
-		s.Hype.Current, s.Hype.Required, s.Nsfw, s.PlayCount, s.Source,
-		s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video,
-		s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled,
-		s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current,
-		s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate,
-		s.Tags, s.HasFavourited, s.Description.Description, s.Genre.Id, s.Genre.Name,
-		s.Language.Id, s.Language.Name, fmt.Sprintf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10]),
-	)
+	_, err := db.Maria.Exec(UpsertBeatmapSet, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, s.Hype.Current, s.Hype.Required, s.Nsfw, s.PlayCount, s.Source, s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video, s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled, s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current, s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate, s.Tags, s.HasFavourited, s.Description.Description, s.Genre.Id, s.Genre.Name, s.Language.Id, s.Language.Name, fmt.Sprintf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10]))
 	if err != nil {
 		log.Error(err)
 		pterm.Error.Println(err)
 	}
-
+	//커버 이미지 주소
+	//if _, err = db.Maria.Exec(fmt.Sprintf(upsertCoverQuery, coverValue), s.Id, s.Covers.Cover, s.Covers.Cover2X, s.Covers.Card, s.Covers.Card2X, s.Covers.List, s.Covers.List2X, s.Covers.Slimcover, s.Covers.Slimcover2X); err != nil {
+	//	log.Error(err)
+	//	pterm.Error.Println(err)
+	//}
 	if *s.Beatmaps == nil {
 		return
 	}
@@ -329,13 +327,11 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 	for i := 0; i < len(ch); i++ {
 		<-ch
 	}
+
 }
 
 func upsertMap(m osu.BeatmapIN, ch chan struct{}) {
-	_, err := db.Maria.Exec(UpsertBeatmap, m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version,
-		m.Accuracy, m.Ar, m.Cs, m.Drain, m.Bpm, m.Convert, m.CountCircles, m.CountSliders, m.CountSpinners, m.DeletedAt,
-		m.HitLength, m.IsScoreable, m.LastUpdated, m.Passcount, m.Playcount, m.Checksum, m.UserId,
-	)
+	_, err := db.Maria.Exec(UpsertBeatmap, m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version, m.Accuracy, m.Ar, m.Cs, m.Drain, m.Bpm, m.Convert, m.CountCircles, m.CountSliders, m.CountSpinners, m.DeletedAt, m.HitLength, m.IsScoreable, m.LastUpdated, m.Passcount, m.Playcount, m.Checksum, m.UserId)
 	if err != nil {
 		log.Error(err)
 		pterm.Error.Println(err)
@@ -432,6 +428,22 @@ INSERT INTO osu.beatmapset(
 	language_id= VALUES(language_id), language_name= VALUES(language_name), ratings= VALUES(ratings)
 ;
 `
+	//
+	//	coverValue       = `(?,?,?,?,?,?,?,?,?)` //9
+	//	upsertCoverQuery = `
+	//INSERT INTO osu.COVERS(
+	//	BEATMAP_SET_ID,
+	//    COVER,COVER2X,
+	//    CARD,CARD2X,
+	//    LIST,LIST2X,
+	//    SLIMCOVER,SLIMCOVER2X
+	//) VALUES %s ON DUPLICATE KEY UPDATE
+	//	COVER=VALUES(COVER) ,COVER2X=VALUES(COVER2X) ,
+	//	CARD=VALUES(CARD) ,CARD2X=VALUES(CARD2X) ,
+	//	LIST=VALUES(LIST) ,LIST2X=VALUES(LIST2X) ,
+	//	SLIMCOVER=VALUES(SLIMCOVER) ,SLIMCOVER2X=VALUES(SLIMCOVER2X)
+	//;
+	//`
 )
 
 func buildSqlValues(s string, count int) (r string) {
@@ -453,6 +465,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	var (
 		setInsertBuf []interface{}
 		mapInsertBuf []interface{}
+		coverBuf     []interface{}
 		beatmapSets  []int
 		beatmaps     []int
 		deletedMaps  []int
@@ -460,21 +473,11 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 
 	for _, s := range *data {
 		beatmapSets = append(beatmapSets, s.Id)
-		setInsertBuf = append(setInsertBuf,
-			s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, s.Nsfw, s.PlayCount, s.Source,
-			s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video,
-			s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled,
-			s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current,
-			s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate,
-			s.Tags, s.HasFavourited,
-		)
+		coverBuf = append(coverBuf, s.Id, s.Covers.Cover, s.Covers.Cover2X, s.Covers.Card, s.Covers.Card2X, s.Covers.List, s.Covers.List2X, s.Covers.Slimcover, s.Covers.Slimcover2X)
+		setInsertBuf = append(setInsertBuf, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, s.Nsfw, s.PlayCount, s.Source, s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video, s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled, s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current, s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate, s.Tags, s.HasFavourited)
 		for _, m := range *s.Beatmaps {
 			beatmaps = append(beatmaps, m.Id)
-			mapInsertBuf = append(mapInsertBuf,
-				m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version,
-				m.Accuracy, m.Ar, m.Cs, m.Drain, m.Bpm, m.Convert, m.CountCircles, m.CountSliders, m.CountSpinners, m.DeletedAt,
-				m.HitLength, m.IsScoreable, m.LastUpdated, m.Passcount, m.Playcount, m.Checksum, m.UserId,
-			)
+			mapInsertBuf = append(mapInsertBuf, m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version, m.Accuracy, m.Ar, m.Cs, m.Drain, m.Bpm, m.Convert, m.CountCircles, m.CountSliders, m.CountSpinners, m.DeletedAt, m.HitLength, m.IsScoreable, m.LastUpdated, m.Passcount, m.Playcount, m.Checksum, m.UserId)
 		}
 	}
 	//맵셋
@@ -482,6 +485,12 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 		pterm.Error.Println(err)
 		return err
 	}
+
+	//커버 이미지 주소
+	//if _, err = db.Maria.Exec(fmt.Sprintf(upsertCoverQuery, buildSqlValues(coverValue, len(beatmapSets))), coverBuf...); err != nil {
+	//	pterm.Error.Println(err)
+	//	return err
+	//}
 
 	//맵
 	//fmt.Println(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))))
