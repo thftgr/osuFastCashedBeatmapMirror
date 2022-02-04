@@ -1,4 +1,4 @@
-package src
+package banchoCroller
 
 import (
 	"encoding/json"
@@ -36,6 +36,7 @@ func apiCountReset() {
 	api.mutex.Unlock()
 }
 func RunGetBeatmapDataASBancho() {
+
 	go func() {
 		for {
 			time.Sleep(time.Minute)
@@ -81,6 +82,7 @@ func RunGetBeatmapDataASBancho() {
 			getGraveyardMap()
 		}
 	}()
+
 	go func() { //ALL asc
 		for {
 			awaitApiCount()
@@ -451,7 +453,7 @@ func buildSqlValues(s string, count int) (r string) {
 	for i := 0; i < count; i++ {
 		sbuf = append(sbuf, s)
 	}
-	return strings.Trim(strings.Join(strings.Fields(fmt.Sprint(sbuf)), ","), "[]")
+	return strings.Join(sbuf, ",")
 }
 
 func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
+	"github.com/Nerinyan/Nerinyan-APIV2/banchoCroller"
 	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
@@ -37,7 +38,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		}))
 	}
 
-	go src.ManualUpdateBeatmapSet(mid)
+	go banchoCroller.ManualUpdateBeatmapSet(mid)
 
 	row := db.Maria.QueryRow(`SELECT beatmapset_id,artist,title,last_updated,video FROM osu.beatmapset WHERE beatmapset_id = ?`, mid)
 	err = row.Err()

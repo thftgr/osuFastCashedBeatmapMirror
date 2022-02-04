@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/Route"
+	"github.com/Nerinyan/Nerinyan-APIV2/banchoCroller"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/middleWareFunc"
@@ -35,12 +36,13 @@ func init() {
 	src.StartIndex()
 	db.ConnectMaria()
 	go db.LoadIndex()
-	go src.LoadBancho(ch)
+	go banchoCroller.LoadBancho(ch)
 	_ = <-ch
 	if os.Getenv("debug") != "true" {
-		go src.RunGetBeatmapDataASBancho()
+		go banchoCroller.RunGetBeatmapDataASBancho()
 	} else {
 	}
+	go banchoCroller.UpdateAllPackList()
 }
 
 func main() {
@@ -76,7 +78,7 @@ func main() {
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"CpuThreadCount":        runtime.NumCPU(),
 			"RunningGoroutineCount": runtime.NumGoroutine(),
-			"apiCount":              *src.ApiCount,
+			"apiCount":              *banchoCroller.ApiCount,
 		})
 	})
 

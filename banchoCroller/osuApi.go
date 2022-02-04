@@ -1,4 +1,4 @@
-package src
+package banchoCroller
 
 import (
 	"bytes"
