@@ -32,16 +32,19 @@ type config struct {
 		} `json:"token"`
 		BeatmapUpdate struct {
 			UpdatedAsc struct {
-				LastUpdate string `json:"last_update"`
-				Id         string `json:"_id"`
+				//LastUpdate   string `json:"last_update"`
+				//Id           string `json:"_id"`
+				CursorString string `json:"cursor_string"`
 			} `json:"updated_asc"`
 			UpdatedDesc struct {
-				LastUpdate string `json:"last_update"`
-				Id         string `json:"_id"`
+				//LastUpdate   string `json:"last_update"`
+				//Id           string `json:"_id"`
+				CursorString string `json:"cursor_string"`
 			} `json:"updated_desc"`
 			GraveyardAsc struct {
-				LastUpdate string `json:"last_update"`
-				Id         string `json:"_id"`
+				//LastUpdate   string `json:"last_update"`
+				//Id           string `json:"_id"`
+				CursorString string `json:"cursor_string"`
 			} `json:"graveyard_asc"`
 		} `json:"beatmapUpdate"`
 	} `json:"osu"`

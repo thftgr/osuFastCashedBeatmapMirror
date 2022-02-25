@@ -54,7 +54,7 @@ func UpdateAllPackList() {
 			}
 		}
 
-		bodyString := fetch(packType[i], strconv.Itoa(page))
+		bodyString := fetchPacks(packType[i], strconv.Itoa(page))
 		m := regLastPage.FindAllStringSubmatch(bodyString, -1)
 		for _, sm := range m {
 			if len(sm) > 1 {
@@ -68,7 +68,7 @@ func UpdateAllPackList() {
 		upsertPack(packType[i], packId, packName, packCreator, packDate)
 		for j := 1; j <= page; j++ {
 			time.Sleep(time.Millisecond * 500)
-			bodyString = fetch(packType[i], strconv.Itoa(j))
+			bodyString = fetchPacks(packType[i], strconv.Itoa(j))
 			packId, packName, packCreator, packDate = parseBody(bodyString)
 			upsertPack(packType[i], packId, packName, packCreator, packDate)
 
@@ -144,7 +144,7 @@ func parseBody(bodyString string) (packId, packName, packCreator, packDate []str
 	}
 	return
 }
-func fetch(Type, page string) string {
+func fetchPacks(Type, page string) string {
 	res, err := http.Get(fmt.Sprintf("https://osu.ppy.sh/beatmaps/packs?type=%s&page=%s", Type, page))
 	if err != nil || res.StatusCode != http.StatusOK {
 		if res != nil {

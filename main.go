@@ -42,7 +42,7 @@ func init() {
 		go banchoCroller.RunGetBeatmapDataASBancho()
 	} else {
 	}
-	go banchoCroller.UpdateAllPackList()
+	//go banchoCroller.UpdateAllPackList()
 }
 
 func main() {

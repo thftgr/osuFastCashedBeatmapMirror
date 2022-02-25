@@ -181,10 +181,9 @@ func getGraveyardMap() {
 		}
 	}()
 	url := ""
-	lu := &config.Setting.Osu.BeatmapUpdate.GraveyardAsc.LastUpdate
-	id := &config.Setting.Osu.BeatmapUpdate.GraveyardAsc.Id
-	if *lu+*id != "" {
-		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor%5Blast_update%5D=" + *lu + "&cursor%5B_id%5D=" + *id
+	cs := &config.Setting.Osu.BeatmapUpdate.UpdatedAsc.CursorString
+	if *cs != "" {
+		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor_string=" + *cs
 	} else {
 		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard"
 	}
@@ -196,15 +195,12 @@ func getGraveyardMap() {
 		return
 	}
 	if data.Cursor == nil {
-		*lu = ""
-		*id = ""
 		return
 	}
 	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
 		return
 	}
-	*lu = *data.Cursor.LastUpdate
-	*id = *data.Cursor.Id
+	*cs = data.CursorString
 	return
 }
 func getUpdatedMapDesc() {
@@ -225,8 +221,8 @@ func getUpdatedMapDesc() {
 	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
 		return
 	}
-	config.Setting.Osu.BeatmapUpdate.UpdatedDesc.LastUpdate = *data.Cursor.LastUpdate
-	config.Setting.Osu.BeatmapUpdate.UpdatedDesc.Id = *data.Cursor.Id
+	cu := &config.Setting.Osu.BeatmapUpdate
+	cu.UpdatedDesc.CursorString = data.CursorString
 
 	return
 }
@@ -239,10 +235,9 @@ func getUpdatedMapAsc() {
 		}
 	}()
 	url := ""
-	lu := &config.Setting.Osu.BeatmapUpdate.UpdatedAsc.LastUpdate
-	id := &config.Setting.Osu.BeatmapUpdate.UpdatedAsc.Id
-	if *lu+*id != "" {
-		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any&cursor%5Blast_update%5D=" + *lu + "&cursor%5B_id%5D=" + *id
+	cs := &config.Setting.Osu.BeatmapUpdate.UpdatedAsc.CursorString
+	if *cs != "" {
+		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any&cursor_string=" + *cs
 	} else {
 		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any"
 	}
@@ -253,16 +248,13 @@ func getUpdatedMapAsc() {
 	if err != nil {
 		return
 	}
-	if data.Cursor == nil {
-		*lu = ""
-		*id = ""
+	if data.CursorString == "" {
 		return
 	}
 	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
 		return
 	}
-	*lu = *data.Cursor.LastUpdate
-	*id = *data.Cursor.Id
+	*cs = data.CursorString
 	return
 }
 
