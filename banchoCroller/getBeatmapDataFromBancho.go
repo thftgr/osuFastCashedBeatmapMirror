@@ -181,7 +181,7 @@ func getGraveyardMap() {
 		}
 	}()
 	url := ""
-	cs := &config.Setting.Osu.BeatmapUpdate.UpdatedAsc.CursorString
+	cs := &config.Setting.Osu.BeatmapUpdate.GraveyardAsc.CursorString
 	if *cs != "" {
 		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor_string=" + *cs
 	} else {
@@ -194,10 +194,13 @@ func getGraveyardMap() {
 	if err != nil {
 		return
 	}
-	if data.Cursor == nil {
+	if data.CursorString == "" {
 		return
 	}
 	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
+		return
+	}
+	if data.CursorString == "" {
 		return
 	}
 	*cs = data.CursorString
@@ -221,9 +224,10 @@ func getUpdatedMapDesc() {
 	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
 		return
 	}
-	cu := &config.Setting.Osu.BeatmapUpdate
-	cu.UpdatedDesc.CursorString = data.CursorString
-
+	if data.CursorString == "" {
+		return
+	}
+	config.Setting.Osu.BeatmapUpdate.UpdatedDesc.CursorString = data.CursorString
 	return
 }
 
@@ -248,10 +252,11 @@ func getUpdatedMapAsc() {
 	if err != nil {
 		return
 	}
-	if data.CursorString == "" {
+
+	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
 		return
 	}
-	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
+	if data.CursorString == "" {
 		return
 	}
 	*cs = data.CursorString
