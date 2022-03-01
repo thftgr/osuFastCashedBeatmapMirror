@@ -108,7 +108,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		url += "?noVideo=1"
 	}
 
-	serverFileName := fmt.Sprintf("%s/%d.osz", config.Setting.TargetDir, mid)
+	serverFileName := fmt.Sprintf("%s/%d.osz", config.Config.TargetDir, mid)
 
 	if src.FileList[mid].Unix() >= lu.Unix() { // 맵이 최신인경우
 		c.Response().Header().Set("Content-Type", "application/x-osu-beatmap-archive")
@@ -131,7 +131,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 			Message:   "Bancho request Build Error",
 		}))
 	}
-	req.Header.Add("Authorization", config.Setting.Osu.Token.TokenType+" "+config.Setting.Osu.Token.AccessToken)
+	req.Header.Add("Authorization", config.Config.Osu.Token.TokenType+" "+config.Config.Osu.Token.AccessToken)
 
 	res, err := client.Do(req)
 	if err != nil {

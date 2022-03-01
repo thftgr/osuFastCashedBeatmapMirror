@@ -30,6 +30,7 @@ import (
 // 		END	  검색 쿼리시 서버에 캐싱되어있는 비트맵인지 여부
 // TODO DOING /status에 들어갈 상태값 추가.
 // TODO DOING 반쵸에서 가져온 데이터 검색캐싱에 추가
+// TODO DOING 디스코드 웹훅
 func init() {
 	ch := make(chan struct{})
 	config.LoadConfig()
@@ -113,9 +114,15 @@ func main() {
 	//})
 
 	// 개발중 || 테스트중 ===================================================================================================
-
-	pterm.Info.Println("ECHO STARTED AT", config.Setting.Port)
-	e.Logger.Fatal(e.Start(":" + config.Setting.Port))
+	//webhook.DiscordError(&bodyStruct.ErrorStruct{
+	//	Code:      "1",
+	//	Path:      "2",
+	//	RequestId: "3",
+	//	Error:     "4",
+	//	Message:   "5",
+	//})
+	pterm.Info.Println("ECHO STARTED AT", config.Config.Port)
+	e.Logger.Fatal(e.Start(":" + config.Config.Port))
 
 }
 

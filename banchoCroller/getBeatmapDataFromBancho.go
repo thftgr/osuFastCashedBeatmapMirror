@@ -44,7 +44,7 @@ func RunGetBeatmapDataASBancho() {
 				continue
 			}
 			apiCountReset()
-			go config.Setting.Save()
+			go config.Config.Save()
 		}
 	}()
 	go func() { //ALL desc limit 50
@@ -181,7 +181,7 @@ func getGraveyardMap() {
 		}
 	}()
 	url := ""
-	cs := &config.Setting.Osu.BeatmapUpdate.GraveyardAsc.CursorString
+	cs := &config.Config.Osu.BeatmapUpdate.GraveyardAsc.CursorString
 	if *cs != "" {
 		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor_string=" + *cs
 	} else {
@@ -227,7 +227,7 @@ func getUpdatedMapDesc() {
 	if data.CursorString == "" {
 		return
 	}
-	config.Setting.Osu.BeatmapUpdate.UpdatedDesc.CursorString = data.CursorString
+	config.Config.Osu.BeatmapUpdate.UpdatedDesc.CursorString = data.CursorString
 	return
 }
 
@@ -239,7 +239,7 @@ func getUpdatedMapAsc() {
 		}
 	}()
 	url := ""
-	cs := &config.Setting.Osu.BeatmapUpdate.UpdatedAsc.CursorString
+	cs := &config.Config.Osu.BeatmapUpdate.UpdatedAsc.CursorString
 	if *cs != "" {
 		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any&cursor_string=" + *cs
 	} else {
@@ -271,7 +271,7 @@ func stdGETBancho(url string, str interface{}) (err error) {
 		return
 	}
 
-	req.Header.Add("Authorization", config.Setting.Osu.Token.TokenType+" "+config.Setting.Osu.Token.AccessToken)
+	req.Header.Add("Authorization", config.Config.Osu.Token.TokenType+" "+config.Config.Osu.Token.AccessToken)
 
 	res, err := client.Do(req)
 	apicountAdd()

@@ -11,7 +11,7 @@ var Maria *sql.DB
 
 func ConnectMaria() {
 
-	db, err := sql.Open("mysql", config.Setting.Sql.Id+":"+config.Setting.Sql.Passwd+"@tcp("+config.Setting.Sql.Url+")/")
+	db, err := sql.Open("mysql", config.Config.Sql.Id+":"+config.Config.Sql.Passwd+"@tcp("+config.Config.Sql.Url+")/")
 	if Maria = db; db != nil {
 		Maria.SetMaxOpenConns(100)
 		pterm.Success.Println("RDBMS connected")

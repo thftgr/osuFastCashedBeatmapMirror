@@ -280,7 +280,7 @@ func queryBuilder(s *searchQuery) (qs string, err error) {
 	query.WriteString(`ranked_date, storyboard, submitted_date, tags, has_favourited,`)
 	query.WriteString(`description, genre_id, genre_name, language_id, language_name, ratings`)
 	query.WriteString(` from `)
-	query.WriteString(config.Setting.Sql.Table.BeatmapSet)
+	query.WriteString(config.Config.Sql.Table.BeatmapSet)
 
 	// Text string `query:"q" json:"query"`   // 문자열 검색
 	//	Ranked     string `query:"s" json:"ranked"`        // 랭크상태 			set.ranked
@@ -351,7 +351,7 @@ func queryBuilder(s *searchQuery) (qs string, err error) {
 	}
 	if len(mapAnd) > 0 { // beatmapset_id IN ()
 		setAnd = append(setAnd,
-			"beatmapset_id IN (select beatmapset_id from "+config.Setting.Sql.Table.Beatmap+
+			"beatmapset_id IN (select beatmapset_id from "+config.Config.Sql.Table.Beatmap+
 				" where "+strings.Join(mapAnd, " AND ")+" )")
 	}
 	if len(setAnd) > 0 { // SELECT * FROM osu.beatmapset WHERE ranked in (4,2,1) AND nsfw = 1 ...

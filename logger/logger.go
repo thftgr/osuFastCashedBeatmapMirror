@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
+	"github.com/Nerinyan/Nerinyan-APIV2/webhook"
 	"github.com/jasonlvhit/gocron"
 	"github.com/pterm/pterm"
 	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -113,8 +115,18 @@ func setLogFile() {
 }
 
 func Error(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
+	z := *v
+	_, file, line, ok := runtime.Caller(1)
+	if !ok {
+		file = "???"
+		line = 0
+	}
 	go func() {
-		b, _ := json.Marshal(v)
+
+		z.SourceFile = fmt.Sprintf("%s:%d", file, line)
+		webhook.DiscordError(&z)
+
+		b, _ := json.Marshal(&z)
 		pterm.Error.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
 	}()
 
@@ -124,7 +136,17 @@ func Error(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
 }
 
 func Info(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
+	z := *v
+	_, file, line, ok := runtime.Caller(1)
+	if !ok {
+		file = "???"
+		line = 0
+	}
 	go func() {
+
+		z.SourceFile = fmt.Sprintf("%s:%d", file, line)
+		webhook.DiscordError(&z)
+
 		b, _ := json.Marshal(v)
 		pterm.Info.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
 	}()

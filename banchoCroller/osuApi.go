@@ -34,7 +34,7 @@ type banchoJWT struct {
 
 func parseTokenExpiraton() (t int64) {
 
-	s := strings.Split(config.Setting.Osu.Token.AccessToken, ".")
+	s := strings.Split(config.Config.Osu.Token.AccessToken, ".")
 	if len(s) != 3 {
 		return
 	}
@@ -72,7 +72,7 @@ func tryLogin() (err error) {
 	} else {
 		spinner.Success("successful refresh Bancho Token")
 	}
-	config.Setting.Save()
+	config.Config.Save()
 	return
 }
 
@@ -111,10 +111,10 @@ func login(refresh bool) (err error) {
 
 	if refresh {
 		_ = writer.WriteField("grant_type", "refresh_token")
-		_ = writer.WriteField("refresh_token", config.Setting.Osu.Token.RefreshToken)
+		_ = writer.WriteField("refresh_token", config.Config.Osu.Token.RefreshToken)
 	} else {
-		_ = writer.WriteField("username", config.Setting.Osu.Username)
-		_ = writer.WriteField("password", config.Setting.Osu.Passwd)
+		_ = writer.WriteField("username", config.Config.Osu.Username)
+		_ = writer.WriteField("password", config.Config.Osu.Passwd)
 		_ = writer.WriteField("grant_type", "password")
 	}
 
@@ -131,7 +131,7 @@ func login(refresh bool) (err error) {
 
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	if refresh {
-		req.Header.Set("Authorization", config.Setting.Osu.Token.TokenType+" "+config.Setting.Osu.Token.AccessToken)
+		req.Header.Set("Authorization", config.Config.Osu.Token.TokenType+" "+config.Config.Osu.Token.AccessToken)
 	}
 
 	res, err := client.Do(req)
@@ -145,5 +145,5 @@ func login(refresh bool) (err error) {
 		return
 	}
 
-	return json.Unmarshal(body, &config.Setting.Osu.Token)
+	return json.Unmarshal(body, &config.Config.Osu.Token)
 }

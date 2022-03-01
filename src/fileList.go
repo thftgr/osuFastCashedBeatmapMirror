@@ -34,7 +34,7 @@ func FileListUpdate() {
 	var err error
 
 	checkDir()
-	files, err := ioutil.ReadDir(config.Setting.TargetDir)
+	files, err := ioutil.ReadDir(config.Config.TargetDir)
 	if err != nil {
 		return
 	}
@@ -83,8 +83,8 @@ func totalFileSize() (s string) {
 	return fmt.Sprintf("%d%s", fileSize, "B")
 }
 func checkDir() {
-	if _, e := os.Stat(config.Setting.TargetDir); os.IsNotExist(e) {
-		err := os.MkdirAll(config.Setting.TargetDir, 666)
+	if _, e := os.Stat(config.Config.TargetDir); os.IsNotExist(e) {
+		err := os.MkdirAll(config.Config.TargetDir, 666)
 		if err != nil {
 			pterm.Error.Println(err)
 			panic(err)

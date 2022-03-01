@@ -11,7 +11,13 @@ type config struct {
 	Port         string   `json:"port"`
 	TargetDir    string   `json:"targetDir"`
 	SlaveServers []string `json:"slave"`
-	Sql          struct {
+	Discord      struct {
+		Webhook struct {
+			Info  string `json:"info"`
+			Error string `json:"error"`
+		} `json:"webhook"`
+	} `json:"discord"`
+	Sql struct {
 		Id     string `json:"id"`
 		Passwd string `json:"passwd"`
 		Url    string `json:"url"`
@@ -50,7 +56,7 @@ type config struct {
 	} `json:"osu"`
 }
 
-var Setting config
+var Config config
 
 func LoadConfig() {
 	b, err := ioutil.ReadFile("./config.json")
@@ -61,7 +67,7 @@ func LoadConfig() {
 			panic(err)
 		}
 		defer out.Close()
-		body, err := json.MarshalIndent(Setting, "", "    ")
+		body, err := json.MarshalIndent(Config, "", "    ")
 		if err != nil {
 			pterm.Error.Println("Error. Marshal json")
 			panic(err)
@@ -73,7 +79,7 @@ func LoadConfig() {
 		}
 	}
 
-	err = json.Unmarshal(b, &Setting)
+	err = json.Unmarshal(b, &Config)
 	if err != nil {
 		pterm.Error.Println("fail to parse config.json")
 		return
