@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -20,6 +21,7 @@ var (
 	creator     = map[string][]int{}
 	title       = map[string][]int{}
 	tags        = map[string][]int{}
+	mutex       = sync.RWMutex{}
 )
 
 type searchIndexTDS struct {
@@ -60,7 +62,9 @@ func doIndex() {
 			pterm.Error.Println(err)
 			return
 		}
+		mutex.Lock()
 		IdInt[m] = append(IdInt[m], s)
+		mutex.Unlock()
 	}
 
 	rows, err = Maria.Query(`select beatmapset_id, artist, creator, title, tags from osu.beatmapset`)
@@ -76,7 +80,9 @@ func doIndex() {
 			pterm.Error.Println(err)
 			return
 		}
+		mutex.Lock()
 		IdInt[tds.id] = append(IdInt[tds.id], tds.id)
+		mutex.Unlock()
 		// 타입별 쓰레드 ============================================================
 		var ch = make(chan struct{})
 		go func() {
@@ -84,7 +90,9 @@ func doIndex() {
 			dataSize := len(data)
 			for i := 0; i < dataSize; i++ {
 				if d := data[i]; d != "" {
+					mutex.Lock()
 					artist[d] = append(artist[d], tds.id)
+					mutex.Unlock()
 				}
 			}
 			ch <- struct{}{}
@@ -94,7 +102,9 @@ func doIndex() {
 			dataSize := len(data)
 			for i := 0; i < dataSize; i++ {
 				if d := data[i]; d != "" {
+					mutex.Lock()
 					creator[d] = append(creator[d], tds.id)
+					mutex.Unlock()
 				}
 			}
 			ch <- struct{}{}
@@ -104,7 +114,9 @@ func doIndex() {
 			dataSize := len(data)
 			for i := 0; i < dataSize; i++ {
 				if d := data[i]; d != "" {
+					mutex.Lock()
 					title[d] = append(title[d], tds.id)
+					mutex.Unlock()
 				}
 			}
 			ch <- struct{}{}
@@ -114,7 +126,9 @@ func doIndex() {
 			dataSize := len(data)
 			for i := 0; i < dataSize; i++ {
 				if d := data[i]; d != "" {
+					mutex.Lock()
 					tags[d] = append(tags[d], tds.id)
+					mutex.Unlock()
 				}
 			}
 			ch <- struct{}{}
@@ -128,7 +142,9 @@ func doIndex() {
 	var ch2 = make(chan struct{})
 	go func() {
 		for key, val := range IdInt {
+			mutex.Lock()
 			IdInt[key] = *makeSliceUnique(val)
+			mutex.Unlock()
 			countValue += len(IdInt[key])
 			countKey += int(unsafe.Sizeof([]int{})) * len(IdInt[key])
 		}
@@ -136,7 +152,9 @@ func doIndex() {
 	}()
 	go func() {
 		for key, val := range artist {
+			mutex.Lock()
 			artist[key] = *makeSliceUnique(val)
+			mutex.Unlock()
 			countValue += len(artist[key])
 			countKey += len([]byte(key))
 		}
@@ -144,7 +162,9 @@ func doIndex() {
 	}()
 	go func() {
 		for key, val := range creator {
+			mutex.Lock()
 			creator[key] = *makeSliceUnique(val)
+			mutex.Unlock()
 			countValue += len(creator[key])
 			countKey += len([]byte(key))
 		}
@@ -152,7 +172,9 @@ func doIndex() {
 	}()
 	go func() {
 		for key, val := range title {
+			mutex.Lock()
 			title[key] = *makeSliceUnique(val)
+			mutex.Unlock()
 			countValue += len(title[key])
 			countKey += len([]byte(key))
 		}
@@ -160,7 +182,9 @@ func doIndex() {
 	}()
 	go func() {
 		for key, val := range tags {
+			mutex.Lock()
 			tags[key] = *makeSliceUnique(val)
+			mutex.Unlock()
 			countValue += len(tags[key])
 			countKey += len([]byte(key))
 		}
@@ -176,7 +200,9 @@ func doIndex() {
 	a := int(unsafe.Sizeof(map[string][]int{})) * countKey
 	b := int(unsafe.Sizeof([]int{})) * countValue
 
+	mutex.Lock()
 	SearchCache = map[string]map[byte][]int{}
+	mutex.Unlock()
 	pterm.Success.Printfln("%s end database indexing %d keys. %d links.using %s of memory. %dms", timeUnit.GetTime(), countKey, countValue, calcMeoerySize(a+b), et-st)
 }
 
@@ -193,7 +219,9 @@ func SearchIndex(q string, option byte) (d []int) {
 	for i := 0; i < dataSize; i++ {
 		di := data[i]
 		if di != "" {
+			mutex.Lock()
 			if option&0x01 > 0 {
+
 				allIds = append(allIds, artist[di]...)
 			}
 			if option&0x02 > 0 {
@@ -208,10 +236,12 @@ func SearchIndex(q string, option byte) (d []int) {
 			if option&0x16 > 0 {
 				dii, err := strconv.Atoi(di)
 				if err != nil {
+
 					allIds = append(allIds, IdInt[dii]...)
 
 				}
 			}
+			mutex.Unlock()
 
 		}
 	}
@@ -227,7 +257,9 @@ func SearchIndex(q string, option byte) (d []int) {
 			d = append(d, k)
 		}
 	}
+	mutex.Lock()
 	SearchCache[q] = map[byte][]int{option: d}
+	mutex.Unlock()
 	et := time.Now().UnixMilli()
 	fmt.Println(et-st, "ms")
 	return
