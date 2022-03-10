@@ -21,7 +21,7 @@ var (
 	creator     = map[string][]int{}
 	title       = map[string][]int{}
 	tags        = map[string][]int{}
-	mutex       = sync.RWMutex{}
+	mutex       = sync.Mutex{}
 )
 
 type searchIndexTDS struct {
@@ -162,6 +162,7 @@ func doIndex() {
 	}()
 	go func() {
 		for key, val := range creator {
+
 			mutex.Lock()
 			creator[key] = *makeSliceUnique(val)
 			mutex.Unlock()
@@ -208,7 +209,9 @@ func doIndex() {
 
 func SearchIndex(q string, option byte) (d []int) {
 	st := time.Now().UnixMilli()
+	mutex.Lock()
 	t := SearchCache[q][option]
+	mutex.Unlock()
 	if len(t) > 0 {
 		return t
 	}
