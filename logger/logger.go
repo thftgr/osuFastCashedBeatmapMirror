@@ -136,9 +136,9 @@ func Error(c echo.Context, v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruc
 	fmt.Printf("%s:%d %s.\n", file, line, fname)
 	v.Path = c.Request().RequestURI
 	v.RequestId = c.Response().Header().Get("X-Request-ID")
-	json.Unmarshal(*utils.ToJsonString(c.QueryParams()), &v.Args.QueryParam)
-	json.Unmarshal(*utils.ToJsonString(c.Cookies()), &v.Args.Cookie)
-	json.Unmarshal(*utils.ToJsonString(c.Request().Header), &v.Args.Header)
+	json.Unmarshal(*utils.ToJsonString(c.QueryParams()), &v.Request.QueryParam)
+	json.Unmarshal(*utils.ToJsonString(c.Cookies()), &v.Request.Cookie)
+	json.Unmarshal(*utils.ToJsonString(c.Request().Header), &v.Request.Header)
 	//fmt.Println(string(*utils.ToJsonString(c.QueryParams())))
 
 	z := *v

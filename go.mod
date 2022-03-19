@@ -13,6 +13,7 @@ require (
 
 require (
 	github.com/atomicgo/cursor v0.0.1 // indirect
+	github.com/dchest/stemmer v0.0.0-20161207102402-66719a20c4b5 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/gookit/color v1.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect

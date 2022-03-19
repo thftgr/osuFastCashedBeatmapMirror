@@ -38,9 +38,13 @@ func init() {
 	src.StartIndex()
 	db.ConnectMaria()
 	go db.LoadIndex()
+	go db.LoadCache()
 	go banchoCroller.LoadBancho(ch)
 	_ = <-ch
+	go banchoCroller.RunGetBeatmapDataASBancho()
+
 	if os.Getenv("debug") != "true" {
+
 		go banchoCroller.RunGetBeatmapDataASBancho()
 	} else {
 	}
@@ -88,7 +92,7 @@ func main() {
 
 	// 맵 파일 다운로드 ===================================================================================================
 	e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.BanchoBeatmapDownloadLimiter)
-	e.GET("/b/:id", Route.DownloadBeatmapSet, middleWareFunc.BanchoBeatmapDownloadLimiter)
+	//e.GET("/b/:id", Route.DownloadBeatmapSet, middleWareFunc.BanchoBeatmapDownloadLimiter)
 	//TODO 맵아이디, 맵셋아이디 지원
 	//e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.LoadBalancer)
 

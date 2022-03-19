@@ -4,7 +4,7 @@ type ErrorStruct struct {
 	Code       string `json:"code"`
 	Path       string `json:"path"`
 	Uri        string `json:"uri"`
-	Args       args   `json:"test"`
+	Request    args   `json:"test"`
 	RequestId  string `json:"requestId"`
 	Error      error  `json:"error"`
 	Message    string `json:"devMessage"`

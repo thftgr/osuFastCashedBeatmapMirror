@@ -34,9 +34,10 @@ type searchIndexTDS struct {
 
 func LoadIndex() {
 	for {
-		doIndex()
+		//doIndex()
 		debug.FreeOSMemory()
 		time.Sleep(time.Minute * 10)
+
 	}
 }
 
@@ -195,7 +196,6 @@ func doIndex() {
 	for i := 0; i < 5; i++ {
 		_ = <-ch2
 	}
-
 	//============================================================
 	et := time.Now().UnixMilli()
 	a := int(unsafe.Sizeof(map[string][]int{})) * countKey
