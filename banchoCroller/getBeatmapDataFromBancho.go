@@ -445,7 +445,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	if len(*data) < 1 {
 		return
 	}
-
+	go db.InsertCache(data)
 	var (
 		setInsertBuf []interface{}
 		mapInsertBuf []interface{}
@@ -457,7 +457,6 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 
 	for _, s := range *data {
 
-		db.InsertCache(&s)
 		beatmapSets = append(beatmapSets, s.Id)
 		coverBuf = append(coverBuf, s.Id, s.Covers.Cover, s.Covers.Cover2X, s.Covers.Card, s.Covers.Card2X, s.Covers.List, s.Covers.List2X, s.Covers.Slimcover, s.Covers.Slimcover2X)
 		setInsertBuf = append(setInsertBuf, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, s.Nsfw, s.PlayCount, s.Source, s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video, s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled, s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current, s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate, s.Tags, s.HasFavourited)

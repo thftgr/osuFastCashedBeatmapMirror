@@ -12,7 +12,7 @@ import (
 )
 
 func SearchByBeatmapId(c echo.Context) (err error) {
-	var sq searchQuery
+	var sq SearchQuery
 	err = c.Bind(&sq)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{

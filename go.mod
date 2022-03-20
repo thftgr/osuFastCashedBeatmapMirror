@@ -1,9 +1,11 @@
 module github.com/Nerinyan/Nerinyan-APIV2
 
-go 1.17
+go 1.18
 
 require (
+	github.com/dchest/stemmer v0.0.0-20161207102402-66719a20c4b5
 	github.com/go-sql-driver/mysql v1.6.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/jasonlvhit/gocron v0.0.1
 	github.com/labstack/echo/v4 v4.6.3
 	github.com/labstack/gommon v0.3.1
@@ -13,7 +15,6 @@ require (
 
 require (
 	github.com/atomicgo/cursor v0.0.1 // indirect
-	github.com/dchest/stemmer v0.0.0-20161207102402-66719a20c4b5 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/gookit/color v1.4.2 // indirect
 	github.com/mattn/go-colorable v0.1.11 // indirect

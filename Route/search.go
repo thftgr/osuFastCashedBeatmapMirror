@@ -23,7 +23,7 @@ import (
 )
 
 //
-func (s *searchQuery) parseSort() { //sort
+func (s *SearchQuery) parseSort() { //sort
 
 	ss := strings.ToLower(s.Sort)
 	switch ss {
@@ -67,7 +67,7 @@ func (s *searchQuery) parseSort() { //sort
 	}
 }
 
-func (s *searchQuery) parsePage() {
+func (s *SearchQuery) parsePage() {
 	// 에러 발생시 int value = 0
 	page, _ := strconv.Atoi(s.Page)
 	pageSize, _ := strconv.Atoi(s.PageSize)
@@ -93,7 +93,7 @@ func (s *searchQuery) parsePage() {
 	return
 }
 
-func (s *searchQuery) parseMode() {
+func (s *SearchQuery) parseMode() {
 	s.Mode = strings.ToLower(strings.TrimSpace(s.Mode))
 	switch s.Mode {
 	case "0", "o", "std", "osu", "osu!", "standard":
@@ -109,7 +109,7 @@ func (s *searchQuery) parseMode() {
 	}
 }
 
-func (s *searchQuery) parseRanked() {
+func (s *SearchQuery) parseRanked() {
 	ss := strings.ToLower(s.Ranked)
 	switch ss {
 	case "ranked", "1,2":
@@ -144,7 +144,7 @@ func (s *searchQuery) parseRanked() {
 
 	}
 }
-func (s *searchQuery) parseNsfw() {
+func (s *SearchQuery) parseNsfw() {
 	ss := strings.ToLower(s.Ranked)
 	switch ss {
 	case "1", "all":
@@ -154,7 +154,7 @@ func (s *searchQuery) parseNsfw() {
 	}
 	return
 }
-func (s *searchQuery) parseOption() {
+func (s *SearchQuery) parseOption() {
 	ss := strings.ToLower(s.Option)
 	if ss == "" {
 		s.OptionB |= 0xFF
@@ -176,7 +176,7 @@ func (s *searchQuery) parseOption() {
 	return
 }
 
-func (s *searchQuery) parseExtra() {
+func (s *SearchQuery) parseExtra() {
 	s.Extra = strings.ToLower(strings.TrimSpace(s.Extra))
 	if s.Storyboard != "1" && s.Storyboard != "all" {
 		if strings.Contains(s.Extra, "storyboard") {
@@ -216,7 +216,7 @@ func (v *minMax) minMaxAsQuery() (query string) {
 	return fmt.Sprintf("BETWEEN %.1f AND %.1f", v.Min, v.Max)
 
 }
-func (s *searchQuery) parseQuery() {
+func (s *SearchQuery) parseQuery() {
 	s.parseRanked()
 	s.parseMode()
 	s.parseSort()
@@ -226,7 +226,7 @@ func (s *searchQuery) parseQuery() {
 	s.parseOption()
 }
 
-type searchQuery struct {
+type SearchQuery struct {
 	// global
 	Extra string `query:"e" json:"extra"` // 스토리보드 비디오.
 
@@ -263,7 +263,7 @@ type searchQuery struct {
 }
 
 // queryBuilder build dynamic mariadb query
-func queryBuilder(s *searchQuery) (qs string, err error) {
+func queryBuilder(s *SearchQuery) (qs string, err error) {
 	s.parseQuery()
 
 	var query bytes.Buffer
@@ -372,7 +372,7 @@ func queryBuilder(s *searchQuery) (qs string, err error) {
 
 func Search(c echo.Context) (err error) {
 
-	var sq searchQuery
+	var sq SearchQuery
 
 	err = c.Bind(&sq)
 	if sq.B64 != "" {
@@ -551,5 +551,112 @@ func Search(c echo.Context) (err error) {
 	}
 
 	return c.JSON(http.StatusOK, sets)
+
+}
+func Search2(sq SearchQuery) (body []byte) {
+
+	if sq.B64 != "" {
+		b6, err := base64.StdEncoding.DecodeString(sq.B64)
+		if err != nil {
+			return []byte(err.Error())
+		}
+		err = json.Unmarshal(b6, &sq)
+		if err != nil {
+			return []byte(err.Error())
+		}
+	}
+
+	q, err := queryBuilder(&sq)
+	if err != nil {
+		return []byte(err.Error())
+	}
+	go func() {
+		b, _ := json.Marshal(sq)
+		log.Println("REBUILDED REQUEST:", string(b))
+		log.Println("GENERATED QUERY:", q)
+		t := time.Now().Format("2006/01/02 15:01:05") //2021/09/10 22:30:38
+		pterm.Info.Println(t, "REBUILDED REQUEST:", pterm.LightYellow(string(b)))
+		pterm.Info.Println(t, "GENERATED QUERY:", pterm.LightYellow(q))
+	}()
+	//return c.JSON(http.StatusOK, "")
+
+	rows, err := db.Maria.Query(q)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return []byte(err.Error())
+
+		}
+		return []byte(err.Error())
+
+	}
+	defer rows.Close()
+	var sets []osu.BeatmapSetsOUT
+	var index = map[int]int{}
+	var mapids []int
+
+	for rows.Next() {
+		var set osu.BeatmapSetsOUT
+
+		err = rows.Scan(
+			// beatmapset_id, artist, artist_unicode, creator, favourite_count, hype_current,
+			//hype_required, nsfw, play_count, source, status, title, title_unicode, user_id,
+			//video, availability_download_disabled, availability_more_information, bpm, can_be_hyped,
+			//discussion_enabled, discussion_locked, is_scoreable, last_updated, legacy_thread_url,
+			//nominations_summary_current, nominations_summary_required, ranked, ranked_date, storyboard,
+			//submitted_date, tags, has_favourited, description, genre_id, genre_name, language_id, language_name, ratings
+
+			&set.Id, &set.Artist, &set.ArtistUnicode, &set.Creator, &set.FavouriteCount, &set.Hype.Current, &set.Hype.Required, &set.Nsfw, &set.PlayCount, &set.Source, &set.Status, &set.Title, &set.TitleUnicode, &set.UserId, &set.Video, &set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped, &set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl, &set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard, &set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString)
+		if err != nil {
+			return []byte(err.Error())
+		}
+
+		lu, err := time.Parse("2006-01-02 15:04:05", *set.LastUpdated)
+		if err != nil {
+			return []byte(err.Error())
+		}
+		//pterm.Info.Println(*set.Id, src.FileList[*set.Id].Unix() >= lu.Unix())
+		//pterm.Info.Println((*set.Id)*-1, src.FileList[(*set.Id)*-1].Unix() >= lu.Unix())
+		set.Cache.Video = src.FileList[*set.Id].Unix() >= lu.Unix()
+		set.Cache.NoVideo = src.FileList[(*set.Id)*-1].Unix() >= lu.Unix()
+
+		index[*set.Id] = len(sets)
+		mapids = append(mapids, *set.Id)
+		sets = append(sets, set)
+
+	}
+
+	if len(sets) < 1 {
+		return []byte(err.Error())
+
+	}
+
+	rows, err = db.Maria.Query(fmt.Sprintf("select beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating, version, accuracy, ar, cs, drain, bpm, "+
+		"`convert`, "+
+		"count_circles, count_sliders, count_spinners, deleted_at, hit_length, is_scoreable, last_updated, passcount, playcount, checksum, "+
+		"user_id from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating;", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return []byte(err.Error())
+
+		}
+		return []byte(err.Error())
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var Map osu.BeatmapOUT
+		err = rows.Scan(
+			//beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating,
+			//version, accuracy, ar, cs, drain, bpm, convert, count_circles, count_sliders, count_spinners, deleted_at,
+			//hit_length, is_scoreable, last_updated, passcount, playcount, checksum, user_id
+			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId)
+		if err != nil {
+			return []byte(err.Error())
+		}
+		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
+	}
+	body, err = json.Marshal(sets)
+
+	return
 
 }
