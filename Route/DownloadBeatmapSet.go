@@ -224,6 +224,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 			}))
 		}
 	}
+
 	if cLen == buf.Len() {
 		return saveLocal(&buf, serverFileName, request.SetId)
 	}
