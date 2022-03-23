@@ -86,6 +86,19 @@ func insertStringIndex(data *[]osu.BeatmapSetsIN) {
 
 }
 
+//func bulkInsertLimiter(query, values string, data []interface{}) (err error) {
+//	//dataSize := len(data)
+//	//varSize := strings.Count(values, "?")
+//	//if dataSize < 1 {
+//	//	return
+//	//}
+//	//if dataSize%varSize != 0 {
+//	//	return errors.New("args length not match")
+//	//}
+//	//strings.Repeat()
+//
+//}
+
 func splitString(input string) (ss []string) {
 	for _, s := range strings.Split(strings.ToLower(input), " ") {
 		s = strings.TrimSpace(regexpReplace.ReplaceAllString(s, " "))

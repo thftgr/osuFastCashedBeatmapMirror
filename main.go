@@ -5,10 +5,8 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/Route"
 	"github.com/Nerinyan/Nerinyan-APIV2/banchoCroller"
-	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
-	"github.com/Nerinyan/Nerinyan-APIV2/middleWareFunc"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
@@ -19,6 +17,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // TODO DOING DB 테이블 없으면 자동으로 생성하게
@@ -94,8 +93,9 @@ func main() {
 	})
 
 	// 맵 파일 다운로드 ===================================================================================================
-	e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.BanchoBeatmapDownloadLimiter)
-	//e.GET("/b/:id", Route.DownloadBeatmapSet, middleWareFunc.BanchoBeatmapDownloadLimiter)
+	e.GET("/d/:seIid", Route.DownloadBeatmapSet)
+	e.GET("/beatmap/:mapId", Route.DownloadBeatmapSet)
+	e.GET("/beatmapset/:seIid", Route.DownloadBeatmapSet)
 	//TODO 맵아이디, 맵셋아이디 지원
 	//e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.LoadBalancer)
 
@@ -114,15 +114,30 @@ func main() {
 
 	// 개발중 || 테스트중 ===================================================================================================
 	//e.HTTPErrorHandler = httpErrorHandler.HttpErrorHandler
+	//e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(1)))
 	e.GET("/test", func(c echo.Context) error {
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:       "",
-			Path:       "",
-			RequestId:  "",
-			Message:    "",
-			SourceFile: "",
-		}))
-	})
+		fmt.Println(time.Now().Format("15:04:05.000"), "test")
+		return c.String(200, "/test")
+	},
+
+	//middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+	//	Rate:      6,
+	//	Burst:     6,
+	//	ExpiresIn: time.Minute * 10,
+	//})),
+	//middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+	//
+	//	Store: middleware.NewRateLimiterMemoryStoreWithConfig(
+	//		middleware.RateLimiterMemoryStoreConfig{
+	//			// 1 / 원하는 대기시간?
+	//			//   0.5 = 2s / 0.1 = 10s / 0.01 = 100s /
+	//			Rate:  1,
+	//			Burst: 0,
+	//			//ExpiresIn: time.Millisecond, // 이게 있던없던 그냥 1초당 제한인듯함
+	//		},
+	//	),
+	//}),
+	)
 	e.GET("/ws", hello)
 	//e.GET("/dev/search", func(c echo.Context) error {
 	//	return c.JSON(http.StatusOK, db.SearchIndex(c.QueryParam("q")))
