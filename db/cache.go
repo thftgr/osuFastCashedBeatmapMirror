@@ -1,8 +1,10 @@
 package db
 
 import (
+	"errors"
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/dchest/stemmer/porter2"
+	"github.com/pterm/pterm"
 	"regexp"
 	"strings"
 )
@@ -49,55 +51,55 @@ type row struct {
 }
 
 func insertStringIndex(data *[]osu.BeatmapSetsIN) {
-	//defer func() {
-	//	err, e := recover().(error)
-	//	if e {
-	//		pterm.Error.Println(err)
-	//	}
-	//}()
-	//insertData := insertData{}
-	//
-	//for _, in := range *data {
-	//
-	//	artist = append(artist, splitString(*in.Artist)...)
-	//	creator = append(creator, splitString(*in.Creator)...)
-	//	title = append(title, splitString(*in.Title)...)
-	//	tags = append(tags, splitString(*in.Tags)...)
-	//
-	//}
-	//stringBuf = append(stringBuf, artist...)
-	//stringBuf = append(stringBuf, creator...)
-	//stringBuf = append(stringBuf, title...)
-	//stringBuf = append(stringBuf, tags...)
-	//
-	//if len(stringBuf) < 1 {
-	//	return
-	//}
-	//res := makeArrayUnique(stringBuf)
-	//if len(res) < 1 {
-	//	return
-	//}
-	//query := `INSERT IGNORE INTO osu.SEARCH_CACHE_STRING_INDEX (STRING) VALUES ` + strings.Join(repeatStringArray("(?)", len(res)), ",") + ";"
-	//_, err := Maria.Exec(query, res...)
-	//if err != nil {
-	//	pterm.Error.Println(err, query, res)
-	//	return
-	//}
+	defer func() {
+		err, e := recover().(error)
+		if e {
+			pterm.Error.Println(err)
+		}
+	}()
+	insertData := insertData{}
+
+	for _, in := range *data {
+
+		artist = append(artist, splitString(*in.Artist)...)
+		creator = append(creator, splitString(*in.Creator)...)
+		title = append(title, splitString(*in.Title)...)
+		tags = append(tags, splitString(*in.Tags)...)
+
+	}
+	stringBuf = append(stringBuf, artist...)
+	stringBuf = append(stringBuf, creator...)
+	stringBuf = append(stringBuf, title...)
+	stringBuf = append(stringBuf, tags...)
+
+	if len(stringBuf) < 1 {
+		return
+	}
+	res := makeArrayUnique(stringBuf)
+	if len(res) < 1 {
+		return
+	}
+	query := `INSERT IGNORE INTO osu.SEARCH_CACHE_STRING_INDEX (STRING) VALUES ` + strings.Join(repeatStringArray("(?)", len(res)), ",") + ";"
+	_, err := Maria.Exec(query, res...)
+	if err != nil {
+		pterm.Error.Println(err, query, res)
+		return
+	}
 
 }
 
-//func bulkInsertLimiter(query, values string, data []interface{}) (err error) {
-//	//dataSize := len(data)
-//	//varSize := strings.Count(values, "?")
-//	//if dataSize < 1 {
-//	//	return
-//	//}
-//	//if dataSize%varSize != 0 {
-//	//	return errors.New("args length not match")
-//	//}
-//	//strings.Repeat()
-//
-//}
+func bulkInsertLimiter(query, values string, data []interface{}) (err error) {
+	dataSize := len(data)
+	varSize := strings.Count(values, "?")
+	if dataSize < 1 {
+		return
+	}
+	if dataSize%varSize != 0 {
+		return errors.New("args length not match")
+	}
+	strings.Repeat()
+
+}
 
 func splitString(input string) (ss []string) {
 	for _, s := range strings.Split(strings.ToLower(input), " ") {

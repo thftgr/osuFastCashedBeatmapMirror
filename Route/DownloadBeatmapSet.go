@@ -28,9 +28,10 @@ type downloadBeatmapSet_requestBody struct {
 }
 
 func DownloadBeatmapSet(c echo.Context) (err error) {
-	var request = downloadBeatmapSet_requestBody{}
+	var request downloadBeatmapSet_requestBody
 	err = c.Bind(&request)
 	if err != nil {
+
 		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
 			Code:        "DownloadBeatmapSet-001",
 			Path:        c.Path(),
@@ -224,7 +225,6 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 			}))
 		}
 	}
-
 	if cLen == buf.Len() {
 		return saveLocal(&buf, serverFileName, request.SetId)
 	}
