@@ -15,11 +15,11 @@ func SearchByBeatmapId(c echo.Context) (err error) {
 	var sq searchQuery
 	err = c.Bind(&sq)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
 			Code:      "SearchByBeatmapId-001",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err.Error(),
+			Error:     err,
 			Message:   "request parse error",
 		}))
 	}
@@ -36,20 +36,20 @@ func SearchByBeatmapId(c echo.Context) (err error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
+			return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
 				Code:      "SearchByBeatmapId-002",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err.Error(),
+				Error:     err,
 				Message:   "not in database",
 			}))
 
 		}
-		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
 			Code:      "SearchByBeatmapId-003",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err.Error(),
+			Error:     err,
 			Message:   "database Query error",
 		}))
 	}

@@ -4,6 +4,7 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/Route"
 	"github.com/Nerinyan/Nerinyan-APIV2/banchoCroller"
+	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/middleWareFunc"
@@ -57,16 +58,18 @@ func main() {
 		}
 	}()
 
-	e.Pre(middleware.RemoveTrailingSlash())
+	e.Pre(
+		middleware.RemoveTrailingSlash(),
+	)
 
 	e.Use(
-
 		middleware.Logger(),
 		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
 		middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
 		middleware.RequestID(),
 		middleware.Recover(),
 	)
+
 	// docs ============================================================================================================
 	e.GET("/", func(c echo.Context) error {
 		return c.Redirect(http.StatusPermanentRedirect, `https://nerinyan.stoplight.io/studio/nerinyan-api`)
@@ -85,6 +88,7 @@ func main() {
 
 	// 맵 파일 다운로드 ===================================================================================================
 	e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.BanchoBeatmapDownloadLimiter)
+	e.GET("/b/:id", Route.DownloadBeatmapSet, middleWareFunc.BanchoBeatmapDownloadLimiter)
 	//TODO 맵아이디, 맵셋아이디 지원
 	//e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.LoadBalancer)
 
@@ -102,6 +106,16 @@ func main() {
 	//})
 
 	// 개발중 || 테스트중 ===================================================================================================
+	//e.HTTPErrorHandler = httpErrorHandler.HttpErrorHandler
+	e.GET("/test", func(c echo.Context) error {
+		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
+			Code:       "",
+			Path:       "",
+			RequestId:  "",
+			Message:    "",
+			SourceFile: "",
+		}))
+	})
 	//e.GET("/dev/search", func(c echo.Context) error {
 	//	return c.JSON(http.StatusOK, db.SearchIndex(c.QueryParam("q")))
 	//})

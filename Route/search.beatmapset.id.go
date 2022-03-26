@@ -16,11 +16,11 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 	var sq searchQuery
 	err = c.Bind(&sq)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
 			Code:      "SearchByBeatmapSetId-001",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err.Error(),
+			Error:     err,
 			Message:   "request parse error",
 		}))
 	}
@@ -47,31 +47,31 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 		&set.Id, &set.Artist, &set.ArtistUnicode, &set.Creator, &set.FavouriteCount, &set.Hype.Current, &set.Hype.Required, &set.Nsfw, &set.PlayCount, &set.Source, &set.Status, &set.Title, &set.TitleUnicode, &set.UserId, &set.Video, &set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped, &set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl, &set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard, &set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
+			return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
 				Code:      "SearchByBeatmapSetId-002",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err.Error(),
+				Error:     err,
 				Message:   "not in database",
 			}))
 
 		}
-		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
 			Code:      "SearchByBeatmapSetId-003",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err.Error(),
+			Error:     err,
 			Message:   "database Query error",
 		}))
 	}
 	mapids = append(mapids, *set.Id)
 
 	if *set.Id == 0 {
-		return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
 			Code:      "SearchByBeatmapSetId-004",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err.Error(),
+			Error:     err,
 			Message:   "not in database",
 		}))
 	}
@@ -83,20 +83,20 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, logger.Error(&bodyStruct.ErrorStruct{
+			return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
 				Code:      "SearchByBeatmapSetId-005",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err.Error(),
+				Error:     err,
 				Message:   "not in database",
 			}))
 
 		}
-		return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
+		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
 			Code:      "SearchByBeatmapSetId-006",
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err.Error(),
+			Error:     err,
 			Message:   "database Query error",
 		}))
 	}
@@ -110,11 +110,11 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 			//hit_length, is_scoreable, last_updated, passcount, playcount, checksum, user_id
 			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, logger.Error(&bodyStruct.ErrorStruct{
+			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
 				Code:      "SearchByBeatmapSetId-007",
 				Path:      c.Path(),
 				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err.Error(),
+				Error:     err,
 				Message:   "database Query scan error",
 			}))
 		}
