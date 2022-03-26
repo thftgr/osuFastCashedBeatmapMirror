@@ -10,6 +10,8 @@ log/*
 osuFastCashedBeatmapMirror
 
 *.sql
+*.bak
 Nerinyan-APIV2
 Nerinyan-APIV2
 Nerinyan-APIV2
+Nerinyan-APIV2-MULTI
