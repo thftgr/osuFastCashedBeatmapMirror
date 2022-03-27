@@ -21,3 +21,10 @@ func ToJsonString(i interface{}) (str *[]byte) {
 	}
 	return &b
 }
+
+func StringRepeatArray(s string, count int) (arr []string) {
+	for i := 0; i < count; i++ {
+		arr = append(arr, s)
+	}
+	return
+}

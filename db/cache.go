@@ -1,17 +1,15 @@
 package db
 
 import (
-	"errors"
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/dchest/stemmer/porter2"
-	"github.com/pterm/pterm"
 	"regexp"
 	"strings"
 )
 
 var (
 	//STRING_INDEX     = map[string]*struct{}{}
-	regexpReplace, _ = regexp.Compile(`^[,./\\;:\[\]{}<>()]|[,./\\;:\[\]{}<>()]$|\s`)
+	regexpReplace, _ = regexp.Compile(`[^0-9A-z]|[\[\]]`)
 )
 
 func LoadCache() {
@@ -51,67 +49,99 @@ type row struct {
 }
 
 func insertStringIndex(data *[]osu.BeatmapSetsIN) {
-	defer func() {
-		err, e := recover().(error)
-		if e {
-			pterm.Error.Println(err)
-		}
-	}()
+	//defer func() {
+	//	err, e := recover().(error)
+	//	if e {
+	//		pterm.Error.Println(err)
+	//	}
+	//}()
 	insertData := insertData{}
 
 	for _, in := range *data {
-
-		artist = append(artist, splitString(*in.Artist)...)
-		creator = append(creator, splitString(*in.Creator)...)
-		title = append(title, splitString(*in.Title)...)
-		tags = append(tags, splitString(*in.Tags)...)
+		artist := splitString(*in.Artist)
+		creator := splitString(*in.Creator)
+		title := splitString(*in.Title)
+		tags := splitString(*in.Tags)
+		insertData.Artist = append(insertData.Artist, row{
+			KEY:          artist,
+			BeatmapsetId: in.Id,
+		})
+		insertData.Creator = append(insertData.Creator, row{
+			KEY:          creator,
+			BeatmapsetId: in.Id,
+		})
+		insertData.Title = append(insertData.Title, row{
+			KEY:          title,
+			BeatmapsetId: in.Id,
+		})
+		insertData.Tags = append(insertData.Tags, row{
+			KEY:          tags,
+			BeatmapsetId: in.Id,
+		})
+		insertData.Strbuf = append(insertData.Strbuf, artist...)
+		insertData.Strbuf = append(insertData.Strbuf, creator...)
+		insertData.Strbuf = append(insertData.Strbuf, title...)
+		insertData.Strbuf = append(insertData.Strbuf, tags...)
 
 	}
-	stringBuf = append(stringBuf, artist...)
-	stringBuf = append(stringBuf, creator...)
-	stringBuf = append(stringBuf, title...)
-	stringBuf = append(stringBuf, tags...)
 
-	if len(stringBuf) < 1 {
-		return
-	}
-	res := makeArrayUnique(stringBuf)
-	if len(res) < 1 {
-		return
-	}
-	query := `INSERT IGNORE INTO osu.SEARCH_CACHE_STRING_INDEX (STRING) VALUES ` + strings.Join(repeatStringArray("(?)", len(res)), ",") + ";"
-	_, err := Maria.Exec(query, res...)
-	if err != nil {
-		pterm.Error.Println(err, query, res)
-		return
+	//pterm.Println(string(*utils.ToJsonString(makeArrayUnique(insertData.Strbuf))))
+	//panic("")
+	err := BulkInsertLimiter(
+		"INSERT IGNORE INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES %s ;",
+		"(?)",
+		makeArrayUnique(insertData.Strbuf),
+	)
+	if err == nil {
+		_ = BulkInsertLimiter(
+			"INSERT IGNORE INTO SEARCH_CACHE_ARTIST (`KEY`,BEATMAPSET_ID) VALUES %s ;",
+			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
+			toIndexKV(insertData.Artist),
+		)
+
+		_ = BulkInsertLimiter(
+			"INSERT IGNORE INTO SEARCH_CACHE_TITLE (`KEY`,BEATMAPSET_ID) VALUES %s ;",
+			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
+			toIndexKV(insertData.Title),
+		)
+		_ = BulkInsertLimiter(
+			"INSERT IGNORE INTO SEARCH_CACHE_CREATOR (`KEY`,BEATMAPSET_ID) VALUES %s ;",
+			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
+			toIndexKV(insertData.Creator),
+		)
+		_ = BulkInsertLimiter(
+			"INSERT IGNORE INTO SEARCH_CACHE_TAG (`KEY`,BEATMAPSET_ID) VALUES %s ;",
+			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
+			toIndexKV(insertData.Tags),
+		)
 	}
 
 }
 
-func bulkInsertLimiter(query, values string, data []interface{}) (err error) {
-	dataSize := len(data)
-	varSize := strings.Count(values, "?")
-	if dataSize < 1 {
-		return
+func toIndexKV(data []row) (AA []interface{}) {
+	for _, A := range data {
+		for _, K := range A.KEY {
+			AA = append(AA, K, A.BeatmapsetId)
+		}
 	}
-	if dataSize%varSize != 0 {
-		return errors.New("args length not match")
-	}
-	strings.Repeat()
+	return
+}
 
+func stringArrayToInterfaceArray(sa *[]string) (ia []interface{}) {
+
+	ia = make([]interface{}, len(*sa))
+	for i, v := range *sa {
+		ia[i] = v
+	}
+	return
 }
 
 func splitString(input string) (ss []string) {
-	for _, s := range strings.Split(strings.ToLower(input), " ") {
-		s = strings.TrimSpace(regexpReplace.ReplaceAllString(s, " "))
-		if s == "" {
+	for _, s := range strings.Split(strings.ToLower(regexpReplace.ReplaceAllString(input, " ")), " ") {
+		if s == "" || s == " " {
 			continue
-		} else if strings.Contains(s, " ") {
-			ss = append(ss, splitString(s)...)
-		} else {
-			ss = append(ss, s)
-			ss = append(ss, porter2.Stemmer.Stem(s))
 		}
+		ss = append(ss, s, porter2.Stemmer.Stem(s))
 	}
 	return
 }

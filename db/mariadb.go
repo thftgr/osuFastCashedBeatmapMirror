@@ -14,6 +14,7 @@ func ConnectMaria() {
 	db, err := sql.Open("mysql", config.Config.Sql.Url)
 	if Maria = db; db != nil {
 		Maria.SetMaxOpenConns(100)
+
 		pterm.Success.Println("RDBMS connected")
 
 		if _, err = Maria.Exec("SET SQL_SAFE_UPDATES = 0;"); err != nil {

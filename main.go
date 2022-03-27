@@ -41,13 +41,13 @@ func init() {
 	db.ConnectMaria()
 	go db.LoadIndex()
 	go db.LoadCache()
-	go banchoCroller.LoadBancho(ch)
-	_ = <-ch
-	//go banchoCroller.RunGetBeatmapDataASBancho()
+	go banchoCroller.LoadBancho(ch) // 반쵸 로그인 컨트롤
+	_ = <-ch                        // 반쵸 로그인 대기
+	go banchoCroller.RunGetBeatmapDataASBancho()
 
 	if os.Getenv("debug") != "true" {
 
-		go banchoCroller.RunGetBeatmapDataASBancho()
+		//go banchoCroller.RunGetBeatmapDataASBancho() // 비트맵 정보 수집
 	} else {
 	}
 	//go banchoCroller.UpdateAllPackList()
