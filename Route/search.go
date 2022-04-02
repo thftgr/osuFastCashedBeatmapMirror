@@ -263,7 +263,7 @@ type SearchQuery struct {
 }
 
 // queryBuilder build dynamic mariadb query
-func queryBuilder(s *SearchQuery) (qs string, err error) {
+func queryBuilder(s *SearchQuery) (qs string, args []interface{}) {
 	s.parseQuery()
 
 	var query bytes.Buffer
@@ -290,9 +290,22 @@ func queryBuilder(s *SearchQuery) (qs string, err error) {
 	//	Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
 
 	if s.Text != "" {
-		si := db.SearchIndex(s.Text, s.OptionB)
+		s.Text = strings.ToLower(s.Text)
 		if len(si) > 0 {
-			setAnd = append(setAnd, "beatmapset_id IN ("+strings.Trim(strings.Join(strings.Fields(fmt.Sprint(si)), ","), "[]")+")")
+			setAnd = append(setAnd,
+				`
+beatmapset_id in (
+    select BEATMAPSET_ID from (
+        select BEATMAPSET_ID from SEARCH_CACHE_TITLE   where INDEX_KEY in ( select  ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'the','void','into' ))
+        group by BEATMAPSET_ID having count(*) >= 3
+        union all select BEATMAPSET_ID from SEARCH_CACHE_ARTIST  where INDEX_KEY in ( select  ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'the','void','into' ))
+        group by BEATMAPSET_ID having count(*) >= 3
+        union all select BEATMAPSET_ID from SEARCH_CACHE_CREATOR where INDEX_KEY in ( select  ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'the','void','into' ))
+        group by BEATMAPSET_ID having count(*) >= 3
+        union all select BEATMAPSET_ID from SEARCH_CACHE_TAG     where INDEX_KEY in ( select  ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'the','void','into' ))
+        group by BEATMAPSET_ID having count(*) >= 3
+    ) A
+)`)
 		} else {
 			err = errors.New("text search data not found")
 		}
@@ -379,41 +392,33 @@ func Search(c echo.Context) (err error) {
 		b6, err := base64.StdEncoding.DecodeString(sq.B64)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:      "SEARCH-000-0",
-				Path:      c.Path(),
-				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err,
-				Message:   "request parm 'b64' base64 decode fail.",
+				Code:    "SEARCH-000-0",
+				Error:   err,
+				Message: "request parm 'b64' base64 decode fail.",
 			}))
 		}
 		err = json.Unmarshal(b6, &sq)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:      "SEARCH-000-1",
-				Path:      c.Path(),
-				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err,
-				Message:   "request parm 'b64' json parse fail.",
+				Code:    "SEARCH-000-1",
+				Error:   err,
+				Message: "request parm 'b64' json parse fail.",
 			}))
 		}
 	}
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:      "SEARCH-001",
-			Path:      c.Path(),
-			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err,
-			Message:   "request parse error",
+			Code:    "SEARCH-001",
+			Error:   err,
+			Message: "request parse error",
 		}))
 	}
 	q, err := queryBuilder(&sq)
 	if err != nil {
 		return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:      "SEARCH-002",
-			Path:      c.Path(),
-			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err,
-			Message:   "text search data not found",
+			Code:    "SEARCH-002",
+			Error:   err,
+			Message: "text search data not found",
 		}))
 	}
 	go func() {
@@ -430,20 +435,16 @@ func Search(c echo.Context) (err error) {
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:      "SEARCH-003",
-				Path:      c.Path(),
-				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err,
-				Message:   "not in database",
+				Code:    "SEARCH-003",
+				Error:   err,
+				Message: "not in database",
 			}))
 
 		}
 		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:      "SEARCH-004",
-			Path:      c.Path(),
-			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err,
-			Message:   "database Query error",
+			Code:    "SEARCH-004",
+			Error:   err,
+			Message: "database Query error",
 		}))
 
 	}
@@ -466,22 +467,18 @@ func Search(c echo.Context) (err error) {
 			&set.Id, &set.Artist, &set.ArtistUnicode, &set.Creator, &set.FavouriteCount, &set.Hype.Current, &set.Hype.Required, &set.Nsfw, &set.PlayCount, &set.Source, &set.Status, &set.Title, &set.TitleUnicode, &set.UserId, &set.Video, &set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped, &set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl, &set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard, &set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:      "SEARCH-005",
-				Path:      c.Path(),
-				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err,
-				Message:   "database Query scan error",
+				Code:    "SEARCH-005",
+				Error:   err,
+				Message: "database Query scan error",
 			}))
 		}
 
 		lu, err := time.Parse("2006-01-02 15:04:05", *set.LastUpdated)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:      "SEARCH-005-1",
-				Path:      c.Path(),
-				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err,
-				Message:   "time Parse error",
+				Code:    "SEARCH-005-1",
+				Error:   err,
+				Message: "time Parse error",
 			}))
 		}
 		//pterm.Info.Println(*set.Id, src.FileList[*set.Id].Unix() >= lu.Unix())
@@ -497,11 +494,9 @@ func Search(c echo.Context) (err error) {
 
 	if len(sets) < 1 {
 		return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:      "SEARCH-006",
-			Path:      c.Path(),
-			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     errors.New(http.StatusText(http.StatusNotFound)),
-			Message:   "not in database",
+			Code:    "SEARCH-006",
+			Error:   errors.New(http.StatusText(http.StatusNotFound)),
+			Message: "not in database",
 		}))
 
 	}
@@ -522,11 +517,9 @@ func Search(c echo.Context) (err error) {
 
 		}
 		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:      "SEARCH-008",
-			Path:      c.Path(),
-			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err,
-			Message:   "database Query error",
+			Code:    "SEARCH-008",
+			Error:   err,
+			Message: "database Query error",
 		}))
 	}
 	defer rows.Close()
@@ -540,11 +533,9 @@ func Search(c echo.Context) (err error) {
 			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:      "SEARCH-009",
-				Path:      c.Path(),
-				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err,
-				Message:   "database Query scan error",
+				Code:    "SEARCH-009",
+				Error:   err,
+				Message: "database Query scan error",
 			}))
 		}
 		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
@@ -568,6 +559,7 @@ func Search2(sq SearchQuery) (body []byte) {
 
 	q, err := queryBuilder(&sq)
 	if err != nil {
+		err
 		return []byte(err.Error())
 	}
 	go func() {
