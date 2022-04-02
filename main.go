@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/Route"
 	"github.com/Nerinyan/Nerinyan-APIV2/banchoCroller"
@@ -16,8 +15,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"strings"
-	"time"
 )
 
 // TODO DOING DB 테이블 없으면 자동으로 생성하게
@@ -116,8 +113,23 @@ func main() {
 	//e.HTTPErrorHandler = httpErrorHandler.HttpErrorHandler
 	//e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(1)))
 	e.GET("/test", func(c echo.Context) error {
-		fmt.Println(time.Now().Format("15:04:05.000"), "test")
-		return c.String(200, "/test")
+		rows, err := db.Maria.Query(`select `, []string{"the"})
+
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		var ids []int
+		for rows.Next() {
+			var id int
+			err = rows.Scan(&id)
+			if err != nil {
+				pterm.Error.Println(err)
+				continue
+			}
+			ids = append(ids, id)
+		}
+
+		return c.JSON(200, ids)
 	},
 
 	//middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
@@ -138,7 +150,7 @@ func main() {
 	//	),
 	//}),
 	)
-	e.GET("/ws", hello)
+	//e.GET("/ws", hello)
 	//e.GET("/dev/search", func(c echo.Context) error {
 	//	return c.JSON(http.StatusOK, db.SearchIndex(c.QueryParam("q")))
 	//})
@@ -171,38 +183,38 @@ var (
 	}
 )
 
-func hello(c echo.Context) (err error) {
-	fmt.Println("wss")
-	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
-	if err != nil {
-		pterm.Error.Println(err)
-		return err
-	}
-	defer ws.Close()
-	for {
-		// Write
-		err = ws.WriteMessage(websocket.TextMessage, Route.Search2(Route.SearchQuery{}))
-		if err != nil {
-			if !strings.Contains(err.Error(), "websocket: close") {
-				pterm.Error.Println(err)
-				c.Logger().Error(err)
-
-			}
-			break
-		}
-
-		// Read
-		_, msg, err := ws.ReadMessage()
-		if err != nil {
-			if !strings.Contains(err.Error(), "websocket: close") {
-				pterm.Error.Println(err)
-				c.Logger().Error(err)
-
-			}
-			break
-
-		}
-		fmt.Printf("%s\n", msg)
-	}
-	return
-}
+//func hello(c echo.Context) (err error) {
+//	fmt.Println("wss")
+//	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+//	if err != nil {
+//		pterm.Error.Println(err)
+//		return err
+//	}
+//	defer ws.Close()
+//	for {
+//		// Write
+//		err = ws.WriteMessage(websocket.TextMessage, Route.Search2(Route.SearchQuery{}))
+//		if err != nil {
+//			if !strings.Contains(err.Error(), "websocket: close") {
+//				pterm.Error.Println(err)
+//				c.Logger().Error(err)
+//
+//			}
+//			break
+//		}
+//
+//		// Read
+//		_, msg, err := ws.ReadMessage()
+//		if err != nil {
+//			if !strings.Contains(err.Error(), "websocket: close") {
+//				pterm.Error.Println(err)
+//				c.Logger().Error(err)
+//
+//			}
+//			break
+//
+//		}
+//		fmt.Printf("%s\n", msg)
+//	}
+//	return
+//}

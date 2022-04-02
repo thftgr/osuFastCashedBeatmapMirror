@@ -3,6 +3,7 @@ package db
 import (
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/dchest/stemmer/porter2"
+	"github.com/pterm/pterm"
 	"regexp"
 	"strings"
 )
@@ -49,12 +50,13 @@ type row struct {
 }
 
 func insertStringIndex(data *[]osu.BeatmapSetsIN) {
-	//defer func() {
-	//	err, e := recover().(error)
-	//	if e {
-	//		pterm.Error.Println(err)
-	//	}
-	//}()
+	return
+	defer func() {
+		err, e := recover().(error)
+		if e {
+			pterm.Error.Println(err)
+		}
+	}()
 	insertData := insertData{}
 
 	for _, in := range *data {
@@ -85,8 +87,13 @@ func insertStringIndex(data *[]osu.BeatmapSetsIN) {
 
 	}
 
+	//Gorm.Clauses(clause.Insert{Modifier: "IGNORE"}).Table("SEARCH_CACHE_STRING_INDEX").Create(&entity.SEARCH_CACHE_STRING_INDEX{
+	//	STRING: "AA",
+	//})
+
 	//pterm.Println(string(*utils.ToJsonString(makeArrayUnique(insertData.Strbuf))))
 	//panic("")
+
 	err := BulkInsertLimiter(
 		"INSERT IGNORE INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES %s ;",
 		"(?)",
@@ -94,23 +101,23 @@ func insertStringIndex(data *[]osu.BeatmapSetsIN) {
 	)
 	if err == nil {
 		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_ARTIST (`KEY`,BEATMAPSET_ID) VALUES %s ;",
+			"INSERT IGNORE INTO SEARCH_CACHE_ARTIST (INDEX_KEY,BEATMAPSET_ID) VALUES %s ;",
 			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
 			toIndexKV(insertData.Artist),
 		)
 
 		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_TITLE (`KEY`,BEATMAPSET_ID) VALUES %s ;",
+			"INSERT IGNORE INTO SEARCH_CACHE_TITLE (INDEX_KEY,BEATMAPSET_ID) VALUES %s ;",
 			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
 			toIndexKV(insertData.Title),
 		)
 		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_CREATOR (`KEY`,BEATMAPSET_ID) VALUES %s ;",
+			"INSERT IGNORE INTO SEARCH_CACHE_CREATOR (INDEX_KEY,BEATMAPSET_ID) VALUES %s ;",
 			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
 			toIndexKV(insertData.Creator),
 		)
 		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_TAG (`KEY`,BEATMAPSET_ID) VALUES %s ;",
+			"INSERT IGNORE INTO SEARCH_CACHE_TAG (INDEX_KEY,BEATMAPSET_ID) VALUES %s ;",
 			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
 			toIndexKV(insertData.Tags),
 		)
@@ -127,15 +134,6 @@ func toIndexKV(data []row) (AA []interface{}) {
 	return
 }
 
-func stringArrayToInterfaceArray(sa *[]string) (ia []interface{}) {
-
-	ia = make([]interface{}, len(*sa))
-	for i, v := range *sa {
-		ia[i] = v
-	}
-	return
-}
-
 func splitString(input string) (ss []string) {
 	for _, s := range strings.Split(strings.ToLower(regexpReplace.ReplaceAllString(input, " ")), " ") {
 		if s == "" || s == " " {
@@ -146,12 +144,6 @@ func splitString(input string) (ss []string) {
 	return
 }
 
-func repeatStringArray(s string, count int) (arr []string) {
-	for i := 0; i < count; i++ {
-		arr = append(arr, s)
-	}
-	return
-}
 func makeArrayUnique(array []string) []interface{} {
 
 	keys := make(map[string]struct{})

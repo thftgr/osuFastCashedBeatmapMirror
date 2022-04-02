@@ -13,59 +13,62 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
+	"github.com/Nerinyan/Nerinyan-APIV2/utils"
+	"github.com/dchest/stemmer/porter2"
 	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
 
 //
-func (s *SearchQuery) parseSort() { //sort
-
-	ss := strings.ToLower(s.Sort)
-	switch ss {
-	case "ranked_asc", "ranked_date ASC":
-		s.Sort = "ranked_date ASC"
-
-	case "ranked_desc", "ranked_date DESC":
-		s.Sort = "ranked_date DESC"
-
-	case "favourites_asc", "favourite_count ASC":
-		s.Sort = "favourite_count ASC"
-
-	case "favourites_desc", "favourite_count DESC":
-		s.Sort = "favourite_count DESC"
-
-	case "plays_asc", "play_count ASC":
-		s.Sort = "play_count ASC"
-
-	case "plays_desc", "play_count DESC":
-		s.Sort = "play_count DESC"
-
-	case "updated_asc", "last_updated ASC":
-		s.Sort = "last_updated ASC"
-
-	case "updated_desc", "last_updated DESC":
-		s.Sort = "last_updated DESC"
-
-	case "title_desc", "title DESC":
-		s.Sort = "title DESC"
-
-	case "title_asc", "title ASC":
-		s.Sort = "title ASC"
-
-	case "artist_desc", "artist DESC":
-		s.Sort = "artist DESC"
-
-	case "artist_asc", "artist ASC":
-		s.Sort = "artist ASC"
-	default:
-		s.Sort = "ranked_date DESC"
-	}
-}
+//func (s *SearchQuery) parseSort() { //sort
+//
+//	ss := strings.ToLower(s.Sort)
+//	switch ss {
+//	case "ranked_asc", "ranked_date ASC":
+//		s.Sort = "ranked_date ASC"
+//
+//	case "ranked_desc", "ranked_date DESC":
+//		s.Sort = "ranked_date DESC"
+//
+//	case "favourites_asc", "favourite_count ASC":
+//		s.Sort = "favourite_count ASC"
+//
+//	case "favourites_desc", "favourite_count DESC":
+//		s.Sort = "favourite_count DESC"
+//
+//	case "plays_asc", "play_count ASC":
+//		s.Sort = "play_count ASC"
+//
+//	case "plays_desc", "play_count DESC":
+//		s.Sort = "play_count DESC"
+//
+//	case "updated_asc", "last_updated ASC":
+//		s.Sort = "last_updated ASC"
+//
+//	case "updated_desc", "last_updated DESC":
+//		s.Sort = "last_updated DESC"
+//
+//	case "title_desc", "title DESC":
+//		s.Sort = "title DESC"
+//
+//	case "title_asc", "title ASC":
+//		s.Sort = "title ASC"
+//
+//	case "artist_desc", "artist DESC":
+//		s.Sort = "artist DESC"
+//
+//	case "artist_asc", "artist ASC":
+//		s.Sort = "artist ASC"
+//	default:
+//		s.Sort = "ranked_date DESC"
+//	}
+//}
 
 func (s *SearchQuery) parsePage() {
 	// 에러 발생시 int value = 0
@@ -219,7 +222,7 @@ func (v *minMax) minMaxAsQuery() (query string) {
 func (s *SearchQuery) parseQuery() {
 	s.parseRanked()
 	s.parseMode()
-	s.parseSort()
+	//s.parseSort()
 	s.parseNsfw()
 	s.parsePage()
 	s.parseExtra()
@@ -249,13 +252,14 @@ type SearchQuery struct {
 	Bpm              minMax `json:"bpm"`              // bpm				map.bpm
 
 	// query
-	Sort     string `query:"sort" json:"sort"`   // 정렬	  order by
-	Page     string `query:"p" json:"page"`      // 페이지 limit
-	PageSize string `query:"ps" json:"pageSize"` // 페이지 당 크기
-	Text     string `query:"q" json:"query"`     // 문자열 검색
-	Option   string `query:"option" json:"option"`
-	OptionB  byte   //artist 1,creator 2,tags 4 ,title 8
-	B64      string `query:"b64"` // body
+	Sort       string   `query:"sort" json:"sort"`   // 정렬	  order by
+	Page       string   `query:"p" json:"page"`      // 페이지 limit
+	PageSize   string   `query:"ps" json:"pageSize"` // 페이지 당 크기
+	Text       string   `query:"q" json:"query"`     // 문자열 검색
+	ParsedText []string `json:"-"`                   // 문자열 검색 파싱
+	Option     string   `query:"option" json:"option"`
+	OptionB    byte     //artist 1,creator 2,tags 4 ,title 8
+	B64        string   `query:"b64"` // body
 
 	//etc
 	MapSetId int `param:"si"` // 맵셋id로 검색
@@ -263,7 +267,7 @@ type SearchQuery struct {
 }
 
 // queryBuilder build dynamic mariadb query
-func queryBuilder(s *SearchQuery) (qs string, args []interface{}) {
+func queryBuilder(s *SearchQuery) (qs string, err error) {
 	s.parseQuery()
 
 	var query bytes.Buffer
@@ -290,22 +294,9 @@ func queryBuilder(s *SearchQuery) (qs string, args []interface{}) {
 	//	Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
 
 	if s.Text != "" {
-		s.Text = strings.ToLower(s.Text)
+		si := db.SearchIndex(s.Text, s.OptionB)
 		if len(si) > 0 {
-			setAnd = append(setAnd,
-				`
-beatmapset_id in (
-    select BEATMAPSET_ID from (
-        select BEATMAPSET_ID from SEARCH_CACHE_TITLE   where INDEX_KEY in ( select  ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'the','void','into' ))
-        group by BEATMAPSET_ID having count(*) >= 3
-        union all select BEATMAPSET_ID from SEARCH_CACHE_ARTIST  where INDEX_KEY in ( select  ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'the','void','into' ))
-        group by BEATMAPSET_ID having count(*) >= 3
-        union all select BEATMAPSET_ID from SEARCH_CACHE_CREATOR where INDEX_KEY in ( select  ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'the','void','into' ))
-        group by BEATMAPSET_ID having count(*) >= 3
-        union all select BEATMAPSET_ID from SEARCH_CACHE_TAG     where INDEX_KEY in ( select  ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'the','void','into' ))
-        group by BEATMAPSET_ID having count(*) >= 3
-    ) A
-)`)
+			setAnd = append(setAnd, "beatmapset_id IN ("+strings.Trim(strings.Join(strings.Fields(fmt.Sprint(si)), ","), "[]")+")")
 		} else {
 			err = errors.New("text search data not found")
 		}
@@ -383,6 +374,33 @@ beatmapset_id in (
 
 }
 
+var (
+	regexpReplace, _ = regexp.Compile(`[^0-9A-z]|[\[\]]`)
+	orderBy          = map[string]int{
+		"ranked_asc": 101, "ranked_date": 101, "ranked_date asc": 101,
+		"favourites_asc": 102, "favourite_count": 102, "favourite_count asc": 102,
+		"plays_asc": 103, "play_count": 103, "play_count asc": 103,
+		"updated_asc": 104, "last_updated": 104, "last_updated asc": 104,
+		"title_asc": 105, "title": 105, "title asc": 105,
+		"artist_asc": 106, "artist": 106, "artist asc": 106,
+		"ranked_desc": 201, "ranked_date desc": 201,
+		"favourites_desc": 202, "favourite_count desc": 202,
+		"plays_desc": 203, "play_count desc": 203,
+		"updated_desc": 204, "last_updated desc": 204,
+		"title_desc": 205, "title desc": 205,
+		"artist_desc": 206, "artist desc": 206,
+	}
+)
+
+func splitString(input string) (ss []string) {
+	for _, s := range strings.Split(strings.ToLower(regexpReplace.ReplaceAllString(input, " ")), " ") {
+		if s == "" || s == " " {
+			continue
+		}
+		ss = append(ss, s, porter2.Stemmer.Stem(s))
+	}
+	return
+}
 func Search(c echo.Context) (err error) {
 
 	var sq SearchQuery
@@ -421,6 +439,69 @@ func Search(c echo.Context) (err error) {
 			Message: "text search data not found",
 		}))
 	}
+	db.Gorm.Raw(`
+SELECT beatmapset_id, title,artist,creator,tags FROM beatmapset
+where
+    ( @useStringSearch > 0 AND  beatmapset_id in (
+        SELECT BEATMAPSET_ID FROM (
+            SELECT BEATMAPSET_ID FROM SEARCH_CACHE_TITLE WHERE INDEX_KEY in ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX where STRING in( @stringSearch ))
+            GROUP BY BEATMAPSET_ID having count(*) >= @useStringSearch
+            UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_ARTIST where INDEX_KEY in ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX where STRING in( @stringSearch ))
+            GROUP BY BEATMAPSET_ID having count(*) >= @useStringSearch
+            UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_CREATOR where INDEX_KEY in ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX where STRING in( @stringSearch ))
+            GROUP BY BEATMAPSET_ID having count(*) >= @useStringSearch
+            UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_TAG where INDEX_KEY in ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX where STRING in( sStringSearch ))
+            GROUP BY BEATMAPSET_ID having count(*) >= @useStringSearch
+        ) A
+    ))
+    AND ((? is null) OR (ranked in (?)))
+    AND ((? is null) OR (nsfw = ?))
+    AND ((? is null) OR (video = ?))
+    AND ((? is null) OR (storyboard = ?))
+    AND( ? OR  beatmapset_id in (
+        SELECT beatmapset_id FROM beatmap where
+                ((? is null) OR (mode_int in (?))
+            AND ((? is null) OR (total_length >= ?))
+            AND ((? is null) OR (total_length <= ?))
+            AND ((? is null) OR (max_combo >= ?))
+            AND ((? is null) OR (max_combo <= ?))
+            AND ((? is null) OR (difficulty_rating >= ?))
+            AND ((? is null) OR (difficulty_rating <= ?))
+            AND ((? is null) OR (accuracy >= ?))
+            AND ((? is null) OR (accuracy <= ?))
+            AND ((? is null) OR (ar >= ?))
+            AND ((? is null) OR (ar <= ?))
+            AND ((? is null) OR (cs >= ?))
+            AND ((? is null) OR (cs <= ?))
+            AND ((? is null) OR (drain >= ?))
+            AND ((? is null) OR (drain <= ?))
+            AND ((? is null) OR (bpm >= ?))
+            AND ((? is null) OR (bpm <= ?))
+    )))
+ORDER BY
+CASE
+    WHEN @order = 101 THEN ranked_date
+    WHEN @order = 102 THEN favourite_count
+    WHEN @order = 103 THEN play_count
+    WHEN @order = 104 THEN last_updated
+    WHEN @order = 105 THEN title
+    WHEN @order = 106 THEN artist
+END
+,CASE
+    WHEN @order = 201 THEN ranked_date
+    WHEN @order = 202 THEN favourite_count
+    WHEN @order = 203 THEN play_count
+    WHEN @order = 204 THEN last_updated
+    WHEN @order = 205 THEN title
+    WHEN @order = 206 THEN artist
+END DESC
+,ranked_date DESC
+;`,
+		sql.Named("useStringSearch", len(sq.ParsedText)),
+		sql.Named("stringSearch", sq.ParsedText),
+		sql.Named("order", utils.TernaryOperator(orderBy[sq.Sort] == 0, orderBy[sq.Sort], nil)),
+	)
+
 	go func() {
 		b, _ := json.Marshal(sq)
 		log.Println("REBUILDED REQUEST:", string(b))
@@ -542,113 +623,5 @@ func Search(c echo.Context) (err error) {
 	}
 
 	return c.JSON(http.StatusOK, sets)
-
-}
-func Search2(sq SearchQuery) (body []byte) {
-
-	if sq.B64 != "" {
-		b6, err := base64.StdEncoding.DecodeString(sq.B64)
-		if err != nil {
-			return []byte(err.Error())
-		}
-		err = json.Unmarshal(b6, &sq)
-		if err != nil {
-			return []byte(err.Error())
-		}
-	}
-
-	q, err := queryBuilder(&sq)
-	if err != nil {
-		err
-		return []byte(err.Error())
-	}
-	go func() {
-		b, _ := json.Marshal(sq)
-		log.Println("REBUILDED REQUEST:", string(b))
-		log.Println("GENERATED QUERY:", q)
-		t := time.Now().Format("2006/01/02 15:01:05") //2021/09/10 22:30:38
-		pterm.Info.Println(t, "REBUILDED REQUEST:", pterm.LightYellow(string(b)))
-		pterm.Info.Println(t, "GENERATED QUERY:", pterm.LightYellow(q))
-	}()
-	//return c.JSON(http.StatusOK, "")
-
-	rows, err := db.Maria.Query(q)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return []byte(err.Error())
-
-		}
-		return []byte(err.Error())
-
-	}
-	defer rows.Close()
-	var sets []osu.BeatmapSetsOUT
-	var index = map[int]int{}
-	var mapids []int
-
-	for rows.Next() {
-		var set osu.BeatmapSetsOUT
-
-		err = rows.Scan(
-			// beatmapset_id, artist, artist_unicode, creator, favourite_count, hype_current,
-			//hype_required, nsfw, play_count, source, status, title, title_unicode, user_id,
-			//video, availability_download_disabled, availability_more_information, bpm, can_be_hyped,
-			//discussion_enabled, discussion_locked, is_scoreable, last_updated, legacy_thread_url,
-			//nominations_summary_current, nominations_summary_required, ranked, ranked_date, storyboard,
-			//submitted_date, tags, has_favourited, description, genre_id, genre_name, language_id, language_name, ratings
-
-			&set.Id, &set.Artist, &set.ArtistUnicode, &set.Creator, &set.FavouriteCount, &set.Hype.Current, &set.Hype.Required, &set.Nsfw, &set.PlayCount, &set.Source, &set.Status, &set.Title, &set.TitleUnicode, &set.UserId, &set.Video, &set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped, &set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl, &set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard, &set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString)
-		if err != nil {
-			return []byte(err.Error())
-		}
-
-		lu, err := time.Parse("2006-01-02 15:04:05", *set.LastUpdated)
-		if err != nil {
-			return []byte(err.Error())
-		}
-		//pterm.Info.Println(*set.Id, src.FileList[*set.Id].Unix() >= lu.Unix())
-		//pterm.Info.Println((*set.Id)*-1, src.FileList[(*set.Id)*-1].Unix() >= lu.Unix())
-		set.Cache.Video = src.FileList[*set.Id].Unix() >= lu.Unix()
-		set.Cache.NoVideo = src.FileList[(*set.Id)*-1].Unix() >= lu.Unix()
-
-		index[*set.Id] = len(sets)
-		mapids = append(mapids, *set.Id)
-		sets = append(sets, set)
-
-	}
-
-	if len(sets) < 1 {
-		return []byte(err.Error())
-
-	}
-
-	rows, err = db.Maria.Query(fmt.Sprintf("select beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating, version, accuracy, ar, cs, drain, bpm, "+
-		"`convert`, "+
-		"count_circles, count_sliders, count_spinners, deleted_at, hit_length, is_scoreable, last_updated, passcount, playcount, checksum, "+
-		"user_id from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating;", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return []byte(err.Error())
-
-		}
-		return []byte(err.Error())
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var Map osu.BeatmapOUT
-		err = rows.Scan(
-			//beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating,
-			//version, accuracy, ar, cs, drain, bpm, convert, count_circles, count_sliders, count_spinners, deleted_at,
-			//hit_length, is_scoreable, last_updated, passcount, playcount, checksum, user_id
-			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId)
-		if err != nil {
-			return []byte(err.Error())
-		}
-		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
-	}
-	body, err = json.Marshal(sets)
-
-	return
 
 }

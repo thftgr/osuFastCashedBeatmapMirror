@@ -28,3 +28,10 @@ func StringRepeatArray(s string, count int) (arr []string) {
 	}
 	return
 }
+
+func TernaryOperator(tf bool, t, f any) any {
+	if tf {
+		return t
+	}
+	return f
+}
