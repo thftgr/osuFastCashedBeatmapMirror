@@ -154,24 +154,3 @@ func Error(c echo.Context, v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruc
 	return v
 
 }
-
-//func Info(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
-//	z := *v
-//	_, file, line, ok := runtime.Caller(1)
-//	if !ok {
-//		file = "???"
-//		line = 0
-//	}
-//	go func() {
-//
-//		z.SourceFile = fmt.Sprintf("%s:%d", file, line)
-//		webhook.DiscordError(&z)
-//
-//		b, _ := json.Marshal(v)
-//		pterm.Info.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
-//	}()
-//
-//	//TODO DB 에 저장
-//	return v
-//
-//}

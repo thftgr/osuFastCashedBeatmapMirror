@@ -50,7 +50,7 @@ type row struct {
 }
 
 func insertStringIndex(data *[]osu.BeatmapSetsIN) {
-	return
+	//return
 	defer func() {
 		err, e := recover().(error)
 		if e {

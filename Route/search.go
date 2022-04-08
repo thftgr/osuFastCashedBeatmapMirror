@@ -13,7 +13,6 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
-	"github.com/Nerinyan/Nerinyan-APIV2/utils"
 	"github.com/dchest/stemmer/porter2"
 	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"
@@ -24,51 +23,6 @@ import (
 	"strings"
 	"time"
 )
-
-//
-//func (s *SearchQuery) parseSort() { //sort
-//
-//	ss := strings.ToLower(s.Sort)
-//	switch ss {
-//	case "ranked_asc", "ranked_date ASC":
-//		s.Sort = "ranked_date ASC"
-//
-//	case "ranked_desc", "ranked_date DESC":
-//		s.Sort = "ranked_date DESC"
-//
-//	case "favourites_asc", "favourite_count ASC":
-//		s.Sort = "favourite_count ASC"
-//
-//	case "favourites_desc", "favourite_count DESC":
-//		s.Sort = "favourite_count DESC"
-//
-//	case "plays_asc", "play_count ASC":
-//		s.Sort = "play_count ASC"
-//
-//	case "plays_desc", "play_count DESC":
-//		s.Sort = "play_count DESC"
-//
-//	case "updated_asc", "last_updated ASC":
-//		s.Sort = "last_updated ASC"
-//
-//	case "updated_desc", "last_updated DESC":
-//		s.Sort = "last_updated DESC"
-//
-//	case "title_desc", "title DESC":
-//		s.Sort = "title DESC"
-//
-//	case "title_asc", "title ASC":
-//		s.Sort = "title ASC"
-//
-//	case "artist_desc", "artist DESC":
-//		s.Sort = "artist DESC"
-//
-//	case "artist_asc", "artist ASC":
-//		s.Sort = "artist ASC"
-//	default:
-//		s.Sort = "ranked_date DESC"
-//	}
-//}
 
 func (s *SearchQuery) parsePage() {
 	// 에러 발생시 int value = 0
@@ -96,57 +50,50 @@ func (s *SearchQuery) parsePage() {
 	return
 }
 
-func (s *SearchQuery) parseMode() {
-	s.Mode = strings.ToLower(strings.TrimSpace(s.Mode))
-	switch s.Mode {
-	case "0", "o", "std", "osu", "osu!", "standard":
-		s.Mode = "0"
-	case "1", "t", "taiko", "osu!taiko":
-		s.Mode = "1"
-	case "2", "c", "ctb", "catch", "osu!catch":
-		s.Mode = "2"
-	case "3", "m", "mania", "osu!mania":
-		s.Mode = "3"
-	default:
-		s.Mode = "all"
+//
+
+var (
+	regexpReplace, _ = regexp.Compile(`[^0-9A-z]|[\[\]]`)
+	mode             = map[string]int{
+		"0": 0, "o": 0, "std": 0, "osu": 0, "osu!": 0, "standard": 0,
+		"1": 1, "t": 1, "taiko": 1, "osu!taiko": 1,
+		"2": 2, "c": 2, "ctb": 2, "catch": 2, "osu!catch": 2,
+		"3": 3, "m": 3, "mania": 3, "osu!mania": 3,
 	}
-}
-
-func (s *SearchQuery) parseRanked() {
-	ss := strings.ToLower(s.Ranked)
-	switch ss {
-	case "ranked", "1,2":
-		s.Ranked = "1,2"
-
-	case "qualified":
-		s.Ranked = "3"
-
-	case "loved":
-		s.Ranked = "4"
-
-	case "pending":
-		s.Ranked = "0"
-
-	case "wip":
-		s.Ranked = "-1"
-
-	case "graveyard":
-		s.Ranked = "-2"
-
-	case "unranked", "0,-1,-2":
-		s.Ranked = "0,-1,-2"
-
-	case "any", "all":
-		s.Ranked = "all"
-
-	case "-2", "-1", "0", "1", "2", "3", "4":
-		s.Ranked = ss
-
-	default:
-		s.Ranked = "4,2,1"
-
+	ranked = map[string][]int{
+		"ranked":    {1, 2},
+		"qualified": {3},
+		"loved":     {4},
+		"pending":   {0},
+		"wip":       {-1},
+		"graveyard": {-2},
+		"unranked":  {0, -1, -2},
+		"any":       nil,
+		"-2":        {-2},
+		"-1":        {-1},
+		"0":         {0},
+		"1":         {1},
+		"2":         {2},
+		"3":         {3},
+		"4":         {4},
+		"default":   {4, 2, 1},
 	}
-}
+	orderBy = map[string]int{
+		"ranked_asc": 101, "ranked_date": 101, "ranked_date asc": 101,
+		"favourites_asc": 102, "favourite_count": 102, "favourite_count asc": 102,
+		"plays_asc": 103, "play_count": 103, "play_count asc": 103,
+		"updated_asc": 104, "last_updated": 104, "last_updated asc": 104,
+		"title_asc": 105, "title": 105, "title asc": 105,
+		"artist_asc": 106, "artist": 106, "artist asc": 106,
+		"ranked_desc": 201, "ranked_date desc": 201,
+		"favourites_desc": 202, "favourite_count desc": 202,
+		"plays_desc": 203, "play_count desc": 203,
+		"updated_desc": 204, "last_updated desc": 204,
+		"title_desc": 205, "title desc": 205,
+		"artist_desc": 206, "artist desc": 206,
+	}
+)
+
 func (s *SearchQuery) parseNsfw() {
 	ss := strings.ToLower(s.Ranked)
 	switch ss {
@@ -217,12 +164,11 @@ func (v *minMax) minMaxAsQuery() (query string) {
 		return fmt.Sprintf("< %.1f", v.Max)
 	}
 	return fmt.Sprintf("BETWEEN %.1f AND %.1f", v.Min, v.Max)
-
+}
+func (v *minMax) minMaxIsNil() (isNil bool) {
+	return v == nil || (v.Min == 0 && v.Max == 0)
 }
 func (s *SearchQuery) parseQuery() {
-	s.parseRanked()
-	s.parseMode()
-	//s.parseSort()
 	s.parseNsfw()
 	s.parsePage()
 	s.parseExtra()
@@ -294,12 +240,7 @@ func queryBuilder(s *SearchQuery) (qs string, err error) {
 	//	Creator    string `query:"creator" json:"creator"` // 제작자				set.creator
 
 	if s.Text != "" {
-		si := db.SearchIndex(s.Text, s.OptionB)
-		if len(si) > 0 {
-			setAnd = append(setAnd, "beatmapset_id IN ("+strings.Trim(strings.Join(strings.Fields(fmt.Sprint(si)), ","), "[]")+")")
-		} else {
-			err = errors.New("text search data not found")
-		}
+		setAnd = append(setAnd, "beatmapset_id IN ("+strings.Trim(strings.Join(strings.Fields(fmt.Sprint(si)), ","), "[]")+")")
 	}
 	if s.Ranked != "all" {
 		setAnd = append(setAnd, "ranked IN("+s.Ranked+")")
@@ -313,9 +254,6 @@ func queryBuilder(s *SearchQuery) (qs string, err error) {
 	if s.Storyboard != "all" {
 		setAnd = append(setAnd, "storyboard = "+s.Storyboard)
 	}
-	//if s.Creator != "" {
-	//	setAnd = append(setAnd, "creator = '"+s.Creator+"'")
-	//}
 
 	//	Mode             string `query:"m" json:"m"`      // 게임모드				map.mode_int
 	//	TotalLength      minMax `json:"totalLength"`      // 플레이시간			map.totalLength
@@ -374,24 +312,6 @@ func queryBuilder(s *SearchQuery) (qs string, err error) {
 
 }
 
-var (
-	regexpReplace, _ = regexp.Compile(`[^0-9A-z]|[\[\]]`)
-	orderBy          = map[string]int{
-		"ranked_asc": 101, "ranked_date": 101, "ranked_date asc": 101,
-		"favourites_asc": 102, "favourite_count": 102, "favourite_count asc": 102,
-		"plays_asc": 103, "play_count": 103, "play_count asc": 103,
-		"updated_asc": 104, "last_updated": 104, "last_updated asc": 104,
-		"title_asc": 105, "title": 105, "title asc": 105,
-		"artist_asc": 106, "artist": 106, "artist asc": 106,
-		"ranked_desc": 201, "ranked_date desc": 201,
-		"favourites_desc": 202, "favourite_count desc": 202,
-		"plays_desc": 203, "play_count desc": 203,
-		"updated_desc": 204, "last_updated desc": 204,
-		"title_desc": 205, "title desc": 205,
-		"artist_desc": 206, "artist desc": 206,
-	}
-)
-
 func splitString(input string) (ss []string) {
 	for _, s := range strings.Split(strings.ToLower(regexpReplace.ReplaceAllString(input, " ")), " ") {
 		if s == "" || s == " " {
@@ -439,68 +359,6 @@ func Search(c echo.Context) (err error) {
 			Message: "text search data not found",
 		}))
 	}
-	db.Gorm.Raw(`
-SELECT beatmapset_id, title,artist,creator,tags FROM beatmapset
-where
-    ( @useStringSearch > 0 AND  beatmapset_id in (
-        SELECT BEATMAPSET_ID FROM (
-            SELECT BEATMAPSET_ID FROM SEARCH_CACHE_TITLE WHERE INDEX_KEY in ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX where STRING in( @stringSearch ))
-            GROUP BY BEATMAPSET_ID having count(*) >= @useStringSearch
-            UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_ARTIST where INDEX_KEY in ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX where STRING in( @stringSearch ))
-            GROUP BY BEATMAPSET_ID having count(*) >= @useStringSearch
-            UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_CREATOR where INDEX_KEY in ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX where STRING in( @stringSearch ))
-            GROUP BY BEATMAPSET_ID having count(*) >= @useStringSearch
-            UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_TAG where INDEX_KEY in ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX where STRING in( sStringSearch ))
-            GROUP BY BEATMAPSET_ID having count(*) >= @useStringSearch
-        ) A
-    ))
-    AND ((? is null) OR (ranked in (?)))
-    AND ((? is null) OR (nsfw = ?))
-    AND ((? is null) OR (video = ?))
-    AND ((? is null) OR (storyboard = ?))
-    AND( ? OR  beatmapset_id in (
-        SELECT beatmapset_id FROM beatmap where
-                ((? is null) OR (mode_int in (?))
-            AND ((? is null) OR (total_length >= ?))
-            AND ((? is null) OR (total_length <= ?))
-            AND ((? is null) OR (max_combo >= ?))
-            AND ((? is null) OR (max_combo <= ?))
-            AND ((? is null) OR (difficulty_rating >= ?))
-            AND ((? is null) OR (difficulty_rating <= ?))
-            AND ((? is null) OR (accuracy >= ?))
-            AND ((? is null) OR (accuracy <= ?))
-            AND ((? is null) OR (ar >= ?))
-            AND ((? is null) OR (ar <= ?))
-            AND ((? is null) OR (cs >= ?))
-            AND ((? is null) OR (cs <= ?))
-            AND ((? is null) OR (drain >= ?))
-            AND ((? is null) OR (drain <= ?))
-            AND ((? is null) OR (bpm >= ?))
-            AND ((? is null) OR (bpm <= ?))
-    )))
-ORDER BY
-CASE
-    WHEN @order = 101 THEN ranked_date
-    WHEN @order = 102 THEN favourite_count
-    WHEN @order = 103 THEN play_count
-    WHEN @order = 104 THEN last_updated
-    WHEN @order = 105 THEN title
-    WHEN @order = 106 THEN artist
-END
-,CASE
-    WHEN @order = 201 THEN ranked_date
-    WHEN @order = 202 THEN favourite_count
-    WHEN @order = 203 THEN play_count
-    WHEN @order = 204 THEN last_updated
-    WHEN @order = 205 THEN title
-    WHEN @order = 206 THEN artist
-END DESC
-,ranked_date DESC
-;`,
-		sql.Named("useStringSearch", len(sq.ParsedText)),
-		sql.Named("stringSearch", sq.ParsedText),
-		sql.Named("order", utils.TernaryOperator(orderBy[sq.Sort] == 0, orderBy[sq.Sort], nil)),
-	)
 
 	go func() {
 		b, _ := json.Marshal(sq)

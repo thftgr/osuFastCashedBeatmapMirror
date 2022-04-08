@@ -29,9 +29,9 @@ func StringRepeatArray(s string, count int) (arr []string) {
 	return
 }
 
-func TernaryOperator(tf bool, t, f any) any {
-	if tf {
-		return t
-	}
-	return f
-}
+//func TernaryOperator[V any](tf bool, T, F V) V {
+//	if tf {
+//		return T
+//	}
+//	return F
+//}

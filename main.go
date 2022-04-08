@@ -36,8 +36,6 @@ func init() {
 	config.LoadConfig()
 	src.StartIndex()
 	db.ConnectMaria()
-	go db.LoadIndex()
-	go db.LoadCache()
 	go banchoCroller.LoadBancho(ch) // 반쵸 로그인 컨트롤
 	_ = <-ch                        // 반쵸 로그인 대기
 	go banchoCroller.RunGetBeatmapDataASBancho()
@@ -50,7 +48,13 @@ func init() {
 	//go banchoCroller.UpdateAllPackList()
 }
 
+// @title Wookiist Sample Swagger API
+// @version 1.0
+// @host localhost:30000
+// @BasePath /api/v1
 func main() {
+	//$ go get github.com/swaggo/swag/cmd/swag
+	//$ go get github.com/swaggo/echo-swagger
 	e := echo.New()
 	e.HideBanner = true
 	go func() {
@@ -79,6 +83,14 @@ func main() {
 	})
 
 	// 서버상태 체크용 ====================================================================================================
+
+	// @Summary Get user
+	// @Description Get user's info
+	// @Accept json
+	// @Produce json
+	// @Param name path string true "name of the user"
+	// @Success 200 {object} User
+	// @Router /user/{name} [get]
 	e.GET("/health", Route.Health)
 	e.GET("/robots.txt", Route.Robots)
 	e.GET("/status", func(c echo.Context) error {
