@@ -29,9 +29,28 @@ func StringRepeatArray(s string, count int) (arr []string) {
 	return
 }
 
-//func TernaryOperator[V any](tf bool, T, F V) V {
-//	if tf {
-//		return T
+func TernaryOperator[V any](tf bool, T, F V) V {
+	if tf {
+		return T
+	}
+	return F
+}
+
+func MakeArrayUnique[T comparable](array *[]T) (res []T) {
+
+	keys := make(map[T]struct{})
+	for _, s := range *array {
+		keys[s] = struct{}{}
+	}
+	for i := range keys {
+		res = append(res, i)
+	}
+	return
+}
+
+//func FindAllVakuesFromMap[K,V comparable](data map[K]V, keys []K)(values []V){
+//	for _, key := range keys {
+//		if key == nil
+//		values = append(values, )
 //	}
-//	return F
 //}

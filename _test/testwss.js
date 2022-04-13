@@ -66,7 +66,6 @@ function lb() {
 
             console.log(`host: ${host} ${et - st} ms`) // 이
         }).catch(e => console.log(`host: ${host} error : ${e}`));
-
     })
 }
 

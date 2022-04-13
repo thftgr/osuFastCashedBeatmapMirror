@@ -7,7 +7,6 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
-	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pterm/pterm"
@@ -36,25 +35,18 @@ func init() {
 	config.LoadConfig()
 	src.StartIndex()
 	db.ConnectMaria()
-	go banchoCroller.LoadBancho(ch) // 반쵸 로그인 컨트롤
-	_ = <-ch                        // 반쵸 로그인 대기
+	go banchoCroller.LoadBancho(ch)
+	_ = <-ch
 	go banchoCroller.RunGetBeatmapDataASBancho()
 
 	if os.Getenv("debug") != "true" {
-
-		//go banchoCroller.RunGetBeatmapDataASBancho() // 비트맵 정보 수집
+		//go banchoCroller.RunGetBeatmapDataASBancho()
 	} else {
 	}
 	//go banchoCroller.UpdateAllPackList()
 }
 
-// @title Wookiist Sample Swagger API
-// @version 1.0
-// @host localhost:30000
-// @BasePath /api/v1
 func main() {
-	//$ go get github.com/swaggo/swag/cmd/swag
-	//$ go get github.com/swaggo/echo-swagger
 	e := echo.New()
 	e.HideBanner = true
 	go func() {
@@ -84,13 +76,6 @@ func main() {
 
 	// 서버상태 체크용 ====================================================================================================
 
-	// @Summary Get user
-	// @Description Get user's info
-	// @Accept json
-	// @Produce json
-	// @Param name path string true "name of the user"
-	// @Success 200 {object} User
-	// @Router /user/{name} [get]
 	e.GET("/health", Route.Health)
 	e.GET("/robots.txt", Route.Robots)
 	e.GET("/status", func(c echo.Context) error {
@@ -100,6 +85,7 @@ func main() {
 			"apiCount":              *banchoCroller.ApiCount,
 		})
 	})
+	e.GET("/latency", Route.LatencyTest)
 
 	// 맵 파일 다운로드 ===================================================================================================
 	e.GET("/d/:seIid", Route.DownloadBeatmapSet)
@@ -124,25 +110,25 @@ func main() {
 	// 개발중 || 테스트중 ===================================================================================================
 	//e.HTTPErrorHandler = httpErrorHandler.HttpErrorHandler
 	//e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(1)))
-	e.GET("/test", func(c echo.Context) error {
-		rows, err := db.Maria.Query(`select `, []string{"the"})
-
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
-		}
-		var ids []int
-		for rows.Next() {
-			var id int
-			err = rows.Scan(&id)
-			if err != nil {
-				pterm.Error.Println(err)
-				continue
-			}
-			ids = append(ids, id)
-		}
-
-		return c.JSON(200, ids)
-	},
+	//e.GET("/test", func(c echo.Context) error {
+	//	rows, err := db.Maria.Query(`select `, []string{"the"})
+	//
+	//	if err != nil {
+	//		return c.JSON(http.StatusInternalServerError, err.Error())
+	//	}
+	//	var ids []int
+	//	for rows.Next() {
+	//		var id int
+	//		err = rows.Scan(&id)
+	//		if err != nil {
+	//			pterm.Error.Println(err)
+	//			continue
+	//		}
+	//		ids = append(ids, id)
+	//	}
+	//
+	//	return c.JSON(200, ids)
+	//},
 
 	//middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
 	//	Rate:      6,
@@ -161,7 +147,7 @@ func main() {
 	//		},
 	//	),
 	//}),
-	)
+	//)
 	//e.GET("/ws", hello)
 	//e.GET("/dev/search", func(c echo.Context) error {
 	//	return c.JSON(http.StatusOK, db.SearchIndex(c.QueryParam("q")))
@@ -187,46 +173,29 @@ func main() {
 
 }
 
-var (
-	upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			return true
-		},
-	}
-)
+//var (
+//	upgrader = websocket.Upgrader{}
+//)
 
-//func hello(c echo.Context) (err error) {
-//	fmt.Println("wss")
+//func hello(c echo.Context) error {
 //	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 //	if err != nil {
-//		pterm.Error.Println(err)
 //		return err
 //	}
 //	defer ws.Close()
+//
 //	for {
 //		// Write
-//		err = ws.WriteMessage(websocket.TextMessage, Route.Search2(Route.SearchQuery{}))
+//		err := ws.WriteMessage(websocket.TextMessage, []byte("Hello, Client!"))
 //		if err != nil {
-//			if !strings.Contains(err.Error(), "websocket: close") {
-//				pterm.Error.Println(err)
-//				c.Logger().Error(err)
-//
-//			}
-//			break
+//			c.Logger().Error(err)
 //		}
 //
 //		// Read
 //		_, msg, err := ws.ReadMessage()
 //		if err != nil {
-//			if !strings.Contains(err.Error(), "websocket: close") {
-//				pterm.Error.Println(err)
-//				c.Logger().Error(err)
-//
-//			}
-//			break
-//
+//			c.Logger().Error(err)
 //		}
 //		fmt.Printf("%s\n", msg)
 //	}
-//	return
 //}
