@@ -11,14 +11,26 @@ type config struct {
 	Port         string   `json:"port"`
 	TargetDir    string   `json:"targetDir"`
 	SlaveServers []string `json:"slave"`
-	Sql          struct {
+	Discord      struct {
+		Webhook struct {
+			Info  string `json:"info"`
+			Error string `json:"error"`
+		} `json:"webhook"`
+	} `json:"discord"`
+	Sql struct {
 		Id     string `json:"id"`
 		Passwd string `json:"passwd"`
 		Url    string `json:"url"`
 		Table  struct {
-			Log        string `json:"log"`
-			Beatmap    string `json:"beatmap"`
-			BeatmapSet string `json:"beatmapSet"`
+			Log                    string `json:"log"`
+			Beatmap                string `json:"beatmap"`
+			BeatmapSet             string `json:"beatmapSet"`
+			SearchCacheArtist      string `json:"searchCacheArtist"`
+			SearchCacheCreator     string `json:"searchCacheCreator"`
+			SearchCacheStringIndex string `json:"searchCacheStringIndex"`
+			SearchCacheTag         string `json:"searchCacheTag"`
+			SearchCacheTitle       string `json:"searchCacheTitle"`
+			ServerCacheKVJson      string `json:"serverCacheKVJson"`
 		} `json:"table"`
 	} `json:"sql"`
 	Osu struct {
@@ -32,22 +44,25 @@ type config struct {
 		} `json:"token"`
 		BeatmapUpdate struct {
 			UpdatedAsc struct {
-				LastUpdate string `json:"last_update"`
-				Id         string `json:"_id"`
+				//LastUpdate   string `json:"last_update"`
+				//Id           string `json:"_id"`
+				CursorString string `json:"cursor_string"`
 			} `json:"updated_asc"`
 			UpdatedDesc struct {
-				LastUpdate string `json:"last_update"`
-				Id         string `json:"_id"`
+				//LastUpdate   string `json:"last_update"`
+				//Id           string `json:"_id"`
+				CursorString string `json:"cursor_string"`
 			} `json:"updated_desc"`
 			GraveyardAsc struct {
-				LastUpdate string `json:"last_update"`
-				Id         string `json:"_id"`
+				//LastUpdate   string `json:"last_update"`
+				//Id           string `json:"_id"`
+				CursorString string `json:"cursor_string"`
 			} `json:"graveyard_asc"`
 		} `json:"beatmapUpdate"`
 	} `json:"osu"`
 }
 
-var Setting config
+var Config config
 
 func LoadConfig() {
 	b, err := ioutil.ReadFile("./config.json")
@@ -58,7 +73,7 @@ func LoadConfig() {
 			panic(err)
 		}
 		defer out.Close()
-		body, err := json.MarshalIndent(Setting, "", "    ")
+		body, err := json.MarshalIndent(Config, "", "    ")
 		if err != nil {
 			pterm.Error.Println("Error. Marshal json")
 			panic(err)
@@ -70,7 +85,7 @@ func LoadConfig() {
 		}
 	}
 
-	err = json.Unmarshal(b, &Setting)
+	err = json.Unmarshal(b, &Config)
 	if err != nil {
 		pterm.Error.Println("fail to parse config.json")
 		return

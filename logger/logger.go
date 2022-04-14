@@ -4,12 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
+	"github.com/Nerinyan/Nerinyan-APIV2/utils"
+	"github.com/Nerinyan/Nerinyan-APIV2/webhook"
 	"github.com/jasonlvhit/gocron"
+	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"
 	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -112,21 +116,38 @@ func setLogFile() {
 
 }
 
-func Error(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
+func Error(c echo.Context, v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
+
+	var fname string
+	pc, file, line, ok := runtime.Caller(1)
+	if !ok {
+		file = "?"
+		line = 0
+		fname = "?"
+	} else {
+		fn := runtime.FuncForPC(pc)
+		if fn == nil {
+			fname = "?"
+		} else {
+			fname = fn.Name()
+		}
+	}
+
+	fmt.Printf("%s:%d %s.\n", file, line, fname)
+	v.Path = c.Request().RequestURI
+	v.RequestId = c.Response().Header().Get("X-Request-ID")
+	json.Unmarshal(*utils.ToJsonString(c.QueryParams()), &v.Request.QueryParam)
+	json.Unmarshal(*utils.ToJsonString(c.Cookies()), &v.Request.Cookie)
+	json.Unmarshal(*utils.ToJsonString(c.Request().Header), &v.Request.Header)
+	//fmt.Println(string(*utils.ToJsonString(c.QueryParams())))
+
+	z := *v
 	go func() {
-		b, _ := json.Marshal(v)
+		z.SourceFile = fmt.Sprintf("%s:%d", file, line)
+		webhook.DiscordError(&z)
+
+		b, _ := json.Marshal(&z)
 		pterm.Error.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
-	}()
-
-	//TODO DB 에 저장
-	return v
-
-}
-
-func Info(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
-	go func() {
-		b, _ := json.Marshal(v)
-		pterm.Info.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
 	}()
 
 	//TODO DB 에 저장

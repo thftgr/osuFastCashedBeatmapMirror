@@ -1,4 +1,4 @@
-package src
+package banchoCroller
 
 import (
 	"encoding/json"
@@ -36,6 +36,7 @@ func apiCountReset() {
 	api.mutex.Unlock()
 }
 func RunGetBeatmapDataASBancho() {
+
 	go func() {
 		for {
 			time.Sleep(time.Minute)
@@ -43,7 +44,7 @@ func RunGetBeatmapDataASBancho() {
 				continue
 			}
 			apiCountReset()
-			go config.Setting.Save()
+			go config.Config.Save()
 		}
 	}()
 	go func() { //ALL desc limit 50
@@ -81,6 +82,7 @@ func RunGetBeatmapDataASBancho() {
 			getGraveyardMap()
 		}
 	}()
+
 	go func() { //ALL asc
 		for {
 			awaitApiCount()
@@ -179,10 +181,9 @@ func getGraveyardMap() {
 		}
 	}()
 	url := ""
-	lu := &config.Setting.Osu.BeatmapUpdate.GraveyardAsc.LastUpdate
-	id := &config.Setting.Osu.BeatmapUpdate.GraveyardAsc.Id
-	if *lu+*id != "" {
-		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor%5Blast_update%5D=" + *lu + "&cursor%5B_id%5D=" + *id
+	cs := &config.Config.Osu.BeatmapUpdate.GraveyardAsc.CursorString
+	if *cs != "" {
+		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor_string=" + *cs
 	} else {
 		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard"
 	}
@@ -193,16 +194,16 @@ func getGraveyardMap() {
 	if err != nil {
 		return
 	}
-	if data.Cursor == nil {
-		*lu = ""
-		*id = ""
+	if data.CursorString == "" {
 		return
 	}
 	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
 		return
 	}
-	*lu = *data.Cursor.LastUpdate
-	*id = *data.Cursor.Id
+	if data.CursorString == "" {
+		return
+	}
+	*cs = data.CursorString
 	return
 }
 func getUpdatedMapDesc() {
@@ -223,9 +224,10 @@ func getUpdatedMapDesc() {
 	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
 		return
 	}
-	config.Setting.Osu.BeatmapUpdate.UpdatedDesc.LastUpdate = *data.Cursor.LastUpdate
-	config.Setting.Osu.BeatmapUpdate.UpdatedDesc.Id = *data.Cursor.Id
-
+	if data.CursorString == "" {
+		return
+	}
+	config.Config.Osu.BeatmapUpdate.UpdatedDesc.CursorString = data.CursorString
 	return
 }
 
@@ -237,10 +239,9 @@ func getUpdatedMapAsc() {
 		}
 	}()
 	url := ""
-	lu := &config.Setting.Osu.BeatmapUpdate.UpdatedAsc.LastUpdate
-	id := &config.Setting.Osu.BeatmapUpdate.UpdatedAsc.Id
-	if *lu+*id != "" {
-		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any&cursor%5Blast_update%5D=" + *lu + "&cursor%5B_id%5D=" + *id
+	cs := &config.Config.Osu.BeatmapUpdate.UpdatedAsc.CursorString
+	if *cs != "" {
+		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any&cursor_string=" + *cs
 	} else {
 		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any"
 	}
@@ -251,16 +252,14 @@ func getUpdatedMapAsc() {
 	if err != nil {
 		return
 	}
-	if data.Cursor == nil {
-		*lu = ""
-		*id = ""
-		return
-	}
+
 	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
 		return
 	}
-	*lu = *data.Cursor.LastUpdate
-	*id = *data.Cursor.Id
+	if data.CursorString == "" {
+		return
+	}
+	*cs = data.CursorString
 	return
 }
 
@@ -272,7 +271,7 @@ func stdGETBancho(url string, str interface{}) (err error) {
 		return
 	}
 
-	req.Header.Add("Authorization", config.Setting.Osu.Token.TokenType+" "+config.Setting.Osu.Token.AccessToken)
+	req.Header.Add("Authorization", config.Config.Osu.Token.TokenType+" "+config.Config.Osu.Token.AccessToken)
 
 	res, err := client.Do(req)
 	apicountAdd()
@@ -297,6 +296,7 @@ func stdGETBancho(url string, str interface{}) (err error) {
 }
 
 func updateMapset(s *osu.BeatmapSetsIN) {
+
 	//	beatmapset_id,artist,artist_unicode,creator,favourite_count,
 	//	hype_current,hype_required,nsfw,play_count,source,
 	//	status,title,title_unicode,user_id,video,
@@ -428,22 +428,6 @@ INSERT INTO osu.beatmapset(
 	language_id= VALUES(language_id), language_name= VALUES(language_name), ratings= VALUES(ratings)
 ;
 `
-	//
-	//	coverValue       = `(?,?,?,?,?,?,?,?,?)` //9
-	//	upsertCoverQuery = `
-	//INSERT INTO osu.COVERS(
-	//	BEATMAP_SET_ID,
-	//    COVER,COVER2X,
-	//    CARD,CARD2X,
-	//    LIST,LIST2X,
-	//    SLIMCOVER,SLIMCOVER2X
-	//) VALUES %s ON DUPLICATE KEY UPDATE
-	//	COVER=VALUES(COVER) ,COVER2X=VALUES(COVER2X) ,
-	//	CARD=VALUES(CARD) ,CARD2X=VALUES(CARD2X) ,
-	//	LIST=VALUES(LIST) ,LIST2X=VALUES(LIST2X) ,
-	//	SLIMCOVER=VALUES(SLIMCOVER) ,SLIMCOVER2X=VALUES(SLIMCOVER2X)
-	//;
-	//`
 )
 
 func buildSqlValues(s string, count int) (r string) {
@@ -451,7 +435,7 @@ func buildSqlValues(s string, count int) (r string) {
 	for i := 0; i < count; i++ {
 		sbuf = append(sbuf, s)
 	}
-	return strings.Trim(strings.Join(strings.Fields(fmt.Sprint(sbuf)), ","), "[]")
+	return strings.Join(sbuf, ",")
 }
 
 func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
@@ -461,7 +445,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	if len(*data) < 1 {
 		return
 	}
-
+	go db.InsertCache(data)
 	var (
 		setInsertBuf []interface{}
 		mapInsertBuf []interface{}
@@ -472,6 +456,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	)
 
 	for _, s := range *data {
+
 		beatmapSets = append(beatmapSets, s.Id)
 		coverBuf = append(coverBuf, s.Id, s.Covers.Cover, s.Covers.Cover2X, s.Covers.Card, s.Covers.Card2X, s.Covers.List, s.Covers.List2X, s.Covers.Slimcover, s.Covers.Slimcover2X)
 		setInsertBuf = append(setInsertBuf, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, s.Nsfw, s.PlayCount, s.Source, s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video, s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled, s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current, s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate, s.Tags, s.HasFavourited)
@@ -486,14 +471,6 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 		return err
 	}
 
-	//커버 이미지 주소
-	//if _, err = db.Maria.Exec(fmt.Sprintf(upsertCoverQuery, buildSqlValues(coverValue, len(beatmapSets))), coverBuf...); err != nil {
-	//	pterm.Error.Println(err)
-	//	return err
-	//}
-
-	//맵
-	//fmt.Println(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))))
 	if _, err = db.Maria.Exec(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))), mapInsertBuf...); err != nil {
 		pterm.Error.Println(err)
 		return err
