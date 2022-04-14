@@ -1,120 +1,114 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
-	"github.com/Nerinyan/Nerinyan-APIV2/utils"
-	"github.com/pterm/pterm"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	"encoding/json"
+	"log"
 )
 
-func main() {
-	ii := []int{0, 1, 2, 3, 4, 5, 5, 5}
-	fmt.Println(ii)
-
-	ii = utils.MakeArrayUnique(ii)
-	fmt.Println(ii)
-
-	//ConnectMaria()
-	//str := Gorm.Select("ID").Table("SEARCH_CACHE_STRING_INDEX").Where("STRING IN (?)", []string{"my", "love"})
-	//C1 := Gorm.Select("BEATMAPSET_ID").Table("SEARCH_CACHE_TITLE").Where("INDEX_KEY IN (?)", str).Group("BEATMAPSET_ID").Having("count(*) >= ?", 2)
-	//C2 := Gorm.Select("BEATMAPSET_ID").Table("SEARCH_CACHE_ARTIST").Where("INDEX_KEY IN (?)", str).Group("BEATMAPSET_ID").Having("count(*) >= ?", 2)
-	//C3 := Gorm.Select("BEATMAPSET_ID").Table("SEARCH_CACHE_CREATOR").Where("INDEX_KEY IN (?)", str).Group("BEATMAPSET_ID").Having("count(*) >= ?", 2)
-	//C4 := Gorm.Select("BEATMAPSET_ID").Table("SEARCH_CACHE_TAG").Where("INDEX_KEY IN (?)", str).Group("BEATMAPSET_ID").Having("count(*) >= ?", 2)
-	//
-	//Gorm.Select("BEATMAPSET_ID").Table("(? UNION ALL ? UNION ALL ? UNION ALL ?) A;", C1, C2, C3, C4)
-	//
-	//Gorm.ToSQL(C1)
-
-	//	//var i int
-	//	////SELECT BEATMAPSET_ID from (
-	//	////      SELECT BEATMAPSET_ID from SEARCH_CACHE_TITLE
-	//	////      where (0xff & 1 = 1) AND INDEX_KEY in ( select ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'my','love' ))
-	//	////      GROUP BY BEATMAPSET_ID having count(*) >= 2
-	//	////      UNION ALL SELECT BEATMAPSET_ID from SEARCH_CACHE_ARTIST
-	//	////      where (0xff & 2 = 2) AND INDEX_KEY in ( select ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'my','love' ))
-	//	////      GROUP BY BEATMAPSET_ID having count(*) >= 2
-	//	////      UNION ALL SELECT BEATMAPSET_ID from SEARCH_CACHE_CREATOR
-	//	////      where (0xff & 4 = 4) AND INDEX_KEY in ( select ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'my','love' ))
-	//	////      GROUP BY BEATMAPSET_ID having count(*) >= 2
-	//	////      UNION ALL SELECT BEATMAPSET_ID from SEARCH_CACHE_TAG
-	//	////      where (0xff & 8 = 8) AND INDEX_KEY in ( select ID from SEARCH_CACHE_STRING_INDEX where STRING in( 'my','love' ))
-	//	////      GROUP BY BEATMAPSET_ID having count(*) >= 2
-	//	////) A
-	//	////;
-	//	//st := time.Now().UnixMicro()
-	//	//et := time.Now().UnixMicro()
-	//	//time.Sleep(time.Second * 5)
-	//	//st = time.Now().UnixMicro()
-	//	//_ = Maria.QueryRow(`SELECT BEATMAPSET_ID FROM (
-	//	//          SELECT BEATMAPSET_ID FROM SEARCH_CACHE_TITLE WHERE INDEX_KEY IN (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN ('my','love')) GROUP BY BEATMAPSET_ID HAVING count(*) >= 2
-	//	//UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_ARTIST WHERE INDEX_KEY IN (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN ('my','love')) GROUP BY BEATMAPSET_ID HAVING count(*) >= 2
-	//	//UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN ('my','love')) GROUP BY BEATMAPSET_ID HAVING count(*) >= 2
-	//	//UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_TAG WHERE INDEX_KEY IN (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN ('my','love')) GROUP BY BEATMAPSET_ID HAVING count(*) >= 2
-	//	//) A; `).Scan(&i)
-	//	//et = time.Now().UnixMicro()
-	//	//fmt.Println(et-st, i)
-	//	//
-	//	//st = time.Now().UnixMicro()
-	//	//Gorm.Raw(`SELECT BEATMAPSET_ID FROM (
-	//	//          SELECT BEATMAPSET_ID FROM SEARCH_CACHE_TITLE WHERE INDEX_KEY IN (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN ('my','love')) GROUP BY BEATMAPSET_ID HAVING count(*) >= 2
-	//	//UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_ARTIST WHERE INDEX_KEY IN (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN ('my','love')) GROUP BY BEATMAPSET_ID HAVING count(*) >= 2
-	//	//UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN ('my','love')) GROUP BY BEATMAPSET_ID HAVING count(*) >= 2
-	//	//UNION ALL SELECT BEATMAPSET_ID FROM SEARCH_CACHE_TAG WHERE INDEX_KEY IN (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN ('my','love')) GROUP BY BEATMAPSET_ID HAVING count(*) >= 2
-	//	//) A; `).Scan(&i)
-	//	//et = time.Now().UnixMicro()
-	//	//fmt.Println(et-st, i)
-	//	//
-	//	//st = time.Now().UnixMicro()
-	//	//str := Gorm.Select("ID").Table("SEARCH_CACHE_STRING_INDEX").Where("STRING IN (?)", []string{"my", "love"})
-	//	//C1 := Gorm.Select("BEATMAPSET_ID").Table("SEARCH_CACHE_TITLE").Where("INDEX_KEY IN (?)", str).Group("BEATMAPSET_ID").Having("count(*) >= ?", 2)
-	//	//C2 := Gorm.Select("BEATMAPSET_ID").Table("SEARCH_CACHE_ARTIST").Where("INDEX_KEY IN (?)", str).Group("BEATMAPSET_ID").Having("count(*) >= ?", 2)
-	//	//C3 := Gorm.Select("BEATMAPSET_ID").Table("SEARCH_CACHE_CREATOR").Where("INDEX_KEY IN (?)", str).Group("BEATMAPSET_ID").Having("count(*) >= ?", 2)
-	//	//C4 := Gorm.Select("BEATMAPSET_ID").Table("SEARCH_CACHE_TAG").Where("INDEX_KEY IN (?)", str).Group("BEATMAPSET_ID").Having("count(*) >= ?", 2)
-	//	//
-	//	//Gorm.Select("BEATMAPSET_ID").Table("(? UNION ALL ? UNION ALL ? UNION ALL ?) A;", C1, C2, C3, C4).Scan(&i)
-	//	//
-	//	//et = time.Now().UnixMicro()
-	//	//fmt.Println(et-st, i)
-	//
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
 
-var Maria *sql.DB
-var Gorm *gorm.DB
+type Point struct {
+	X int
+	Y int
+}
 
-func ConnectMaria() {
+func (v *Point) Equal(p Point) bool {
+	return v.X == p.X && v.Y == p.Y
+}
+func main() {
 
-	db, err := sql.Open("mysql", "root:myaimgod!1?@tcp(192.168.0.50:3306)/osu")
-	if Maria = db; db != nil {
-		Maria.SetMaxOpenConns(100)
+	MAP := [][]int{
+		{1, 1, 1, 1, 1, 1, 1, 1},
+		{1, 0, 0, 1, 0, 1, 0, 1},
+		{1, 1, 0, 0, 0, 1, 0, 1},
+		{1, 1, 1, 0, 1, 1, 0, 1},
+		{1, 1, 1, 0, 0, 0, 0, 1},
+		{1, 0, 0, 0, 1, 1, 1, 1},
+		{1, 1, 0, 1, 0, 0, 0, 1},
+		{1, 0, 0, 0, 0, 1, 0, 1},
+		{1, 1, 1, 1, 1, 1, 1, 1},
+	}
+	START := Point{
+		X: 1,
+		Y: 1,
+	}
+	END := Point{
+		X: 6,
+		Y: 7,
+	}
+	line := Line{
+		Map:   MAP,
+		Start: START,
+		End:   END,
+		Pass:  nil,
+	}
+	FindPass(line)
 
-		pterm.Success.Println("RDBMS connected")
-		var i int
-		Maria.QueryRow("SELECT 1;").Scan(&i)
+}
 
-		if _, err = Maria.Exec("SET SQL_SAFE_UPDATES = 0;"); err != nil {
-			pterm.Error.Println("SET SQL_SAFE_UPDATES FAIL.")
-			panic(err)
+type Line struct {
+	Map   [][]int
+	Start Point
+	End   Point
+	Pass  []Point
+}
+
+func FindPass(v Line) {
+	org := v
+	check := func(p Point) {
+		if v.End.Equal(p) {
+			log.Println(p.X, p.Y)
+			panic("END")
 		}
-	} else {
-		pterm.Error.Println("RDBMS Connect Fail", err)
-		panic(err)
+		if !p.Equal(v.Start) && v.Map[p.Y][p.X] == 0 {
+			log.Println(p.X, p.Y, "|", v.Map[p.Y][p.X])
+			v.Start = p
+			v.Pass = append(v.Pass, p)
+			log.Println(ToJsonString(v))
+			FindPass(v)
+		}
+	}
+	if v.Start.X > 0 {
+		p := Point{
+			X: v.Start.X - 1,
+			Y: v.Start.Y,
+		}
+		check(p)
+
+	}
+	v = org
+	if v.Start.X < len(v.Map)-1 {
+		p := Point{
+			X: v.Start.X + 1,
+			Y: v.Start.Y,
+		}
+		check(p)
+	}
+	v = org
+	if v.Start.Y > 0 {
+		p := Point{
+			X: v.Start.X,
+			Y: v.Start.Y - 1,
+		}
+		check(p)
+	}
+	v = org
+	if v.Start.Y < len(v.Map[v.Start.X])-1 {
+		p := Point{
+			X: v.Start.X,
+			Y: v.Start.Y + 1,
+		}
+		check(p)
 	}
 
-	orm, err := gorm.Open(mysql.New(mysql.Config{Conn: Maria}), &gorm.Config{
-		AllowGlobalUpdate: true,
-		Logger:            logger.Default.LogMode(logger.Info),
-		CreateBatchSize:   100,
-	})
-	if Gorm = orm; orm != nil {
-		var i int
-		Gorm.Raw("SELECT 1;").Scan(&i)
-		pterm.Success.Println("RDBMS orm connected")
-	} else {
-		pterm.Error.Println("RDBMS orm Connect Fail", err)
-		panic(err)
+}
+func ToJsonString(i interface{}) (str string) {
+	b, err := json.Marshal(i)
+	if err != nil {
+		log.Println(err)
+		return
 	}
-
+	return string(b)
 }

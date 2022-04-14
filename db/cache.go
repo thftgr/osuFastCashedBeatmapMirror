@@ -13,25 +13,6 @@ var (
 	regexpReplace, _ = regexp.Compile(`[^0-9A-z]|[\[\]]`)
 )
 
-func LoadCache() {
-	//rows, err := Maria.Query(`select STRING from SEARCH_CACHE_STRING_INDEX`)
-	//if err != nil && err != sql.ErrNoRows {
-	//	pterm.Error.Println(err)
-	//	return
-	//}
-	//defer rows.Close()
-	//var tmp string
-	//for rows.Next() {
-	//	err := rows.Scan(&tmp)
-	//	if err != nil {
-	//		pterm.Error.Println(err)
-	//		continue
-	//	}
-	//	STRING_INDEX[tmp] = &struct{}{}
-	//}
-	//pterm.Info.Println("LoadCache() end")
-}
-
 func InsertCache(data *[]osu.BeatmapSetsIN) {
 	go insertStringIndex(data)
 

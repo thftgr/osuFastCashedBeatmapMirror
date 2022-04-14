@@ -267,6 +267,7 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 	query.WriteString(searchBaseQuery)
 
 	query.WriteString(config.Config.Sql.Table.BeatmapSet)
+	query.WriteString(" AS A ")
 
 	if s.Text != "" {
 
@@ -354,6 +355,7 @@ GROUP BY BEATMAPSET_ID having count(*) >= @textCount
 	}
 
 	if len(mapAnd) > 0 { // beatmapset_id IN ()
+		mapAnd = append([]string{"beatmapset_id IN (A.beatmapset_id)"}, mapAnd...)
 		setAnd = append(setAnd, "beatmapset_id IN (select beatmapset_id from "+config.Config.Sql.Table.Beatmap+" where "+strings.Join(mapAnd, " AND ")+" )")
 	}
 	if len(setAnd) > 0 { // SELECT * FROM osu.beatmapset WHERE ranked in (4,2,1) AND nsfw = 1 ...
@@ -407,26 +409,8 @@ func Search(c echo.Context) (err error) {
 			Message: "request parse error",
 		}))
 	}
-	//q, err := queryBuilder(&sq)
-	//if err != nil {
-	//	return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
-	//		Code:    "SEARCH-002",
-	//		Error:   err,
-	//		Message: "text search data not found",
-	//	}))
-	//}
-	q, args := sq.queryBuilder2()
-	//pterm.Info.Println(string(*utils.ToJsonIndentString(sq)))
 
-	//go func() {
-	//	b, _ := json.Marshal(sq)
-	//	log.Println("REBUILDED REQUEST:", string(b))
-	//	log.Println("GENERATED QUERY:", q)
-	//	t := time.Now().Format("2006/01/02 15:01:05") //2021/09/10 22:30:38
-	//	pterm.Info.Println(t, "REBUILDED REQUEST:", pterm.LightYellow(string(b)))
-	//	pterm.Info.Println(t, "GENERATED QUERY:", pterm.LightYellow(q))
-	//}()
-	//return c.JSON(http.StatusOK, "")
+	q, args := sq.queryBuilder2()
 
 	rows, err := db.Gorm.Raw(q, args...).Rows()
 

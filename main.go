@@ -28,7 +28,7 @@ import (
 // TODO DOING 서버 자체적으로 10분당 150건 이내만 다운로드 가능하게 셋팅
 // 		END	  검색 쿼리시 서버에 캐싱되어있는 비트맵인지 여부
 // TODO DOING /status에 들어갈 상태값 추가.
-// TODO DOING 반쵸에서 가져온 데이터 검색캐싱에 추가
+// TODO END 반쵸에서 가져온 데이터 검색캐싱에 추가
 // TODO DOING 디스코드 웹훅
 func init() {
 	ch := make(chan struct{})

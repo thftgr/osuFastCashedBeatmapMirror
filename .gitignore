@@ -12,3 +12,5 @@ osuFastCashedBeatmapMirror
 *.sql
 Nerinyan-APIV2
 /Nerinyan-APIV2.7z
+/.idea/codeStyles/codeStyleConfig.xml
+/.idea/jsLibraryMappings.xml
