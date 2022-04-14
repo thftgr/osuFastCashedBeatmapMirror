@@ -4,10 +4,8 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/Route"
 	"github.com/Nerinyan/Nerinyan-APIV2/banchoCroller"
-	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
-	"github.com/Nerinyan/Nerinyan-APIV2/middleWareFunc"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -30,18 +28,19 @@ import (
 // TODO DOING 서버 자체적으로 10분당 150건 이내만 다운로드 가능하게 셋팅
 // 		END	  검색 쿼리시 서버에 캐싱되어있는 비트맵인지 여부
 // TODO DOING /status에 들어갈 상태값 추가.
-// TODO DOING 반쵸에서 가져온 데이터 검색캐싱에 추가
+// TODO END 반쵸에서 가져온 데이터 검색캐싱에 추가
 // TODO DOING 디스코드 웹훅
 func init() {
 	ch := make(chan struct{})
 	config.LoadConfig()
 	src.StartIndex()
 	db.ConnectMaria()
-	go db.LoadIndex()
 	go banchoCroller.LoadBancho(ch)
 	_ = <-ch
+	go banchoCroller.RunGetBeatmapDataASBancho()
+
 	if os.Getenv("debug") != "true" {
-		go banchoCroller.RunGetBeatmapDataASBancho()
+		//go banchoCroller.RunGetBeatmapDataASBancho()
 	} else {
 	}
 	//go banchoCroller.UpdateAllPackList()
@@ -64,8 +63,8 @@ func main() {
 
 	e.Use(
 		middleware.Logger(),
-		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
-		middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
+		//middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
+		//middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
 		middleware.RequestID(),
 		middleware.Recover(),
 	)
@@ -76,6 +75,7 @@ func main() {
 	})
 
 	// 서버상태 체크용 ====================================================================================================
+
 	e.GET("/health", Route.Health)
 	e.GET("/robots.txt", Route.Robots)
 	e.GET("/status", func(c echo.Context) error {
@@ -85,10 +85,12 @@ func main() {
 			"apiCount":              *banchoCroller.ApiCount,
 		})
 	})
+	e.GET("/latency", Route.LatencyTest)
 
 	// 맵 파일 다운로드 ===================================================================================================
-	e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.BanchoBeatmapDownloadLimiter)
-	e.GET("/b/:id", Route.DownloadBeatmapSet, middleWareFunc.BanchoBeatmapDownloadLimiter)
+	e.GET("/d/:seIid", Route.DownloadBeatmapSet)
+	e.GET("/beatmap/:mapId", Route.DownloadBeatmapSet)
+	e.GET("/beatmapset/:seIid", Route.DownloadBeatmapSet)
 	//TODO 맵아이디, 맵셋아이디 지원
 	//e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.LoadBalancer)
 
@@ -107,15 +109,46 @@ func main() {
 
 	// 개발중 || 테스트중 ===================================================================================================
 	//e.HTTPErrorHandler = httpErrorHandler.HttpErrorHandler
-	e.GET("/test", func(c echo.Context) error {
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:       "",
-			Path:       "",
-			RequestId:  "",
-			Message:    "",
-			SourceFile: "",
-		}))
-	})
+	//e.Use(middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(1)))
+	//e.GET("/test", func(c echo.Context) error {
+	//	rows, err := db.Maria.Query(`select `, []string{"the"})
+	//
+	//	if err != nil {
+	//		return c.JSON(http.StatusInternalServerError, err.Error())
+	//	}
+	//	var ids []int
+	//	for rows.Next() {
+	//		var id int
+	//		err = rows.Scan(&id)
+	//		if err != nil {
+	//			pterm.Error.Println(err)
+	//			continue
+	//		}
+	//		ids = append(ids, id)
+	//	}
+	//
+	//	return c.JSON(200, ids)
+	//},
+
+	//middleware.RateLimiter(middleware.NewRateLimiterMemoryStoreWithConfig(middleware.RateLimiterMemoryStoreConfig{
+	//	Rate:      6,
+	//	Burst:     6,
+	//	ExpiresIn: time.Minute * 10,
+	//})),
+	//middleware.RateLimiterWithConfig(middleware.RateLimiterConfig{
+	//
+	//	Store: middleware.NewRateLimiterMemoryStoreWithConfig(
+	//		middleware.RateLimiterMemoryStoreConfig{
+	//			// 1 / 원하는 대기시간?
+	//			//   0.5 = 2s / 0.1 = 10s / 0.01 = 100s /
+	//			Rate:  1,
+	//			Burst: 0,
+	//			//ExpiresIn: time.Millisecond, // 이게 있던없던 그냥 1초당 제한인듯함
+	//		},
+	//	),
+	//}),
+	//)
+	//e.GET("/ws", hello)
 	//e.GET("/dev/search", func(c echo.Context) error {
 	//	return c.JSON(http.StatusOK, db.SearchIndex(c.QueryParam("q")))
 	//})

@@ -136,9 +136,9 @@ func Error(c echo.Context, v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruc
 	fmt.Printf("%s:%d %s.\n", file, line, fname)
 	v.Path = c.Request().RequestURI
 	v.RequestId = c.Response().Header().Get("X-Request-ID")
-	json.Unmarshal(*utils.ToJsonString(c.QueryParams()), &v.Args.QueryParam)
-	json.Unmarshal(*utils.ToJsonString(c.Cookies()), &v.Args.Cookie)
-	json.Unmarshal(*utils.ToJsonString(c.Request().Header), &v.Args.Header)
+	json.Unmarshal(*utils.ToJsonString(c.QueryParams()), &v.Request.QueryParam)
+	json.Unmarshal(*utils.ToJsonString(c.Cookies()), &v.Request.Cookie)
+	json.Unmarshal(*utils.ToJsonString(c.Request().Header), &v.Request.Header)
 	//fmt.Println(string(*utils.ToJsonString(c.QueryParams())))
 
 	z := *v
@@ -154,24 +154,3 @@ func Error(c echo.Context, v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruc
 	return v
 
 }
-
-//func Info(v *bodyStruct.ErrorStruct) (vv *bodyStruct.ErrorStruct) {
-//	z := *v
-//	_, file, line, ok := runtime.Caller(1)
-//	if !ok {
-//		file = "???"
-//		line = 0
-//	}
-//	go func() {
-//
-//		z.SourceFile = fmt.Sprintf("%s:%d", file, line)
-//		webhook.DiscordError(&z)
-//
-//		b, _ := json.Marshal(v)
-//		pterm.Info.Println(time.Now().Format("2006-01-02 15:04:05"), string(b))
-//	}()
-//
-//	//TODO DB 에 저장
-//	return v
-//
-//}

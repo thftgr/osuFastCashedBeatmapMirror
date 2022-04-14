@@ -22,9 +22,15 @@ type config struct {
 		Passwd string `json:"passwd"`
 		Url    string `json:"url"`
 		Table  struct {
-			Log        string `json:"log"`
-			Beatmap    string `json:"beatmap"`
-			BeatmapSet string `json:"beatmapSet"`
+			Log                    string `json:"log"`
+			Beatmap                string `json:"beatmap"`
+			BeatmapSet             string `json:"beatmapSet"`
+			SearchCacheArtist      string `json:"searchCacheArtist"`
+			SearchCacheCreator     string `json:"searchCacheCreator"`
+			SearchCacheStringIndex string `json:"searchCacheStringIndex"`
+			SearchCacheTag         string `json:"searchCacheTag"`
+			SearchCacheTitle       string `json:"searchCacheTitle"`
+			ServerCacheKVJson      string `json:"serverCacheKVJson"`
 		} `json:"table"`
 	} `json:"sql"`
 	Osu struct {

@@ -296,6 +296,7 @@ func stdGETBancho(url string, str interface{}) (err error) {
 }
 
 func updateMapset(s *osu.BeatmapSetsIN) {
+
 	//	beatmapset_id,artist,artist_unicode,creator,favourite_count,
 	//	hype_current,hype_required,nsfw,play_count,source,
 	//	status,title,title_unicode,user_id,video,
@@ -427,22 +428,6 @@ INSERT INTO osu.beatmapset(
 	language_id= VALUES(language_id), language_name= VALUES(language_name), ratings= VALUES(ratings)
 ;
 `
-	//
-	//	coverValue       = `(?,?,?,?,?,?,?,?,?)` //9
-	//	upsertCoverQuery = `
-	//INSERT INTO osu.COVERS(
-	//	BEATMAP_SET_ID,
-	//    COVER,COVER2X,
-	//    CARD,CARD2X,
-	//    LIST,LIST2X,
-	//    SLIMCOVER,SLIMCOVER2X
-	//) VALUES %s ON DUPLICATE KEY UPDATE
-	//	COVER=VALUES(COVER) ,COVER2X=VALUES(COVER2X) ,
-	//	CARD=VALUES(CARD) ,CARD2X=VALUES(CARD2X) ,
-	//	LIST=VALUES(LIST) ,LIST2X=VALUES(LIST2X) ,
-	//	SLIMCOVER=VALUES(SLIMCOVER) ,SLIMCOVER2X=VALUES(SLIMCOVER2X)
-	//;
-	//`
 )
 
 func buildSqlValues(s string, count int) (r string) {
@@ -460,7 +445,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	if len(*data) < 1 {
 		return
 	}
-
+	go db.InsertCache(data)
 	var (
 		setInsertBuf []interface{}
 		mapInsertBuf []interface{}
@@ -471,6 +456,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 	)
 
 	for _, s := range *data {
+
 		beatmapSets = append(beatmapSets, s.Id)
 		coverBuf = append(coverBuf, s.Id, s.Covers.Cover, s.Covers.Cover2X, s.Covers.Card, s.Covers.Card2X, s.Covers.List, s.Covers.List2X, s.Covers.Slimcover, s.Covers.Slimcover2X)
 		setInsertBuf = append(setInsertBuf, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, s.Nsfw, s.PlayCount, s.Source, s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video, s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled, s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current, s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate, s.Tags, s.HasFavourited)
@@ -485,14 +471,6 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 		return err
 	}
 
-	//커버 이미지 주소
-	//if _, err = db.Maria.Exec(fmt.Sprintf(upsertCoverQuery, buildSqlValues(coverValue, len(beatmapSets))), coverBuf...); err != nil {
-	//	pterm.Error.Println(err)
-	//	return err
-	//}
-
-	//맵
-	//fmt.Println(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))))
 	if _, err = db.Maria.Exec(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))), mapInsertBuf...); err != nil {
 		pterm.Error.Println(err)
 		return err
