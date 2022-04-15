@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	//STRING_INDEX     = map[string]*struct{}{}
 	regexpReplace, _ = regexp.Compile(`[^0-9A-z]|[\[\]]`)
 )
 
@@ -67,13 +66,6 @@ func insertStringIndex(data *[]osu.BeatmapSetsIN) {
 		insertData.Strbuf = append(insertData.Strbuf, tags...)
 
 	}
-
-	//Gorm.Clauses(clause.Insert{Modifier: "IGNORE"}).Table("SEARCH_CACHE_STRING_INDEX").Create(&entity.SEARCH_CACHE_STRING_INDEX{
-	//	STRING: "AA",
-	//})
-
-	//pterm.Println(string(*utils.ToJsonString(makeArrayUnique(insertData.Strbuf))))
-	//panic("")
 
 	err := BulkInsertLimiter(
 		"INSERT INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES %s ON DUPLICATE KEY UPDATE STRING= VALUES(STRING);",
