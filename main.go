@@ -88,9 +88,9 @@ func main() {
 	e.GET("/latency", Route.LatencyTest)
 
 	// 맵 파일 다운로드 ===================================================================================================
-	e.GET("/d/:seIid", Route.DownloadBeatmapSet)
+	e.GET("/d/:setId", Route.DownloadBeatmapSet)
 	e.GET("/beatmap/:mapId", Route.DownloadBeatmapSet)
-	e.GET("/beatmapset/:seIid", Route.DownloadBeatmapSet)
+	e.GET("/beatmapset/:setId", Route.DownloadBeatmapSet)
 	//TODO 맵아이디, 맵셋아이디 지원
 	//e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.LoadBalancer)
 
