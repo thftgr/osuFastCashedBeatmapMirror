@@ -47,10 +47,3 @@ func MakeArrayUnique[T comparable](array *[]T) (res []T) {
 	}
 	return
 }
-
-//func FindAllVakuesFromMap[K,V comparable](data map[K]V, keys []K)(values []V){
-//	for _, key := range keys {
-//		if key == nil
-//		values = append(values, )
-//	}
-//}

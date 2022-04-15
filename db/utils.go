@@ -9,7 +9,7 @@ import (
 )
 
 //BulkInsertLimiter query = "INSERT INTO DB.TABLE (A,B,C,D)  VALUES %S ;"
-func BulkInsertLimiter(query, value string, aa []any) (err error) {
+func BulkInsertLimiter(query, value string, aa []interface{}) (err error) {
 	dataSize := len(aa)
 	valueSize := strings.Count(value, "?")
 	if dataSize%valueSize != 0 {
