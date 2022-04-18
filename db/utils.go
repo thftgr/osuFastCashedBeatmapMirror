@@ -23,6 +23,7 @@ func BulkInsertLimiter(query, value string, aa []interface{}) (err error) {
 		if j > dataSize {
 			j = dataSize
 		}
+		//pterm.Info.Println(fmt.Sprintf(query, strings.Join(utils.StringRepeatArray(value, len(aa[i:j])/valueSize), ",")), aa[i:j])
 		if _, err := Maria.Exec(fmt.Sprintf(query, strings.Join(utils.StringRepeatArray(value, len(aa[i:j])/valueSize), ",")), aa[i:j]...); err != nil {
 			pterm.Error.Println("eaa", err)
 		}

@@ -8,12 +8,23 @@ import (
 	"strings"
 )
 
+func init() {
+	cacheChannel = make(chan []osu.BeatmapSetsIN)
+	go func() {
+		for ins := range cacheChannel {
+			insertStringIndex(ins)
+		}
+	}()
+
+}
+
 var (
 	regexpReplace, _ = regexp.Compile(`[^0-9A-z]|[\[\]]`)
+	cacheChannel     chan []osu.BeatmapSetsIN
 )
 
 func InsertCache(data *[]osu.BeatmapSetsIN) {
-	go insertStringIndex(data)
+	cacheChannel <- *data
 
 }
 
@@ -29,7 +40,7 @@ type row struct {
 	BeatmapsetId int
 }
 
-func insertStringIndex(data *[]osu.BeatmapSetsIN) {
+func insertStringIndex(data []osu.BeatmapSetsIN) {
 	//return
 	defer func() {
 		err, e := recover().(error)
@@ -39,7 +50,7 @@ func insertStringIndex(data *[]osu.BeatmapSetsIN) {
 	}()
 	insertData := insertData{}
 
-	for _, in := range *data {
+	for _, in := range data {
 		artist := splitString(*in.Artist)
 		creator := splitString(*in.Creator)
 		title := splitString(*in.Title)
@@ -68,30 +79,30 @@ func insertStringIndex(data *[]osu.BeatmapSetsIN) {
 	}
 
 	err := BulkInsertLimiter(
-		"INSERT IGNORE INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES %s;",
+		"INSERT INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
 		"(?)",
 		makeArrayUnique(insertData.Strbuf),
 	)
 	if err == nil {
 		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_ARTIST (INDEX_KEY,BEATMAPSET_ID) VALUES %s;",
-			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
+			"INSERT INTO SEARCH_CACHE_ARTIST (INDEX_KEY,BEATMAPSET_ID) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
+			"((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
 			toIndexKV(insertData.Artist),
 		)
 
 		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_TITLE (INDEX_KEY,BEATMAPSET_ID) VALUES %s;",
-			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
+			"INSERT INTO SEARCH_CACHE_TITLE (INDEX_KEY,BEATMAPSET_ID) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
+			"((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
 			toIndexKV(insertData.Title),
 		)
 		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_CREATOR (INDEX_KEY,BEATMAPSET_ID) VALUES %s;",
-			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
+			"INSERT INTO SEARCH_CACHE_CREATOR (INDEX_KEY,BEATMAPSET_ID) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
+			"((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
 			toIndexKV(insertData.Creator),
 		)
 		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_TAG (INDEX_KEY,BEATMAPSET_ID) VALUES %s;",
-			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
+			"INSERT INTO SEARCH_CACHE_TAG (INDEX_KEY,BEATMAPSET_ID) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
+			"((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
 			toIndexKV(insertData.Tags),
 		)
 	}
