@@ -23,8 +23,8 @@ var (
 	cacheChannel     chan []osu.BeatmapSetsIN
 )
 
-func InsertCache(data *[]osu.BeatmapSetsIN) {
-	cacheChannel <- *data
+func InsertCache(data []osu.BeatmapSetsIN) {
+	cacheChannel <- data
 
 }
 
@@ -41,69 +41,71 @@ type row struct {
 }
 
 func insertStringIndex(data []osu.BeatmapSetsIN) {
-	//return
 	defer func() {
 		err, e := recover().(error)
 		if e {
 			pterm.Error.Println(err)
 		}
 	}()
-	insertData := insertData{}
+	var insertDataa insertData
+	//pterm.Info.Println(unsafe.Pointer(&insertDataa), string(*utils.ToJsonString(insertDataa)))
 
 	for _, in := range data {
+
 		artist := splitString(*in.Artist)
 		creator := splitString(*in.Creator)
 		title := splitString(*in.Title)
 		tags := splitString(*in.Tags)
-		insertData.Artist = append(insertData.Artist, row{
+		insertDataa.Artist = append(insertDataa.Artist, row{
 			KEY:          artist,
 			BeatmapsetId: in.Id,
 		})
-		insertData.Creator = append(insertData.Creator, row{
+		insertDataa.Creator = append(insertDataa.Creator, row{
 			KEY:          creator,
 			BeatmapsetId: in.Id,
 		})
-		insertData.Title = append(insertData.Title, row{
+		insertDataa.Title = append(insertDataa.Title, row{
 			KEY:          title,
 			BeatmapsetId: in.Id,
 		})
-		insertData.Tags = append(insertData.Tags, row{
+		insertDataa.Tags = append(insertDataa.Tags, row{
 			KEY:          tags,
 			BeatmapsetId: in.Id,
 		})
-		insertData.Strbuf = append(insertData.Strbuf, artist...)
-		insertData.Strbuf = append(insertData.Strbuf, creator...)
-		insertData.Strbuf = append(insertData.Strbuf, title...)
-		insertData.Strbuf = append(insertData.Strbuf, tags...)
+		insertDataa.Strbuf = append(insertDataa.Strbuf, artist...)
+		insertDataa.Strbuf = append(insertDataa.Strbuf, creator...)
+		insertDataa.Strbuf = append(insertDataa.Strbuf, title...)
+		insertDataa.Strbuf = append(insertDataa.Strbuf, tags...)
 
 	}
+	//pterm.Info.Println(string(*utils.ToJsonString(insertDataa))[:100])
 
 	err := BulkInsertLimiter(
 		"INSERT INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
 		"(?)",
-		makeArrayUnique(insertData.Strbuf),
+		makeArrayUnique(insertDataa.Strbuf),
 	)
 	if err == nil {
 		_ = BulkInsertLimiter(
 			"INSERT INTO SEARCH_CACHE_ARTIST (INDEX_KEY,BEATMAPSET_ID) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
 			"((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
-			toIndexKV(insertData.Artist),
+			toIndexKV(insertDataa.Artist),
 		)
 
 		_ = BulkInsertLimiter(
 			"INSERT INTO SEARCH_CACHE_TITLE (INDEX_KEY,BEATMAPSET_ID) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
 			"((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
-			toIndexKV(insertData.Title),
+			toIndexKV(insertDataa.Title),
 		)
 		_ = BulkInsertLimiter(
 			"INSERT INTO SEARCH_CACHE_CREATOR (INDEX_KEY,BEATMAPSET_ID) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
 			"((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
-			toIndexKV(insertData.Creator),
+			toIndexKV(insertDataa.Creator),
 		)
 		_ = BulkInsertLimiter(
 			"INSERT INTO SEARCH_CACHE_TAG (INDEX_KEY,BEATMAPSET_ID) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
 			"((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
-			toIndexKV(insertData.Tags),
+			toIndexKV(insertDataa.Tags),
 		)
 	}
 

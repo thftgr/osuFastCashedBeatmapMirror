@@ -122,14 +122,16 @@ func getUpdatedMapRanked() {
 			pterm.Error.Println(err)
 		}
 	}()
-	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=ranked"
+	url := "https://osu.ppy.sh/beatmapsets/search?nsfw=true&s=ranked"
 
 	var data osu.BeatmapsetsSearch
 
 	if err = stdGETBancho(url, &data); err != nil {
 		return
 	}
-	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
+	//pterm.Info.Println("getUpdatedMapRanked", string(*utils.ToJsonString(*data.Beatmapsets))[:100])
+
+	if err = updateSearchBeatmaps(*data.Beatmapsets); err != nil {
 		return
 	}
 
@@ -143,13 +145,14 @@ func getUpdatedMapLoved() {
 			pterm.Error.Println(err)
 		}
 	}()
-	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=loved"
+	url := "https://osu.ppy.sh/beatmapsets/search?nsfw=true&s=loved"
 
 	var data osu.BeatmapsetsSearch
 	if err = stdGETBancho(url, &data); err != nil {
 		return
 	}
-	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
+	//pterm.Info.Println("getUpdatedMapLoved", string(*utils.ToJsonString(*data.Beatmapsets))[:100])
+	if err = updateSearchBeatmaps(*data.Beatmapsets); err != nil {
 		return
 	}
 	return
@@ -161,13 +164,14 @@ func getUpdatedMapQualified() {
 			pterm.Error.Println(err)
 		}
 	}()
-	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=qualified"
+	url := "https://osu.ppy.sh/beatmapsets/search?nsfw=true&s=qualified"
 
 	var data osu.BeatmapsetsSearch
 	if err = stdGETBancho(url, &data); err != nil {
 		return
 	}
-	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
+	//pterm.Info.Println("getUpdatedMapQualified", string(*utils.ToJsonString(*data.Beatmapsets))[:100])
+	if err = updateSearchBeatmaps(*data.Beatmapsets); err != nil {
 		return
 	}
 	return
@@ -183,9 +187,9 @@ func getGraveyardMap() {
 	url := ""
 	cs := &config.Config.Osu.BeatmapUpdate.GraveyardAsc.CursorString
 	if *cs != "" {
-		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor_string=" + *cs
+		url = "https://osu.ppy.sh/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor_string=" + *cs
 	} else {
-		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard"
+		url = "https://osu.ppy.sh/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard"
 	}
 
 	var data osu.BeatmapsetsSearch
@@ -197,7 +201,8 @@ func getGraveyardMap() {
 	if data.CursorString == "" {
 		return
 	}
-	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
+	//pterm.Info.Println("getGraveyardMap", string(*utils.ToJsonString(*data.Beatmapsets))[:100])
+	if err = updateSearchBeatmaps(*data.Beatmapsets); err != nil {
 		return
 	}
 	if data.CursorString == "" {
@@ -213,7 +218,7 @@ func getUpdatedMapDesc() {
 			pterm.Error.Println(err)
 		}
 	}()
-	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_desc&s=any"
+	url := "https://osu.ppy.sh/beatmapsets/search?nsfw=true&sort=updated_desc&s=any"
 
 	var data osu.BeatmapsetsSearch
 
@@ -221,7 +226,8 @@ func getUpdatedMapDesc() {
 		return
 	}
 
-	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
+	//pterm.Info.Println("getUpdatedMapDesc", string(*utils.ToJsonString(*data.Beatmapsets))[:100])
+	if err = updateSearchBeatmaps(*data.Beatmapsets); err != nil {
 		return
 	}
 	if data.CursorString == "" {
@@ -241,10 +247,11 @@ func getUpdatedMapAsc() {
 	url := ""
 	cs := &config.Config.Osu.BeatmapUpdate.UpdatedAsc.CursorString
 	if *cs != "" {
-		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any&cursor_string=" + *cs
+		url = "https://osu.ppy.sh/beatmapsets/search?nsfw=true&sort=updated_asc&s=any&cursor_string=" + *cs
 	} else {
-		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any"
+		url = "https://osu.ppy.sh/beatmapsets/search?nsfw=true&sort=updated_asc&s=any"
 	}
+	//pterm.Info.Println(url)
 
 	var data osu.BeatmapsetsSearch
 
@@ -253,7 +260,9 @@ func getUpdatedMapAsc() {
 		return
 	}
 
-	if err = updateSearchBeatmaps(data.Beatmapsets); err != nil {
+	//pterm.Info.Println(url, data.CursorString)
+	//pterm.Info.Println(data.CursorString, url, string(*utils.ToJsonString(*data.Beatmapsets))[:200])
+	if err = updateSearchBeatmaps(*data.Beatmapsets); err != nil {
 		return
 	}
 	if data.CursorString == "" {
@@ -272,6 +281,7 @@ func stdGETBancho(url string, str interface{}) (err error) {
 	}
 
 	req.Header.Add("Authorization", config.Config.Osu.Token.TokenType+" "+config.Config.Osu.Token.AccessToken)
+	req.Header.Add("Content-Type", "Application/json")
 
 	res, err := client.Do(req)
 	apicountAdd()
@@ -438,11 +448,12 @@ func buildSqlValues(s string, count int) (r string) {
 	return strings.Join(sbuf, ",")
 }
 
-func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
+func updateSearchBeatmaps(data []osu.BeatmapSetsIN) (err error) {
+
 	if data == nil {
 		return
 	}
-	if len(*data) < 1 {
+	if len(data) < 1 {
 		return
 	}
 	go db.InsertCache(data)
@@ -455,7 +466,7 @@ func updateSearchBeatmaps(data *[]osu.BeatmapSetsIN) (err error) {
 		deletedMaps  []int
 	)
 
-	for _, s := range *data {
+	for _, s := range data {
 
 		beatmapSets = append(beatmapSets, s.Id)
 		coverBuf = append(coverBuf, s.Id, s.Covers.Cover, s.Covers.Cover2X, s.Covers.Card, s.Covers.Card2X, s.Covers.List, s.Covers.List2X, s.Covers.Slimcover, s.Covers.Slimcover2X)
