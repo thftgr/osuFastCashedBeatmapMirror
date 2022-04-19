@@ -37,7 +37,7 @@ func ConnectMaria() {
 
 	orm, err := gorm.Open(mysql.New(mysql.Config{Conn: Maria}), &gorm.Config{
 		AllowGlobalUpdate: true,
-		Logger:            logger.Default.LogMode(logger.Info),
+		Logger:            logger.Default.LogMode(logger.Error),
 		CreateBatchSize:   100,
 	})
 	if Gorm = orm; orm != nil {

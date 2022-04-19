@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-//BulkInsertLimiter query = "INSERT INTO DB.TABLE (A,B,C,D)  VALUES %S ;"
+//BulkInsertLimiter Query = "INSERT INTO DB.TABLE (A,B,C,D)  VALUES %S ;"
 func BulkInsertLimiter(query, value string, aa []interface{}) (err error) {
 	dataSize := len(aa)
 	valueSize := strings.Count(value, "?")
@@ -23,7 +23,7 @@ func BulkInsertLimiter(query, value string, aa []interface{}) (err error) {
 		if j > dataSize {
 			j = dataSize
 		}
-		//pterm.Info.Println(fmt.Sprintf(query, strings.Join(utils.StringRepeatArray(value, len(aa[i:j])/valueSize), ",")), aa[i:j])
+		//pterm.Info.Println(fmt.Sprintf(Query, strings.Join(utils.StringRepeatArray(value, len(aa[i:j])/valueSize), ",")), aa[i:j])
 		if _, err := Maria.Exec(fmt.Sprintf(query, strings.Join(utils.StringRepeatArray(value, len(aa[i:j])/valueSize), ",")), aa[i:j]...); err != nil {
 			pterm.Error.Println("eaa", err)
 		}

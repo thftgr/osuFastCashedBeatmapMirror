@@ -2,6 +2,7 @@ package db
 
 import (
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
+	"github.com/Nerinyan/Nerinyan-APIV2/utils"
 	"github.com/dchest/stemmer/porter2"
 	"github.com/pterm/pterm"
 	"regexp"
@@ -78,12 +79,12 @@ func insertStringIndex(data []osu.BeatmapSetsIN) {
 		insertDataa.Strbuf = append(insertDataa.Strbuf, tags...)
 
 	}
-	//pterm.Info.Println(string(*utils.ToJsonString(insertDataa))[:100])
+	pterm.Info.Println(string(*utils.ToJsonString(insertDataa))[:100])
 
 	err := BulkInsertLimiter(
 		"INSERT INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES %s ON DUPLICATE KEY UPDATE TMP = 1;",
 		"(?)",
-		makeArrayUnique(insertDataa.Strbuf),
+		utils.MakeArrayUnique(&insertDataa.Strbuf),
 	)
 	if err == nil {
 		_ = BulkInsertLimiter(
@@ -128,17 +129,4 @@ func splitString(input string) (ss []string) {
 		ss = append(ss, s, porter2.Stemmer.Stem(s))
 	}
 	return
-}
-
-func makeArrayUnique(array []string) []interface{} {
-
-	keys := make(map[string]struct{})
-	res := make([]interface{}, 0)
-	for _, s := range array {
-		keys[s] = struct{}{}
-	}
-	for i := range keys {
-		res = append(res, i)
-	}
-	return res
 }
