@@ -121,7 +121,7 @@ func getUpdatedMapRanked() {
 			pterm.Error.Println(err)
 		}
 	}()
-	url := "https://osu.ppy.sh/beatmapsets/search?nsfw=true&s=ranked"
+	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=ranked"
 
 	var data osu.BeatmapsetsSearch
 
@@ -144,7 +144,7 @@ func getUpdatedMapLoved() {
 			pterm.Error.Println(err)
 		}
 	}()
-	url := "https://osu.ppy.sh/beatmapsets/search?nsfw=true&s=loved"
+	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=loved"
 
 	var data osu.BeatmapsetsSearch
 	if err = stdGETBancho(url, &data); err != nil {
@@ -163,7 +163,7 @@ func getUpdatedMapQualified() {
 			pterm.Error.Println(err)
 		}
 	}()
-	url := "https://osu.ppy.sh/beatmapsets/search?nsfw=true&s=qualified"
+	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=qualified"
 
 	var data osu.BeatmapsetsSearch
 	if err = stdGETBancho(url, &data); err != nil {
@@ -186,9 +186,9 @@ func getGraveyardMap() {
 	url := ""
 	cs := &config.Config.Osu.BeatmapUpdate.GraveyardAsc.CursorString
 	if *cs != "" {
-		url = "https://osu.ppy.sh/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor_string=" + *cs
+		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard&cursor_string=" + *cs
 	} else {
-		url = "https://osu.ppy.sh/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard"
+		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=graveyard"
 	}
 
 	var data osu.BeatmapsetsSearch
@@ -214,7 +214,7 @@ func getUpdatedMapDesc() {
 			pterm.Error.Println(err)
 		}
 	}()
-	url := "https://osu.ppy.sh/beatmapsets/search?nsfw=true&sort=updated_desc&s=any"
+	url := "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_desc&s=any"
 
 	var data osu.BeatmapsetsSearch
 
@@ -243,9 +243,9 @@ func getUpdatedMapAsc() {
 	url := ""
 	cs := &config.Config.Osu.BeatmapUpdate.UpdatedAsc.CursorString
 	if *cs != "" {
-		url = "https://osu.ppy.sh/beatmapsets/search?nsfw=true&sort=updated_asc&s=any&cursor_string=" + *cs
+		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any&cursor_string=" + *cs
 	} else {
-		url = "https://osu.ppy.sh/beatmapsets/search?nsfw=true&sort=updated_asc&s=any"
+		url = "https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&sort=updated_asc&s=any"
 	}
 
 	var data osu.BeatmapsetsSearch
@@ -265,6 +265,7 @@ func getUpdatedMapAsc() {
 }
 
 func stdGETBancho(url string, str interface{}) (err error) {
+	pterm.Info.Printfln("%s | %-50s | URL : %s", time.Now().Format("15:04:05.000"), pterm.Yellow("BANCHO CRAWLER"), url)
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 
@@ -354,7 +355,7 @@ func upsertMap(m osu.BeatmapIN) {
 }
 
 const (
-	UpsertBeatmap = `
+	UpsertBeatmap = `/* UPSERT BEATMAP */
 	INSERT INTO osu.beatmap
 		(
 			beatmap_id,beatmapset_id,mode,mode_int,status,	ranked,total_length,max_combo,difficulty_rating,version,
@@ -373,7 +374,7 @@ const (
 			is_scoreable = VALUES(is_scoreable), last_updated = VALUES(last_updated), passcount = VALUES(passcount), playcount = VALUES(playcount), 
 			checksum = VALUES(checksum), user_id = VALUES(user_id);`
 
-	setUpsert = `
+	setUpsert = `/* UPSERT BEATMAPSET */
 		INSERT INTO osu.beatmapset (
 			beatmapset_id,artist,artist_unicode,creator,favourite_count,
 			nsfw,play_count,source,
@@ -395,7 +396,7 @@ const (
 			tags = VALUES(tags), has_favourited = VALUES(has_favourited);`
 	setValues = `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)` //30
 
-	mapUpsert = `
+	mapUpsert = `/* UPSERT BEATMAP */
 		INSERT INTO osu.beatmap (	
 			beatmap_id,beatmapset_id,mode,mode_int,status,	ranked,total_length,max_combo,difficulty_rating,version,
 			accuracy,ar,cs,drain,bpm,` + "`convert`" + `,count_circles,count_sliders,count_spinners,deleted_at,
@@ -414,6 +415,7 @@ const (
 	selectDeletedMaps = `select beatmap_id from osu.beatmap where beatmapset_id in (%s) AND beatmap_id not in (%s)`
 	deleteMap         = `delete from osu.beatmap where beatmap_id in (%s);`
 	UpsertBeatmapSet  = `
+/* UPSERT BEATMAPSET */
 INSERT INTO osu.beatmapset(
 	beatmapset_id,artist,artist_unicode,creator,favourite_count,
 	hype_current,hype_required,nsfw,play_count,source,

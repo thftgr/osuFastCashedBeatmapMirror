@@ -15,6 +15,7 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/Nerinyan/Nerinyan-APIV2/utils"
 	"github.com/labstack/echo/v4"
+	"github.com/pterm/pterm"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -263,51 +264,44 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 	var query bytes.Buffer
 	var setAnd []string // 맵셋 	AND 문
 	var mapAnd []string // 맵	AND 문
-
-	query.WriteString(searchBaseQuery)
-
-	query.WriteString(config.Config.Sql.Table.BeatmapSet)
-	query.WriteString(" AS A ")
-
+	var textSearchQuery []string
 	if s.Text != "" {
-
-		var textSearchQuery []string
-		if s.OptionB&0x01 == 0x01 {
-			textSearchQuery = append(textSearchQuery, `
-SELECT BEATMAPSET_ID from SEARCH_CACHE_ARTIST 
-WHERE INDEX_KEY IN ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text )
-GROUP BY BEATMAPSET_ID having count(*) >= @textCount
-`)
-		}
-		if s.OptionB&0x02 == 0x02 {
-
-			textSearchQuery = append(textSearchQuery, `
-SELECT BEATMAPSET_ID from SEARCH_CACHE_CREATOR 
-WHERE INDEX_KEY IN ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text )
-GROUP BY BEATMAPSET_ID having count(*) >= @textCount
-`)
-		}
-		if s.OptionB&0x04 == 0x04 {
-
-			textSearchQuery = append(textSearchQuery, `
-SELECT BEATMAPSET_ID from SEARCH_CACHE_TAG 
-WHERE INDEX_KEY IN ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text )
-GROUP BY BEATMAPSET_ID having count(*) >= @textCount
-`)
-		}
-		if s.OptionB&0x08 == 0x08 {
-
-			textSearchQuery = append(textSearchQuery, `
-SELECT BEATMAPSET_ID from SEARCH_CACHE_TITLE 
-WHERE INDEX_KEY IN ( SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text )
-GROUP BY BEATMAPSET_ID having count(*) >= @textCount
-`)
-		}
 		text := splitString(s.Text)
+		text = utils.MakeArrayUnique(&text)
+
+		if s.OptionB&0x01 == 0x01 {
+			textSearchQuery = append(textSearchQuery,
+				`SELECT BEATMAPSET_ID from SEARCH_CACHE_ARTIST  WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+			)
+		}
+
+		if s.OptionB&0x02 == 0x02 {
+			textSearchQuery = append(textSearchQuery,
+				`SELECT BEATMAPSET_ID from SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+			)
+		}
+
+		if s.OptionB&0x04 == 0x04 {
+			textSearchQuery = append(textSearchQuery,
+				`SELECT BEATMAPSET_ID from SEARCH_CACHE_TAG     WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+			)
+		}
+
+		if s.OptionB&0x08 == 0x08 {
+			textSearchQuery = append(textSearchQuery,
+				`SELECT BEATMAPSET_ID from SEARCH_CACHE_TITLE   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+			)
+		}
+
+		if s.OptionB == 0xFF {
+			textSearchQuery = append(textSearchQuery,
+				`SELECT BEATMAPSET_ID from SEARCH_CACHE_OTHER   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+			)
+		}
+
 		args = append(args, sql.Named("text", text))           //TODO 검색어 어레이
 		args = append(args, sql.Named("textCount", len(text))) //TODO 검색어 어레이.len
-
-		setAnd = append(setAnd, "beatmapset_id IN (SELECT BEATMAPSET_ID from ("+strings.Join(textSearchQuery, " UNION ALL ")+") A)")
+		query.WriteString(`WITH SCSI AS (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text) `)
 
 	}
 	if s.Ranked != "all" {
@@ -357,6 +351,15 @@ GROUP BY BEATMAPSET_ID having count(*) >= @textCount
 	if len(mapAnd) > 0 { // beatmapset_id IN ()
 		mapAnd = append([]string{"beatmapset_id IN (A.beatmapset_id)"}, mapAnd...)
 		setAnd = append(setAnd, "beatmapset_id IN (select beatmapset_id from "+config.Config.Sql.Table.Beatmap+" where "+strings.Join(mapAnd, " AND ")+" )")
+	}
+
+	query.WriteString(searchBaseQuery)
+
+	query.WriteString(config.Config.Sql.Table.BeatmapSet + " AS MAPSET ")
+	if len(textSearchQuery) > 0 {
+		query.WriteString(" INNER JOIN ( SELECT * FROM (")
+		query.WriteString(strings.Join(textSearchQuery, " UNION ALL "))
+		query.WriteString(")A GROUP BY BEATMAPSET_ID having count(*) >= @textCount) AS TEXTINDEX on MAPSET.beatmapset_id = TEXTINDEX.BEATMAPSET_ID")
 	}
 	if len(setAnd) > 0 { // SELECT * FROM osu.beatmapset WHERE ranked in (4,2,1) AND nsfw = 1 ...
 		query.WriteString(" WHERE " + strings.Join(setAnd, " AND "))
@@ -412,6 +415,7 @@ func Search(c echo.Context) (err error) {
 
 	q, args := sq.queryBuilder2()
 
+	pterm.Info.Println(q)
 	rows, err := db.Gorm.Raw(q, args...).Rows()
 
 	if err != nil {

@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"log"
+	"strings"
 )
 
 func ToJsonIndentString(i interface{}) (str *[]byte) {
@@ -46,4 +47,23 @@ func MakeArrayUnique[T comparable](array *[]T) (res []T) {
 		res = append(res, i)
 	}
 	return
+}
+func MakeArrayUniqueInterface[T comparable](array *[]T) (res []interface{}) {
+
+	keys := make(map[T]struct{})
+	for _, s := range *array {
+		keys[s] = struct{}{}
+	}
+	for i := range keys {
+		res = append(res, i)
+	}
+	return
+}
+func StringRepeatJoin(str, sep string, count int) string {
+	var repeatBuf []string
+	for i := 0; i < count; i++ {
+		repeatBuf = append(repeatBuf, str)
+	}
+	return strings.Join(repeatBuf, sep)
+
 }
