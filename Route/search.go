@@ -246,17 +246,16 @@ type SearchQuery struct {
 	MapId    int `param:"mi"` // 맵id로 검색
 }
 
-var searchBaseQuery = `
-SELECT 
-	beatmapset_id, artist, artist_unicode, creator, favourite_count,
-	hype_current, hype_required, nsfw, play_count, source, status,
-	title, title_unicode, user_id, video, availability_download_disabled,
-	availability_more_information, bpm, can_be_hyped, discussion_enabled,
-	discussion_locked, is_scoreable, last_updated, legacy_thread_url,
-	nominations_summary_current, nominations_summary_required, ranked,
-	ranked_date, storyboard, submitted_date, tags, has_favourited,
-	description, genre_id, genre_name, language_id, language_name, ratings
-from `
+var searchBaseQuery = `SELECT 
+    MAPSET.beatmapset_id, artist, artist_unicode, creator, favourite_count,
+    hype_current, hype_required, nsfw, play_count, source, status,
+    title, title_unicode, user_id, video, availability_download_disabled,
+    availability_more_information, bpm, can_be_hyped, discussion_enabled,
+    discussion_locked, is_scoreable, last_updated, legacy_thread_url,
+    nominations_summary_current, nominations_summary_required, ranked,
+    ranked_date, storyboard, submitted_date, tags, has_favourited,
+    description, genre_id, genre_name, language_id, language_name, ratings
+from`
 
 func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 	s.parseQuery()
@@ -301,7 +300,7 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 
 		args = append(args, sql.Named("text", text))           //TODO 검색어 어레이
 		args = append(args, sql.Named("textCount", len(text))) //TODO 검색어 어레이.len
-		query.WriteString(`WITH SCSI AS (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text) `)
+		query.WriteString("WITH SCSI AS (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text)\n")
 
 	}
 	if s.Ranked != "all" {
@@ -355,17 +354,26 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 
 	query.WriteString(searchBaseQuery)
 
-	query.WriteString(config.Config.Sql.Table.BeatmapSet + " AS MAPSET ")
 	if len(textSearchQuery) > 0 {
-		query.WriteString(" INNER JOIN ( SELECT * FROM (")
-		query.WriteString(strings.Join(textSearchQuery, " UNION ALL "))
-		query.WriteString(")A GROUP BY BEATMAPSET_ID having count(*) >= @textCount) AS TEXTINDEX on MAPSET.beatmapset_id = TEXTINDEX.BEATMAPSET_ID")
+
+		query.WriteString("( SELECT BEATMAPSET_ID FROM(\n")
+		query.WriteString("              ")
+		query.WriteString(strings.Join(textSearchQuery, "\n    UNION ALL ") + "\n")
+		query.WriteString(") TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(1) >= @textCount )  TEXTINDEX \n")
+		//query.WriteString(") TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(1) >= (SELECT COUNT(1) FROM SCSI) )  TEXTINDEX \n")
+
+		query.WriteString("LEFT JOIN beatmapset MAPSET on TEXTINDEX.BEATMAPSET_ID = MAPSET.beatmapset_id\n")
+	} else {
+		query.WriteString(config.Config.Sql.Table.BeatmapSet + " AS MAPSET \n")
 	}
 	if len(setAnd) > 0 { // SELECT * FROM osu.beatmapset WHERE ranked in (4,2,1) AND nsfw = 1 ...
-		query.WriteString(" WHERE " + strings.Join(setAnd, " AND "))
+		query.WriteString("WHERE " + strings.Join(setAnd, " AND ") + "\n")
 	}
-
-	query.WriteString(" ORDER BY " + utils.TernaryOperator(orderBy[s.Sort] == "", orderBy["default"], orderBy[s.Sort]) + " " + s.Page + ";")
+	if len(textSearchQuery) > 0 {
+		query.WriteString("GROUP BY TEXTINDEX.BEATMAPSET_ID ,MAPSET.ranked_date \n")
+	}
+	query.WriteString("ORDER BY " + utils.TernaryOperator(orderBy[s.Sort] == "", orderBy["default"], orderBy[s.Sort]) + "\n")
+	query.WriteString(s.Page + ";")
 	qs = query.String()
 
 	return
