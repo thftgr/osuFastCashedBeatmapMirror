@@ -13,6 +13,10 @@ import (
 var Maria *sql.DB
 var Gorm *gorm.DB
 
+//TODO my.cnf 에 innodb_autoinc_lock_mode=0 추가해야함
+//TODO
+//TODO
+//TODO
 func ConnectMaria() {
 
 	db, err := sql.Open("mysql", config.Config.Sql.Url)
@@ -22,6 +26,7 @@ func ConnectMaria() {
 		pterm.Success.Println("RDBMS connected")
 
 		if _, err = Maria.Exec("SET SQL_SAFE_UPDATES = 0;"); err != nil {
+
 			pterm.Error.Println("SET SQL_SAFE_UPDATES FAIL.")
 			panic(err)
 		}
@@ -32,7 +37,7 @@ func ConnectMaria() {
 
 	orm, err := gorm.Open(mysql.New(mysql.Config{Conn: Maria}), &gorm.Config{
 		AllowGlobalUpdate: true,
-		Logger:            logger.Default.LogMode(logger.Info),
+		Logger:            logger.Default.LogMode(logger.Error),
 		CreateBatchSize:   100,
 	})
 	if Gorm = orm; orm != nil {

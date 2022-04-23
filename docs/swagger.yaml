@@ -1,8 +1,0 @@
-basePath: /
-host: api.nerinyan.moe
-info:
-  contact: {}
-  title: Nerinyan API
-  version: "2.0"
-paths: {}
-swagger: "2.0"

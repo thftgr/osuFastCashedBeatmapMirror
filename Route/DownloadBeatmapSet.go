@@ -23,8 +23,8 @@ import (
 type downloadBeatmapSet_requestBody struct {
 	NoVideo  bool `query:"noVideo"`
 	NoVideo2 bool `query:"nv"`
-	MapId    int  `param:"MapId"`
-	SetId    int  `param:"SetId"`
+	MapId    int  `param:"mapId"`
+	SetId    int  `param:"setId"`
 }
 
 func DownloadBeatmapSet(c echo.Context) (err error) {

@@ -2,19 +2,31 @@ package db
 
 import (
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
+	"github.com/Nerinyan/Nerinyan-APIV2/utils"
 	"github.com/dchest/stemmer/porter2"
 	"github.com/pterm/pterm"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
+func init() {
+	cacheChannel = make(chan []osu.BeatmapSetsIN)
+	go func() {
+		for ins := range cacheChannel {
+			insertStringIndex(ins)
+		}
+	}()
+
+}
+
 var (
-	//STRING_INDEX     = map[string]*struct{}{}
 	regexpReplace, _ = regexp.Compile(`[^0-9A-z]|[\[\]]`)
+	cacheChannel     chan []osu.BeatmapSetsIN
 )
 
-func InsertCache(data *[]osu.BeatmapSetsIN) {
-	go insertStringIndex(data)
+func InsertCache(data []osu.BeatmapSetsIN) {
+	cacheChannel <- data
 
 }
 
@@ -24,86 +36,107 @@ type insertData struct {
 	Creator []row
 	Title   []row
 	Tags    []row
+	Other   []row
 }
 type row struct {
 	KEY          []string
 	BeatmapsetId int
 }
 
-func insertStringIndex(data *[]osu.BeatmapSetsIN) {
-	//return
+func insertStringIndex(data []osu.BeatmapSetsIN) {
 	defer func() {
 		err, e := recover().(error)
 		if e {
 			pterm.Error.Println(err)
 		}
 	}()
-	insertData := insertData{}
+	var insertDataa insertData
+	//pterm.Info.Println(unsafe.Pointer(&insertDataa), string(*utils.ToJsonString(insertDataa)))
 
-	for _, in := range *data {
+	for _, in := range data {
+
 		artist := splitString(*in.Artist)
 		creator := splitString(*in.Creator)
 		title := splitString(*in.Title)
 		tags := splitString(*in.Tags)
-		insertData.Artist = append(insertData.Artist, row{
-			KEY:          artist,
+		insertDataa.Artist = append(insertDataa.Artist, row{
+			KEY:          utils.MakeArrayUnique(&artist),
 			BeatmapsetId: in.Id,
 		})
-		insertData.Creator = append(insertData.Creator, row{
-			KEY:          creator,
+		insertDataa.Creator = append(insertDataa.Creator, row{
+			KEY:          utils.MakeArrayUnique(&creator),
 			BeatmapsetId: in.Id,
 		})
-		insertData.Title = append(insertData.Title, row{
-			KEY:          title,
+		insertDataa.Title = append(insertDataa.Title, row{
+			KEY:          utils.MakeArrayUnique(&title),
 			BeatmapsetId: in.Id,
 		})
-		insertData.Tags = append(insertData.Tags, row{
-			KEY:          tags,
+		insertDataa.Tags = append(insertDataa.Tags, row{
+			KEY:          utils.MakeArrayUnique(&tags),
 			BeatmapsetId: in.Id,
 		})
-		insertData.Strbuf = append(insertData.Strbuf, artist...)
-		insertData.Strbuf = append(insertData.Strbuf, creator...)
-		insertData.Strbuf = append(insertData.Strbuf, title...)
-		insertData.Strbuf = append(insertData.Strbuf, tags...)
+		insertDataa.Strbuf = append(insertDataa.Strbuf, artist...)
+		insertDataa.Strbuf = append(insertDataa.Strbuf, creator...)
+		insertDataa.Strbuf = append(insertDataa.Strbuf, title...)
+		insertDataa.Strbuf = append(insertDataa.Strbuf, tags...)
+		insertDataa.Strbuf = append(insertDataa.Strbuf, strconv.Itoa(in.Id))
+		for _, beatmapIN := range *in.Beatmaps {
+			other := splitString(*beatmapIN.Version)
+			insertDataa.Strbuf = append(insertDataa.Strbuf, other...)
+			insertDataa.Strbuf = append(insertDataa.Strbuf, strconv.Itoa(beatmapIN.Id))
+			insertDataa.Other = append(insertDataa.Other, row{
+				KEY:          []string{strconv.Itoa(beatmapIN.Id)},
+				BeatmapsetId: beatmapIN.BeatmapsetId,
+			})
+			insertDataa.Other = append(insertDataa.Other, row{
+				KEY:          []string{strconv.Itoa(beatmapIN.BeatmapsetId)},
+				BeatmapsetId: beatmapIN.BeatmapsetId,
+			})
+			insertDataa.Other = append(insertDataa.Other, row{
+				KEY:          other,
+				BeatmapsetId: beatmapIN.BeatmapsetId,
+			})
+		}
 
 	}
-
-	//Gorm.Clauses(clause.Insert{Modifier: "IGNORE"}).Table("SEARCH_CACHE_STRING_INDEX").Create(&entity.SEARCH_CACHE_STRING_INDEX{
-	//	STRING: "AA",
-	//})
-
-	//pterm.Println(string(*utils.ToJsonString(makeArrayUnique(insertData.Strbuf))))
-	//panic("")
-
-	err := BulkInsertLimiter(
-		"INSERT IGNORE INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES %s ;",
-		"(?)",
-		makeArrayUnique(insertData.Strbuf),
-	)
-	if err == nil {
-		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_ARTIST (INDEX_KEY,BEATMAPSET_ID) VALUES %s ;",
-			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
-			toIndexKV(insertData.Artist),
-		)
-
-		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_TITLE (INDEX_KEY,BEATMAPSET_ID) VALUES %s ;",
-			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
-			toIndexKV(insertData.Title),
-		)
-		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_CREATOR (INDEX_KEY,BEATMAPSET_ID) VALUES %s ;",
-			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
-			toIndexKV(insertData.Creator),
-		)
-		_ = BulkInsertLimiter(
-			"INSERT IGNORE INTO SEARCH_CACHE_TAG (INDEX_KEY,BEATMAPSET_ID) VALUES %s ;",
-			"((SELECT ID FROM  SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)",
-			toIndexKV(insertData.Tags),
+	if idata := utils.MakeArrayUniqueInterface(&insertDataa.Strbuf); len(idata) > 0 {
+		AddInsertQueue("/* INSERT SEARCH_CACHE_STRING_INDEX */ INSERT INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES "+utils.StringRepeatJoin("(?)", ",", len(idata))+" ON DUPLICATE KEY UPDATE TMP = 1;",
+			idata...,
 		)
 	}
 
+	if idata := toIndexKV(insertDataa.Artist); len(idata) > 0 {
+		AddInsertQueue("/* INSERT SEARCH_CACHE_ARTIST */ INSERT INTO SEARCH_CACHE_ARTIST (INDEX_KEY,BEATMAPSET_ID) VALUES "+
+			utils.StringRepeatJoin("((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)", ",", len(idata)/2)+
+			" ON DUPLICATE KEY UPDATE TMP = 1;", idata...,
+		)
+	}
+
+	if idata := toIndexKV(insertDataa.Title); len(idata) > 0 {
+		AddInsertQueue("/* INSERT SEARCH_CACHE_TITLE */ INSERT INTO SEARCH_CACHE_TITLE (INDEX_KEY,BEATMAPSET_ID) VALUES "+
+			utils.StringRepeatJoin("((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)", ",", len(idata)/2)+
+			" ON DUPLICATE KEY UPDATE TMP = 1;", idata...,
+		)
+	}
+
+	if idata := toIndexKV(insertDataa.Creator); len(idata) > 0 {
+		AddInsertQueue("/* INSERT SEARCH_CACHE_CREATOR */ INSERT INTO SEARCH_CACHE_CREATOR (INDEX_KEY,BEATMAPSET_ID) VALUES "+
+			utils.StringRepeatJoin("((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)", ",", len(idata)/2)+
+			" ON DUPLICATE KEY UPDATE TMP = 1;", idata...,
+		)
+	}
+	if idata := toIndexKV(insertDataa.Tags); len(idata) > 0 {
+		AddInsertQueue("/* INSERT SEARCH_CACHE_TAG */ INSERT INTO SEARCH_CACHE_TAG (INDEX_KEY,BEATMAPSET_ID) VALUES "+
+			utils.StringRepeatJoin("((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)", ",", len(idata)/2)+
+			" ON DUPLICATE KEY UPDATE TMP = 1;", idata...,
+		)
+	}
+	if idata := toIndexKV(insertDataa.Other); len(idata) > 0 {
+		AddInsertQueue("/* INSERT SEARCH_CACHE_OTHER */ INSERT INTO SEARCH_CACHE_OTHER (INDEX_KEY,BEATMAPSET_ID) VALUES "+
+			utils.StringRepeatJoin("((SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE `STRING` = ?), ?)", ",", len(idata)/2)+
+			" ON DUPLICATE KEY UPDATE TMP = 1;", idata...,
+		)
+	}
 }
 
 func toIndexKV(data []row) (AA []interface{}) {
@@ -123,17 +156,4 @@ func splitString(input string) (ss []string) {
 		ss = append(ss, s, porter2.Stemmer.Stem(s))
 	}
 	return
-}
-
-func makeArrayUnique(array []string) []interface{} {
-
-	keys := make(map[string]struct{})
-	res := make([]interface{}, 0)
-	for _, s := range array {
-		keys[s] = struct{}{}
-	}
-	for i := range keys {
-		res = append(res, i)
-	}
-	return res
 }
