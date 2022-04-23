@@ -1,7 +1,8 @@
 package db
 
 import (
-	"github.com/Nerinyan/nerinyanBATCH/bancho"
+	"github.com/Nerinyan/Nerinyan-APIV2/osu"
+	"github.com/Nerinyan/Nerinyan-APIV2/utils"
 	"github.com/dchest/stemmer/porter2"
 	"github.com/pterm/pterm"
 	"regexp"
@@ -10,7 +11,7 @@ import (
 )
 
 func init() {
-	cacheChannel = make(chan []bancho.BeatmapSetsIN)
+	cacheChannel = make(chan []osu.BeatmapSetsIN)
 	go func() {
 		for ins := range cacheChannel {
 			insertStringIndex(ins)
@@ -21,10 +22,10 @@ func init() {
 
 var (
 	regexpReplace, _ = regexp.Compile(`[^0-9A-z]|[\[\]]`)
-	cacheChannel     chan []bancho.BeatmapSetsIN
+	cacheChannel     chan []osu.BeatmapSetsIN
 )
 
-func InsertCache(data []bancho.BeatmapSetsIN) {
+func InsertCache(data []osu.BeatmapSetsIN) {
 	cacheChannel <- data
 
 }
@@ -42,7 +43,7 @@ type row struct {
 	BeatmapsetId int
 }
 
-func insertStringIndex(data []bancho.BeatmapSetsIN) {
+func insertStringIndex(data []osu.BeatmapSetsIN) {
 	defer func() {
 		err, e := recover().(error)
 		if e {
