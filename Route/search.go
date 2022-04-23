@@ -255,7 +255,7 @@ var searchBaseQuery = `SELECT
     nominations_summary_current, nominations_summary_required, ranked,
     ranked_date, storyboard, submitted_date, tags, has_favourited,
     description, genre_id, genre_name, language_id, language_name, ratings
-from`
+from `
 
 func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 	s.parseQuery()
