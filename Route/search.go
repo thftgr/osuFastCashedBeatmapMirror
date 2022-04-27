@@ -52,8 +52,9 @@ func (s *SearchQuery) parsePage() {
 //
 
 var (
-	regexpReplace, _ = regexp.Compile(`[^0-9A-z]|[\[\]]`)
-	mode             = map[string]int{
+	regexpReplace, _    = regexp.Compile(`[^0-9A-z]|[\[\]]`)
+	regexpByteString, _ = regexp.Compile(`^((0x[\da-fA-F]{1,2})|([\da-fA-F]{1,2})|(1[0-2][0-7]))$`)
+	mode                = map[string]int{
 		"0": 0, "o": 0, "std": 0, "osu": 0, "osu!": 0, "standard": 0,
 		"1": 1, "t": 1, "taiko": 1, "osu!taiko": 1,
 		"2": 2, "c": 2, "ctb": 2, "catch": 2, "osu!catch": 2,
@@ -270,36 +271,36 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 
 		if s.OptionB&0x01 == 0x01 {
 			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID from SEARCH_CACHE_ARTIST  WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+				`SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_ARTIST  WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
 		if s.OptionB&0x02 == 0x02 {
 			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID from SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+				`SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
 		if s.OptionB&0x04 == 0x04 {
 			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID from SEARCH_CACHE_TAG     WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+				`SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_TAG     WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
 		if s.OptionB&0x08 == 0x08 {
 			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID from SEARCH_CACHE_TITLE   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+				`SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_TITLE   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
 		if s.OptionB == 0xFF {
 			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID from SEARCH_CACHE_OTHER   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+				`SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_OTHER   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
-		args = append(args, sql.Named("text", text))           //TODO 검색어 어레이
-		args = append(args, sql.Named("textCount", len(text))) //TODO 검색어 어레이.len
+		args = append(args, sql.Named("text", text)) //TODO 검색어 어레이
+		//args = append(args, sql.Named("textCount", len(text))) //TODO 검색어 어레이.len
 		query.WriteString("WITH SCSI AS (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text)\n")
 
 	}
@@ -359,8 +360,8 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 		query.WriteString("( SELECT BEATMAPSET_ID FROM(\n")
 		query.WriteString("              ")
 		query.WriteString(strings.Join(textSearchQuery, "\n    UNION ALL ") + "\n")
-		query.WriteString(") TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(1) >= @textCount )  TEXTINDEX \n")
-		//query.WriteString(") TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(1) >= (SELECT COUNT(1) FROM SCSI) )  TEXTINDEX \n")
+		//query.WriteString(") TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(1) >= @textCount )  TEXTINDEX \n")
+		query.WriteString(") TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(1) >= (SELECT COUNT(1) FROM SCSI) )  TEXTINDEX \n")
 
 		query.WriteString("LEFT JOIN beatmapset MAPSET on TEXTINDEX.BEATMAPSET_ID = MAPSET.beatmapset_id\n")
 	} else {
