@@ -48,6 +48,21 @@ func MakeArrayUnique[T comparable](array *[]T) (res []T) {
 	}
 	return
 }
+func MakeStringArrayUniqueAndCheckLength(array *[]string, limit int) (res []string) {
+
+	keys := make(map[string]struct{})
+	for _, s := range *array {
+		keys[s] = struct{}{}
+	}
+	for i := range keys {
+		if len(i) <= limit {
+			res = append(res, i)
+
+		}
+	}
+	return
+}
+
 func MakeArrayUniqueInterface[T comparable](array *[]T) (res []interface{}) {
 
 	keys := make(map[T]struct{})

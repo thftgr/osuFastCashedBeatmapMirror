@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"regexp"
-	"time"
+	"strings"
 )
 
 func init() {
@@ -14,7 +15,10 @@ func init() {
 var queryNameRegex, _ = regexp.Compile("^(/[*])(.+?)([*]/)")
 
 func main() {
-	log.Println(time.Now().Format("15:04:05.000"), queryNameRegex.FindString("/* INSERT SEARCH_CACHE_ARTIST */ INSERT INTO SEARCH_CACHE_ARTIST"))
+
+	fmt.Println(strings.Replace("A               B", "  ", " ", -1))
+
+	//log.Println(time.Now().Format("15:04:05.000"), queryNameRegex.FindString("/* INSERT SEARCH_CACHE_ARTIST */ INSERT INTO SEARCH_CACHE_ARTIST"))
 }
 
 func ToJsonString(i interface{}) (str string) {

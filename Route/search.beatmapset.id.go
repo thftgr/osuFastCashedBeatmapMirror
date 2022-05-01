@@ -24,15 +24,15 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 			Message:   "request parse error",
 		}))
 	}
-	row := db.Maria.QueryRow(`select 
-       beatmapset_id, artist, artist_unicode, creator, favourite_count, 
-       hype_current, hype_required, nsfw, play_count, source, status, 
-       title, title_unicode, user_id, video, availability_download_disabled, 
-       availability_more_information, bpm, can_be_hyped, discussion_enabled, 
-       discussion_locked, is_scoreable, last_updated, legacy_thread_url, 
-       nominations_summary_current, nominations_summary_required, ranked, 
-       ranked_date, storyboard, submitted_date, tags, has_favourited, description, 
-       genre_id, genre_name, language_id, language_name, ratings from osu.beatmapset where beatmapset_id = ?;`, sq.MapSetId)
+	row := db.Maria.QueryRow(`SELECT 
+       BEATMAPSET_ID, ARTIST, ARTIST_UNICODE, CREATOR, FAVOURITE_COUNT, 
+       HYPE_CURRENT, HYPE_REQUIRED, NSFW, PLAY_COUNT, SOURCE, STATUS, 
+       TITLE, TITLE_UNICODE, USER_ID, VIDEO, AVAILABILITY_DOWNLOAD_DISABLED, 
+       AVAILABILITY_MORE_INFORMATION, BPM, CAN_BE_HYPED, DISCUSSION_ENABLED, 
+       DISCUSSION_LOCKED, IS_SCOREABLE, LAST_UPDATED, LEGACY_THREAD_URL, 
+       NOMINATIONS_SUMMARY_CURRENT, NOMINATIONS_SUMMARY_REQUIRED, RANKED, 
+       RANKED_DATE, STORYBOARD, SUBMITTED_DATE, TAGS, HAS_FAVOURITED, DESCRIPTION, 
+       GENRE_ID, GENRE_NAME, LANGUAGE_ID, LANGUAGE_NAME, RATINGS FROM BEATMAPSET WHERE BEATMAPSET_ID = ?;`, sq.MapSetId)
 
 	var set osu.BeatmapSetsOUT
 	var mapids []int
@@ -77,9 +77,9 @@ func SearchByBeatmapSetId(c echo.Context) (err error) {
 	}
 
 	rows, err := db.Maria.Query(fmt.Sprintf(
-		"select beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating, version, accuracy, ar, cs, drain, bpm, `convert`, count_circles, "+
-			"count_sliders, count_spinners, deleted_at, hit_length, is_scoreable, last_updated, passcount, playcount, checksum, "+
-			"user_id from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating;", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
+		"SELECT BEATMAP_ID, BEATMAPSET_ID, MODE, MODE_INT, STATUS, RANKED, TOTAL_LENGTH, MAX_COMBO, DIFFICULTY_RATING, VERSION, ACCURACY, AR, CS, DRAIN, BPM, `CONVERT`, COUNT_CIRCLES, "+
+			"COUNT_SLIDERS, COUNT_SPINNERS, DELETED_AT, HIT_LENGTH, IS_SCOREABLE, LAST_UPDATED, PASSCOUNT, PLAYCOUNT, CHECKSUM, "+
+			"USER_ID FROM BEATMAP WHERE BEATMAPSET_ID IN( %s ) ORDER BY DIFFICULTY_RATING;", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
 
 	if err != nil {
 		if err == sql.ErrNoRows {

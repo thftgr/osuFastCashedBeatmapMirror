@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
-	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
@@ -18,6 +17,7 @@ import (
 	"github.com/pterm/pterm"
 	"net/http"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -78,37 +78,47 @@ var (
 		"default":   {4, 2, 1},
 	}
 	orderBy = map[string]string{
-		"ranked_asc":           "ranked_date",
-		"ranked_date":          "ranked_date",
-		"ranked_date asc":      "ranked_date",
-		"favourites_asc":       "favourite_count",
-		"favourite_count":      "favourite_count",
-		"favourite_count asc":  "favourite_count",
-		"plays_asc":            "play_count",
-		"play_count":           "play_count",
-		"play_count asc":       "play_count",
-		"updated_asc":          "last_updated",
-		"last_updated":         "last_updated",
-		"last_updated asc":     "last_updated",
-		"title_asc":            "title",
-		"title":                "title",
-		"title asc":            "title",
-		"artist_asc":           "artist",
-		"artist":               "artist",
-		"artist asc":           "artist",
-		"ranked_desc":          "ranked_date desc",
-		"ranked_date desc":     "ranked_date desc",
-		"favourites_desc":      "favourite_count desc",
-		"favourite_count desc": "favourite_count desc",
-		"plays_desc":           "play_count desc",
-		"play_count desc":      "play_count desc",
-		"updated_desc":         "last_updated desc",
-		"last_updated desc":    "last_updated desc",
-		"title_desc":           "title desc",
-		"title desc":           "title desc",
-		"artist_desc":          "artist desc",
-		"artist desc":          "artist desc",
-		"default":              "ranked_date desc",
+		"ranked_asc":           "RANKED_DATE",
+		"ranked_date":          "RANKED_DATE",
+		"ranked_date asc":      "RANKED_DATE",
+		"favourites_asc":       "FAVOURITE_COUNT",
+		"favourite_count":      "FAVOURITE_COUNT",
+		"favourite_count asc":  "FAVOURITE_COUNT",
+		"plays_asc":            "PLAY_COUNT",
+		"play_count":           "PLAY_COUNT",
+		"play_count asc":       "PLAY_COUNT",
+		"updated_asc":          "LAST_UPDATED",
+		"last_updated":         "LAST_UPDATED",
+		"last_updated asc":     "LAST_UPDATED",
+		"title_asc":            "TITLE",
+		"title":                "TITLE",
+		"title asc":            "TITLE",
+		"artist_asc":           "ARTIST",
+		"artist":               "ARTIST",
+		"artist asc":           "ARTIST",
+		"ranked_desc":          "RANKED_DATE DESC",
+		"ranked_date desc":     "RANKED_DATE DESC",
+		"favourites_desc":      "FAVOURITE_COUNT DESC",
+		"favourite_count desc": "FAVOURITE_COUNT DESC",
+		"plays_desc":           "PLAY_COUNT DESC",
+		"play_count desc":      "PLAY_COUNT DESC",
+		"updated_desc":         "LAST_UPDATED DESC",
+		"last_updated desc":    "LAST_UPDATED DESC",
+		"title_desc":           "TITLE DESC",
+		"title desc":           "TITLE DESC",
+		"artist_desc":          "ARTIST DESC",
+		"artist desc":          "ARTIST DESC",
+		"default":              "RANKED_DATE DESC",
+	}
+	searchOption = map[string]uint64{
+		"artist":  1 << 0,
+		"a":       1 << 0,
+		"creator": 1 << 1,
+		"c":       1 << 1,
+		"tag":     1 << 2,
+		"tg":      1 << 2,
+		"title":   1 << 3,
+		"t":       1 << 3,
 	}
 )
 
@@ -125,21 +135,11 @@ func (s *SearchQuery) parseNsfw() {
 func (s *SearchQuery) parseOption() {
 	ss := strings.ToLower(s.Option)
 	if ss == "" {
-		s.OptionB |= 0xFF
+		s.OptionB |= 0xFFFFFFFF
 		return
 	}
-	sss := strings.Split(ss, ",")
-	for i := 0; i < len(sss); i++ {
-		switch ss {
-		case "artist", "a":
-			s.OptionB |= 0x01
-		case "creator", "c":
-			s.OptionB |= 0x02
-		case "tag", "tg":
-			s.OptionB |= 0x04
-		case "title", "t":
-			s.OptionB |= 0x08
-		}
+	for _, s2 := range strings.Split(ss, ",") {
+		s.OptionB |= searchOption[s2]
 	}
 	return
 }
@@ -239,7 +239,7 @@ type SearchQuery struct {
 	Text       string   `query:"q" json:"query"`     // 문자열 검색
 	ParsedText []string `json:"-"`                   // 문자열 검색 파싱
 	Option     string   `query:"option" json:"option"`
-	OptionB    byte     //artist 1,creator 2,tags 4 ,title 8
+	OptionB    uint64   //artist 1,creator 2,tags 4 ,title 8
 	B64        string   `query:"b64"` // body
 
 	//etc
@@ -248,15 +248,15 @@ type SearchQuery struct {
 }
 
 var searchBaseQuery = `SELECT 
-    MAPSET.beatmapset_id, artist, artist_unicode, creator, favourite_count,
-    hype_current, hype_required, nsfw, play_count, source, status,
-    title, title_unicode, user_id, video, availability_download_disabled,
-    availability_more_information, bpm, can_be_hyped, discussion_enabled,
-    discussion_locked, is_scoreable, last_updated, legacy_thread_url,
-    nominations_summary_current, nominations_summary_required, ranked,
-    ranked_date, storyboard, submitted_date, tags, has_favourited,
-    description, genre_id, genre_name, language_id, language_name, ratings
-from `
+    MAPSET.BEATMAPSET_ID, ARTIST, ARTIST_UNICODE, CREATOR, FAVOURITE_COUNT,
+    HYPE_CURRENT, HYPE_REQUIRED, NSFW, PLAY_COUNT, SOURCE, STATUS,
+    TITLE, TITLE_UNICODE, USER_ID, VIDEO, AVAILABILITY_DOWNLOAD_DISABLED,
+    AVAILABILITY_MORE_INFORMATION, BPM, CAN_BE_HYPED, DISCUSSION_ENABLED,
+    DISCUSSION_LOCKED, IS_SCOREABLE, LAST_UPDATED, LEGACY_THREAD_URL,
+    NOMINATIONS_SUMMARY_CURRENT, NOMINATIONS_SUMMARY_REQUIRED, RANKED,
+    RANKED_DATE, STORYBOARD, SUBMITTED_DATE, TAGS, HAS_FAVOURITED,
+    DESCRIPTION, GENRE_ID, GENRE_NAME, LANGUAGE_ID, LANGUAGE_NAME, RATINGS
+FROM `
 
 func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 	s.parseQuery()
@@ -265,114 +265,126 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 	var setAnd []string // 맵셋 	AND 문
 	var mapAnd []string // 맵	AND 문
 	var textSearchQuery []string
-	if s.Text != "" {
-		text := splitString(s.Text)
-		text = utils.MakeArrayUnique(&text)
+	text := splitString(s.Text)
+	text = utils.MakeArrayUnique(&text)
+	if len(text) > 0 {
 
-		if s.OptionB&0x01 == 0x01 {
+		if s.OptionB&1<<0 > 0 {
 			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_ARTIST  WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_ARTIST  WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
-		if s.OptionB&0x02 == 0x02 {
+		if s.OptionB&1<<2 > 0 {
 			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
-		if s.OptionB&0x04 == 0x04 {
+		if s.OptionB&1<<3 > 0 {
 			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_TAG     WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_TAG     WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
-		if s.OptionB&0x08 == 0x08 {
+		if s.OptionB&1<<4 > 0 {
 			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_TITLE   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_TITLE   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
-		if s.OptionB == 0xFF {
+		if s.OptionB&0xFFFFFFFF > 0 {
 			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_OTHER   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
+				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_OTHER   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
 		args = append(args, sql.Named("text", text)) //TODO 검색어 어레이
 		//args = append(args, sql.Named("textCount", len(text))) //TODO 검색어 어레이.len
-		query.WriteString("WITH SCSI AS (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text)\n")
 
 	}
 	if s.Ranked != "all" {
-		setAnd = append(setAnd, "ranked IN @ranked")
+		setAnd = append(setAnd, "RANKED IN @ranked")
 		args = append(args, sql.Named("ranked", utils.TernaryOperator(ranked[s.Ranked] != nil, ranked[s.Ranked], ranked["default"])))
 	}
 	if s.Nsfw != "all" {
-		setAnd = append(setAnd, "nsfw = "+s.Nsfw)
+		setAnd = append(setAnd, "NSFW = "+s.Nsfw)
 	}
 	if s.Video != "all" {
-		setAnd = append(setAnd, "video = "+s.Video)
+		setAnd = append(setAnd, "VIDEO = "+s.Video)
 	}
 	if s.Storyboard != "all" {
-		setAnd = append(setAnd, "storyboard = "+s.Storyboard)
+		setAnd = append(setAnd, "STORYBOARD = "+s.Storyboard)
 	}
 
 	if s.Mode != "all" && s.Mode != "" {
 
-		mapAnd = append(mapAnd, "mode_int IN (@modes)")
+		mapAnd = append(mapAnd, "MODE_INT = @modes")
 		args = append(args, sql.Named("modes", mode[s.Mode]))
 	}
 	if !s.TotalLength.minMaxIsNil() {
-		mapAnd = append(mapAnd, `total_length `+s.TotalLength.minMaxAsQuery())
+		mapAnd = append(mapAnd, `TOTAL_LENGTH `+s.TotalLength.minMaxAsQuery())
 	}
 	if !s.MaxCombo.minMaxIsNil() {
-		mapAnd = append(mapAnd, `max_combo `+s.MaxCombo.minMaxAsQuery())
+		mapAnd = append(mapAnd, `MAX_COMBO `+s.MaxCombo.minMaxAsQuery())
 	}
 	if !s.DifficultyRating.minMaxIsNil() {
-		mapAnd = append(mapAnd, `difficulty_rating `+s.DifficultyRating.minMaxAsQuery())
+		mapAnd = append(mapAnd, `DIFFICULTY_RATING `+s.DifficultyRating.minMaxAsQuery())
 	}
 	if !s.Accuracy.minMaxIsNil() {
-		mapAnd = append(mapAnd, `accuracy `+s.Accuracy.minMaxAsQuery())
+		mapAnd = append(mapAnd, `ACCURACY `+s.Accuracy.minMaxAsQuery())
 	}
 	if !s.Ar.minMaxIsNil() {
-		mapAnd = append(mapAnd, `ar `+s.Ar.minMaxAsQuery())
+		mapAnd = append(mapAnd, `AR `+s.Ar.minMaxAsQuery())
 	}
 	if !s.Cs.minMaxIsNil() {
-		mapAnd = append(mapAnd, `cs `+s.Cs.minMaxAsQuery())
+		mapAnd = append(mapAnd, `CS `+s.Cs.minMaxAsQuery())
 	}
 	if !s.Drain.minMaxIsNil() {
-		mapAnd = append(mapAnd, `drain `+s.Drain.minMaxAsQuery())
+		mapAnd = append(mapAnd, `DRAIN `+s.Drain.minMaxAsQuery())
 	}
 	if !s.Bpm.minMaxIsNil() {
-		mapAnd = append(mapAnd, `bpm `+s.Bpm.minMaxAsQuery())
+		mapAnd = append(mapAnd, `BPM `+s.Bpm.minMaxAsQuery())
 	}
 
 	if len(mapAnd) > 0 { // beatmapset_id IN ()
-		mapAnd = append([]string{"beatmapset_id IN (A.beatmapset_id)"}, mapAnd...)
-		setAnd = append(setAnd, "beatmapset_id IN (select beatmapset_id from "+config.Config.Sql.Table.Beatmap+" where "+strings.Join(mapAnd, " AND ")+" )")
+		mapAnd = append([]string{"BEATMAPSET_ID IN (MAPSET.BEATMAPSET_ID)"}, mapAnd...)
+		setAnd = append(setAnd, "BEATMAPSET_ID IN (SELECT BEATMAPSET_ID FROM BEATMAP WHERE "+strings.Join(mapAnd, " AND ")+" )")
 	}
 
 	query.WriteString(searchBaseQuery)
 
 	if len(textSearchQuery) > 0 {
 
-		query.WriteString("( SELECT BEATMAPSET_ID FROM(\n")
-		query.WriteString("              ")
-		query.WriteString(strings.Join(textSearchQuery, "\n    UNION ALL ") + "\n")
-		//query.WriteString(") TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(1) >= @textCount )  TEXTINDEX \n")
-		query.WriteString(") TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(1) >= (SELECT COUNT(1) FROM SCSI) )  TEXTINDEX \n")
+		//WITH SCSI AS (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN ('rainbow','dash','likes','girls'))
+		query.WriteString("(\n")
+		query.WriteString("    SELECT MAPSET.* FROM (\n")
+		query.WriteString("        WITH SCSI AS (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text)\n")
+		query.WriteString("        SELECT BEATMAPSET_ID FROM (\n")
+		query.WriteString("                      ")
+		//                                        SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_ARTIST  WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )
+		//                              UNION ALL SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )
+		//                              UNION ALL SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_TAG     WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )
+		//                              UNION ALL SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_TITLE   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )
+		//                              UNION ALL SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_OTHER   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )
+		query.WriteString(strings.Join(textSearchQuery, "\n            UNION ALL ") + "\n")
 
-		query.WriteString("LEFT JOIN beatmapset MAPSET on TEXTINDEX.BEATMAPSET_ID = MAPSET.beatmapset_id\n")
+		query.WriteString("        ) TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(DISTINCT INDEX_KEY) = ( SELECT COUNT(1) FROM SCSI )\n")
+		if s.OptionB&1<<5 > 0 && len(text) > 0 {
+			query.WriteString("        UNION ALL SELECT BEATMAPSET_ID  from BEATMAP WHERE CHECKSUM IN @text\n")
+		}
+		query.WriteString("    )  TEXTINDEX\n")
+		query.WriteString("    LEFT JOIN" +
+			" BEATMAPSET MAPSET ON TEXTINDEX.BEATMAPSET_ID = MAPSET.BEATMAPSET_ID\n")
+		query.WriteString("GROUP BY TEXTINDEX.BEATMAPSET_ID  ) MAPSET\n")
+
 	} else {
-		query.WriteString(config.Config.Sql.Table.BeatmapSet + " AS MAPSET \n")
+		query.WriteString("BEATMAPSET AS MAPSET \n")
 	}
-	if len(setAnd) > 0 { // SELECT * FROM osu.beatmapset WHERE ranked in (4,2,1) AND nsfw = 1 ...
+	if len(setAnd) > 0 { // SELECT * FROM Beatmapset WHERE ranked in (4,2,1) AND nsfw = 1 ...
 		query.WriteString("WHERE " + strings.Join(setAnd, " AND ") + "\n")
 	}
-	if len(textSearchQuery) > 0 {
-		query.WriteString("GROUP BY TEXTINDEX.BEATMAPSET_ID ,MAPSET.ranked_date \n")
-	}
+
 	query.WriteString("ORDER BY " + utils.TernaryOperator(orderBy[s.Sort] == "", orderBy["default"], orderBy[s.Sort]) + "\n")
 	query.WriteString(s.Page + ";")
 	qs = query.String()
@@ -495,19 +507,16 @@ func Search(c echo.Context) (err error) {
 		}))
 
 	}
-
-	rows, err = db.Maria.Query(fmt.Sprintf("select beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating, version, accuracy, ar, cs, drain, bpm, "+
-		"`convert`, "+
-		"count_circles, count_sliders, count_spinners, deleted_at, hit_length, is_scoreable, last_updated, passcount, playcount, checksum, "+
-		"user_id from osu.beatmap where beatmapset_id in( %s ) order by difficulty_rating;", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(mapids)), ", "), "[]")))
+	rows, err = db.Gorm.Raw("SELECT BEATMAP_ID, BEATMAPSET_ID, MODE, MODE_INT, STATUS, RANKED, TOTAL_LENGTH, MAX_COMBO, DIFFICULTY_RATING, VERSION, ACCURACY, AR, CS, DRAIN, BPM, "+
+		"`CONVERT`, "+
+		"COUNT_CIRCLES, COUNT_SLIDERS, COUNT_SPINNERS, DELETED_AT, HIT_LENGTH, IS_SCOREABLE, LAST_UPDATED, PASSCOUNT, PLAYCOUNT, CHECKSUM, "+
+		"USER_ID FROM BEATMAP WHERE BEATMAPSET_ID IN @setId ;", sql.Named("setId", mapids)).Rows()
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:      "SEARCH-007",
-				Path:      c.Path(),
-				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     err,
-				Message:   "not in database",
+				Code:    "SEARCH-007",
+				Error:   err,
+				Message: "not in database",
 			}))
 
 		}
@@ -518,7 +527,6 @@ func Search(c echo.Context) (err error) {
 		}))
 	}
 	defer rows.Close()
-
 	for rows.Next() {
 		var Map osu.BeatmapOUT
 		err = rows.Scan(
@@ -534,6 +542,13 @@ func Search(c echo.Context) (err error) {
 			}))
 		}
 		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
+	}
+
+	for _, set := range sets {
+
+		sort.Slice(set.Beatmaps, func(i, j int) bool {
+			return *set.Beatmaps[i].DifficultyRating < *set.Beatmaps[j].DifficultyRating
+		})
 	}
 
 	return c.JSON(http.StatusOK, sets)
