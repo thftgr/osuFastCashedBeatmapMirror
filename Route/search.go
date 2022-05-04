@@ -23,32 +23,6 @@ import (
 	"time"
 )
 
-func (s *SearchQuery) parsePage() {
-	// 에러 발생시 int value = 0
-	page, _ := strconv.Atoi(s.Page)
-	pageSize, _ := strconv.Atoi(s.PageSize)
-	if page < 0 {
-		page = 0
-	}
-	if pageSize < 10 {
-		pageSize = 50
-	}
-	if pageSize > 1000 {
-		pageSize = 1000
-	}
-	if page == 0 && pageSize == 0 {
-		s.Page = "LIMIT 50"
-	} else if page != 0 && pageSize == 0 {
-		s.Page = fmt.Sprintf("LIMIT %d,50", page*50)
-	} else if page == 0 && pageSize != 0 {
-		s.Page = fmt.Sprintf("LIMIT 0,%d", pageSize)
-	} else if page != 0 && pageSize != 0 {
-		s.Page = fmt.Sprintf("LIMIT %d,%d", page*pageSize, pageSize)
-	}
-
-	return
-}
-
 //
 
 var (
@@ -111,16 +85,47 @@ var (
 		"default":              "RANKED_DATE DESC",
 	}
 	searchOption = map[string]uint64{
-		"artist":  1 << 0,
-		"a":       1 << 0,
-		"creator": 1 << 1,
-		"c":       1 << 1,
-		"tag":     1 << 2,
-		"tg":      1 << 2,
-		"title":   1 << 3,
-		"t":       1 << 3,
+		"artist":   1 << 0, // 1
+		"a":        1 << 0,
+		"creator":  1 << 1, // 2
+		"c":        1 << 1,
+		"tag":      1 << 2, // 4
+		"tg":       1 << 2,
+		"title":    1 << 3, // 8
+		"t":        1 << 3,
+		"checksum": 1 << 4, // 16
+		"cks":      1 << 4,
+		"mapId":    1 << 5, // 32
+		"m":        1 << 5,
+		"setId":    1 << 6, // 64
+		"s":        1 << 6,
 	}
 )
+
+func (s *SearchQuery) parsePage() {
+	// 에러 발생시 int value = 0
+	page, _ := strconv.Atoi(s.Page)
+	pageSize, _ := strconv.Atoi(s.PageSize)
+	if page < 0 {
+		page = 0
+	}
+	if pageSize < 10 {
+		pageSize = 50
+	}
+	if pageSize > 1000 {
+		pageSize = 1000
+	}
+	if page == 0 && pageSize == 0 {
+		s.Page = "LIMIT 50"
+	} else if page != 0 && pageSize == 0 {
+		s.Page = fmt.Sprintf("LIMIT %d,50", page*50)
+	} else if page == 0 && pageSize != 0 {
+		s.Page = fmt.Sprintf("LIMIT 0,%d", pageSize)
+	} else if page != 0 && pageSize != 0 {
+		s.Page = fmt.Sprintf("LIMIT %d,%d", page*pageSize, pageSize)
+	}
+	return
+}
 
 func (s *SearchQuery) parseNsfw() {
 	ss := strings.ToLower(s.Nsfw)
@@ -239,12 +244,9 @@ type SearchQuery struct {
 	Text       string   `query:"q" json:"query"`     // 문자열 검색
 	ParsedText []string `json:"-"`                   // 문자열 검색 파싱
 	Option     string   `query:"option" json:"option"`
-	OptionB    uint64   //artist 1,creator 2,tags 4 ,title 8
+	OptionB    uint64   `json:"-"`    //artist 1,creator 2,tags 4 ,title 8
 	B64        string   `query:"b64"` // body
 
-	//etc
-	MapSetId int `param:"si"` // 맵셋id로 검색
-	MapId    int `param:"mi"` // 맵id로 검색
 }
 
 var searchBaseQuery = `SELECT 
@@ -269,31 +271,46 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 	text = utils.MakeArrayUnique(&text)
 	if len(text) > 0 {
 
-		if s.OptionB&1<<0 > 0 {
+		if s.OptionB&(1<<0) > 0 {
 			textSearchQuery = append(textSearchQuery,
 				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_ARTIST  WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
-		if s.OptionB&1<<2 > 0 {
+		if s.OptionB&(1<<1) > 0 {
 			textSearchQuery = append(textSearchQuery,
 				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
-		if s.OptionB&1<<3 > 0 {
+		if s.OptionB&(1<<2) > 0 {
 			textSearchQuery = append(textSearchQuery,
 				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_TAG     WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
 
-		if s.OptionB&1<<4 > 0 {
+		if s.OptionB&(1<<3) > 0 {
 			textSearchQuery = append(textSearchQuery,
 				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_TITLE   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
 		}
+		if s.OptionB&(1<<4) > 0 && len(text) > 0 {
+			textSearchQuery = append(textSearchQuery,
+				`SELECT BEATMAPSET_ID,-1 AS INDEX_KEY FROM BEATMAP      WHERE CHECKSUM IN @text`,
+			)
+		}
+		if s.OptionB&(1<<5) > 0 && len(text) > 0 {
+			textSearchQuery = append(textSearchQuery,
+				`SELECT BEATMAPSET_ID,-1 AS INDEX_KEY FROM BEATMAP       WHERE BEATMAP_ID IN @text`,
+			)
+		}
+		if s.OptionB&(1<<6) > 0 && len(text) > 0 {
+			textSearchQuery = append(textSearchQuery,
+				`SELECT BEATMAPSET_ID,-1 AS INDEX_KEY FROM BEATMAPSET   WHERE BEATMAPSET_ID IN @text`,
+			)
+		}
 
-		if s.OptionB&0xFFFFFFFF > 0 {
+		if s.OptionB == 0xFFFFFFFF {
 			textSearchQuery = append(textSearchQuery,
 				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_OTHER   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
 			)
@@ -370,13 +387,9 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 		query.WriteString(strings.Join(textSearchQuery, "\n            UNION ALL ") + "\n")
 
 		query.WriteString("        ) TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(DISTINCT INDEX_KEY) = ( SELECT COUNT(1) FROM SCSI )\n")
-		if s.OptionB&1<<5 > 0 && len(text) > 0 {
-			query.WriteString("        UNION ALL SELECT BEATMAPSET_ID  from BEATMAP WHERE CHECKSUM IN @text\n")
-		}
 		query.WriteString("    )  TEXTINDEX\n")
-		query.WriteString("    LEFT JOIN" +
-			" BEATMAPSET MAPSET ON TEXTINDEX.BEATMAPSET_ID = MAPSET.BEATMAPSET_ID\n")
-		query.WriteString("GROUP BY TEXTINDEX.BEATMAPSET_ID  ) MAPSET\n")
+		query.WriteString("    LEFT JOIN BEATMAPSET MAPSET ON TEXTINDEX.BEATMAPSET_ID = MAPSET.BEATMAPSET_ID\n")
+		query.WriteString("    GROUP BY TEXTINDEX.BEATMAPSET_ID  ) MAPSET\n")
 
 	} else {
 		query.WriteString("BEATMAPSET AS MAPSET \n")
@@ -395,6 +408,7 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 
 func splitString(input string) (ss []string) {
 	for _, s := range strings.Split(strings.ToLower(regexpReplace.ReplaceAllString(input, " ")), " ") {
+		s = strings.TrimSpace(s)
 		if s == "" || s == " " {
 			continue
 		}
