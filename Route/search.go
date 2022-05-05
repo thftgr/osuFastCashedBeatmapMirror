@@ -84,7 +84,7 @@ var (
 		"artist desc":          "ARTIST DESC",
 		"default":              "RANKED_DATE DESC",
 	}
-	searchOption = map[string]uint64{
+	searchOption = map[string]uint32{
 		"artist":   1 << 0, // 1
 		"a":        1 << 0,
 		"creator":  1 << 1, // 2
@@ -145,6 +145,9 @@ func (s *SearchQuery) parseOption() {
 	}
 	for _, s2 := range strings.Split(ss, ",") {
 		s.OptionB |= searchOption[s2]
+	}
+	if s.OptionB == 0 {
+		s.OptionB = 0xFFFFFFFF
 	}
 	return
 }
@@ -244,7 +247,7 @@ type SearchQuery struct {
 	Text       string   `query:"q" json:"query"`     // 문자열 검색
 	ParsedText []string `json:"-"`                   // 문자열 검색 파싱
 	Option     string   `query:"option" json:"option"`
-	OptionB    uint64   `json:"-"`    //artist 1,creator 2,tags 4 ,title 8
+	OptionB    uint32   `json:"-"`    //artist 1,creator 2,tags 4 ,title 8
 	B64        string   `query:"b64"` // body
 
 }
@@ -260,66 +263,16 @@ var searchBaseQuery = `SELECT
     DESCRIPTION, GENRE_ID, GENRE_NAME, LANGUAGE_ID, LANGUAGE_NAME, RATINGS
 FROM `
 
-func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
+func (s *SearchQuery) queryBuilder() (qs string, args []interface{}) {
 	s.parseQuery()
 
 	var query bytes.Buffer
 	var setAnd []string // 맵셋 	AND 문
 	var mapAnd []string // 맵	AND 문
-	var textSearchQuery []string
+	//var textSearchQuery []string
 	text := splitString(s.Text)
 	text = utils.MakeArrayUnique(&text)
-	if len(text) > 0 {
 
-		if s.OptionB&(1<<0) > 0 {
-			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_ARTIST  WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
-			)
-		}
-
-		if s.OptionB&(1<<1) > 0 {
-			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
-			)
-		}
-
-		if s.OptionB&(1<<2) > 0 {
-			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_TAG     WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
-			)
-		}
-
-		if s.OptionB&(1<<3) > 0 {
-			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_TITLE   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
-			)
-		}
-		if s.OptionB&(1<<4) > 0 && len(text) > 0 {
-			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,-1 AS INDEX_KEY FROM BEATMAP      WHERE CHECKSUM IN @text`,
-			)
-		}
-		if s.OptionB&(1<<5) > 0 && len(text) > 0 {
-			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,-1 AS INDEX_KEY FROM BEATMAP       WHERE BEATMAP_ID IN @text`,
-			)
-		}
-		if s.OptionB&(1<<6) > 0 && len(text) > 0 {
-			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,-1 AS INDEX_KEY FROM BEATMAPSET   WHERE BEATMAPSET_ID IN @text`,
-			)
-		}
-
-		if s.OptionB == 0xFFFFFFFF {
-			textSearchQuery = append(textSearchQuery,
-				`SELECT BEATMAPSET_ID,INDEX_KEY FROM SEARCH_CACHE_OTHER   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`,
-			)
-		}
-
-		args = append(args, sql.Named("text", text)) //TODO 검색어 어레이
-		//args = append(args, sql.Named("textCount", len(text))) //TODO 검색어 어레이.len
-
-	}
 	if s.Ranked != "all" {
 		setAnd = append(setAnd, "RANKED IN @ranked")
 		args = append(args, sql.Named("ranked", utils.TernaryOperator(ranked[s.Ranked] != nil, ranked[s.Ranked], ranked["default"])))
@@ -333,9 +286,7 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 	if s.Storyboard != "all" {
 		setAnd = append(setAnd, "STORYBOARD = "+s.Storyboard)
 	}
-
 	if s.Mode != "all" && s.Mode != "" {
-
 		mapAnd = append(mapAnd, "MODE_INT = @modes")
 		args = append(args, sql.Named("modes", mode[s.Mode]))
 	}
@@ -371,26 +322,59 @@ func (s *SearchQuery) queryBuilder2() (qs string, args []interface{}) {
 
 	query.WriteString(searchBaseQuery)
 
-	if len(textSearchQuery) > 0 {
+	if len(text) > 0 {
+		args = append(args, sql.Named("text", text))
+		var textQuery1 []string
+		var textQuery2 []string
+		{
+			query.WriteString("(\n")
+			query.WriteString("    SELECT MAPSET.* FROM (\n")
+		}
+		if s.OptionB == 0xFFFFFFFF || s.OptionB&0b00001111 > 0 {
+			var query bytes.Buffer
+			query.WriteString("        WITH SCSI AS (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text )\n")
+			query.WriteString("        SELECT BEATMAPSET_ID FROM (\n")
+			if s.OptionB&(1<<0) > 0 {
+				textQuery1 = append(textQuery1, `SELECT BEATMAPSET_ID, INDEX_KEY FROM SEARCH_CACHE_ARTIST  WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`) // a
+			}
+			if s.OptionB&(1<<1) > 0 {
+				textQuery1 = append(textQuery1, `SELECT BEATMAPSET_ID, INDEX_KEY FROM SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`) // c
+			}
+			if s.OptionB&(1<<2) > 0 {
+				textQuery1 = append(textQuery1, `SELECT BEATMAPSET_ID, INDEX_KEY FROM SEARCH_CACHE_TAG     WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`) // tg
+			}
+			if s.OptionB&(1<<3) > 0 {
+				textQuery1 = append(textQuery1, `SELECT BEATMAPSET_ID, INDEX_KEY FROM SEARCH_CACHE_TITLE   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`) // t
+			}
+			if s.OptionB == 0xFFFFFFFF {
+				textQuery1 = append(textQuery1, `SELECT BEATMAPSET_ID, INDEX_KEY FROM SEARCH_CACHE_OTHER   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )`) // all
+			}
+			query.WriteString("                      ")
+			query.WriteString(strings.Join(textQuery1, "\n            UNION ALL ") + "\n")
+			query.WriteString("        ) TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(DISTINCT INDEX_KEY) = ( SELECT COUNT(1) FROM SCSI )")
+			textQuery2 = append(textQuery2, query.String())
+		}
+		if s.OptionB&0b01110000 > 0 {
+			if s.OptionB&(1<<4) > 1 {
+				textQuery2 = append(textQuery2, `SELECT BEATMAPSET_ID FROM BEATMAP    WHERE CHECKSUM      IN @text`) // cks
+			}
+			if s.OptionB&(1<<5) > 1 {
+				textQuery2 = append(textQuery2, `SELECT BEATMAPSET_ID FROM BEATMAP    WHERE BEATMAP_ID    IN @text`) // m
+			}
+			if s.OptionB&(1<<6) > 1 {
+				textQuery2 = append(textQuery2, `SELECT BEATMAPSET_ID FROM BEATMAPSET WHERE BEATMAPSET_ID IN @text`) // s
+			}
 
-		//WITH SCSI AS (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN ('rainbow','dash','likes','girls'))
-		query.WriteString("(\n")
-		query.WriteString("    SELECT MAPSET.* FROM (\n")
-		query.WriteString("        WITH SCSI AS (SELECT ID FROM SEARCH_CACHE_STRING_INDEX WHERE STRING IN @text)\n")
-		query.WriteString("        SELECT BEATMAPSET_ID FROM (\n")
-		query.WriteString("                      ")
-		//                                        SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_ARTIST  WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )
-		//                              UNION ALL SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_CREATOR WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )
-		//                              UNION ALL SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_TAG     WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )
-		//                              UNION ALL SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_TITLE   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )
-		//                              UNION ALL SELECT BEATMAPSET_ID,INDEX_KEY from SEARCH_CACHE_OTHER   WHERE INDEX_KEY IN ( SELECT ID FROM SCSI )
-		query.WriteString(strings.Join(textSearchQuery, "\n            UNION ALL ") + "\n")
-
-		query.WriteString("        ) TEXTINDEX GROUP BY BEATMAPSET_ID HAVING COUNT(DISTINCT INDEX_KEY) = ( SELECT COUNT(1) FROM SCSI )\n")
-		query.WriteString("    )  TEXTINDEX\n")
-		query.WriteString("    LEFT JOIN BEATMAPSET MAPSET ON TEXTINDEX.BEATMAPSET_ID = MAPSET.BEATMAPSET_ID\n")
-		query.WriteString("    GROUP BY TEXTINDEX.BEATMAPSET_ID  ) MAPSET\n")
-
+		}
+		{
+			if len(textQuery1) < 1 {
+				query.WriteString("                  ")
+			}
+			query.WriteString(strings.Join(textQuery2, "\n        UNION ALL ") + "\n")
+			query.WriteString("    )  TEXTINDEX\n")
+			query.WriteString("    LEFT JOIN BEATMAPSET MAPSET ON TEXTINDEX.BEATMAPSET_ID = MAPSET.BEATMAPSET_ID\n")
+			query.WriteString("    GROUP BY TEXTINDEX.BEATMAPSET_ID  ) MAPSET\n")
+		}
 	} else {
 		query.WriteString("BEATMAPSET AS MAPSET \n")
 	}
@@ -440,6 +424,7 @@ func Search(c echo.Context) (err error) {
 			}))
 		}
 	}
+
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
 			Code:    "SEARCH-001",
@@ -448,7 +433,7 @@ func Search(c echo.Context) (err error) {
 		}))
 	}
 
-	q, args := sq.queryBuilder2()
+	q, args := sq.queryBuilder()
 
 	pterm.Info.Println(q)
 	rows, err := db.Gorm.Raw(q, args...).Rows()

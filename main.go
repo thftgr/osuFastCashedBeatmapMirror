@@ -37,7 +37,7 @@ func init() {
 	db.ConnectMaria()
 	go banchoCroller.LoadBancho(ch)
 	_ = <-ch
-	go banchoCroller.RunGetBeatmapDataASBancho()
+	//go banchoCroller.RunGetBeatmapDataASBancho()
 
 	if os.Getenv("debug") != "true" {
 		//go banchoCroller.RunGetBeatmapDataASBancho()
@@ -97,16 +97,9 @@ func main() {
 	// 비트맵 리스트 검색용 ================================================================================================
 	e.GET("/search", Route.Search)
 
-	// 서버 데이터 강제 업데이트용. ==========================================================================================
-	// TODO 맵 굳이 한개씩 강제업데이트할 이유가 없음. 맵셋으로 업데이트만 지원
-	//e.GET("/update/beatmapset/:id", func(c echo.Context) error {
-	//
-	//	//src.ManualUpdateBeatmapSet()
-	//	return nil
-	//})
-
 	// 개발중 || 테스트중 ===================================================================================================
 
+	// ====================================================================================================================
 	pterm.Info.Println("ECHO STARTED AT", config.Config.Port)
 	e.Logger.Fatal(e.Start(":" + config.Config.Port))
 
