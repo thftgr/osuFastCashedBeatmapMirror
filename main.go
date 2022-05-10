@@ -71,7 +71,7 @@ func main() {
 
 	// docs ============================================================================================================
 	e.GET("/", func(c echo.Context) error {
-		return c.Redirect(http.StatusPermanentRedirect, `https://nerinyan.stoplight.io/studio/nerinyan-api`)
+		return c.Redirect(http.StatusPermanentRedirect, `https://nerinyan.stoplight.io/docs/nerinyan-api`)
 	})
 
 	// 서버상태 체크용 ====================================================================================================
