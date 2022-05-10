@@ -37,7 +37,7 @@ func init() {
 	db.ConnectMaria()
 	go banchoCroller.LoadBancho(ch)
 	_ = <-ch
-	//go banchoCroller.RunGetBeatmapDataASBancho()
+	go banchoCroller.RunGetBeatmapDataASBancho()
 
 	if os.Getenv("debug") != "true" {
 		//go banchoCroller.RunGetBeatmapDataASBancho()

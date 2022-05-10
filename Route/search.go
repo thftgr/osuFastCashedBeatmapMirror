@@ -17,7 +17,6 @@ import (
 	"github.com/pterm/pterm"
 	"net/http"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -504,12 +503,14 @@ func Search(c echo.Context) (err error) {
 			Error:   errors.New(http.StatusText(http.StatusNotFound)),
 			Message: "not in database",
 		}))
-
 	}
+
+	mapids = utils.MakeArrayUnique(&mapids)
+
 	rows, err = db.Gorm.Raw("SELECT BEATMAP_ID, BEATMAPSET_ID, MODE, MODE_INT, STATUS, RANKED, TOTAL_LENGTH, MAX_COMBO, DIFFICULTY_RATING, VERSION, ACCURACY, AR, CS, DRAIN, BPM, "+
 		"`CONVERT`, "+
 		"COUNT_CIRCLES, COUNT_SLIDERS, COUNT_SPINNERS, DELETED_AT, HIT_LENGTH, IS_SCOREABLE, LAST_UPDATED, PASSCOUNT, PLAYCOUNT, CHECKSUM, "+
-		"USER_ID FROM BEATMAP WHERE BEATMAPSET_ID IN @setId ;", sql.Named("setId", mapids)).Rows()
+		"USER_ID FROM BEATMAP WHERE BEATMAPSET_ID IN @setId ORDER BY DIFFICULTY_RATING;", sql.Named("setId", mapids)).Rows()
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
@@ -526,6 +527,7 @@ func Search(c echo.Context) (err error) {
 		}))
 	}
 	defer rows.Close()
+	var tmp []int
 	for rows.Next() {
 		var Map osu.BeatmapOUT
 		err = rows.Scan(
@@ -540,16 +542,13 @@ func Search(c echo.Context) (err error) {
 				Message: "database Query scan error",
 			}))
 		}
+		tmp = append(tmp, *Map.BeatmapsetId)
 		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
+		if index[*Map.BeatmapsetId] == 0 {
+			go pterm.Info.Println(string(*utils.ToJsonIndentString(Map)))
+		}
 	}
-
-	for _, set := range sets {
-
-		sort.Slice(set.Beatmaps, func(i, j int) bool {
-			return *set.Beatmaps[i].DifficultyRating < *set.Beatmaps[j].DifficultyRating
-		})
-	}
-
+	go pterm.Info.Println(string(*utils.ToJsonIndentString(sets[0])))
 	return c.JSON(http.StatusOK, sets)
 
 }
