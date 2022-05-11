@@ -209,20 +209,15 @@ func (s *SearchQuery) parseQuery() {
 
 }
 func (s *SearchQuery) parseRankedStatus() (status []int) {
-	statuss := strings.Split(s.Ranked, ",")
-	for _, st := range statuss {
+	for _, st := range strings.Split(s.Ranked, ",") {
 		st = strings.ToLower(strings.TrimSpace(st))
-		if st == "" {
-			continue
-		}
-		rs := ranked[st]
-		if len(rs) < 1 || rs == nil {
-			return ranked["default"]
-		}
-
+		status = append(status, ranked[st]...)
 	}
-	statuss = utils.MakeArrayUnique(&statuss)
-	return
+
+	if len(status) < 1 {
+		status = ranked["default"]
+	}
+	return utils.MakeArrayUnique(&status)
 }
 
 type SearchQuery struct {
@@ -550,9 +545,7 @@ func Search(c echo.Context) (err error) {
 		}
 		tmp = append(tmp, *Map.BeatmapsetId)
 		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
-		if index[*Map.BeatmapsetId] == 0 {
-			go pterm.Info.Println(string(*utils.ToJsonIndentString(Map)))
-		}
+
 	}
 	return c.JSON(http.StatusOK, sets)
 
