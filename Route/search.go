@@ -133,6 +133,7 @@ func (s *SearchQuery) parseNsfw() {
 	case "1", "true", "all":
 		s.Nsfw = "all"
 	case "0", "false":
+		s.Nsfw = "0"
 
 	default:
 		if s.OptionB&(searchOption["cks"]|searchOption["m"]|searchOption["s"]) > 0 {
