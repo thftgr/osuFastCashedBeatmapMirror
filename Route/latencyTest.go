@@ -6,7 +6,8 @@ import (
 )
 
 func LatencyTest(c echo.Context) (err error) {
-	return c.HTML(http.StatusOK, `<!DOCTYPE html>
+	return c.HTML(http.StatusOK, `
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -122,6 +123,7 @@ func LatencyTest(c echo.Context) (err error) {
 </script>
 
 </body>
-</html>`)
+</html>
+`)
 
 }

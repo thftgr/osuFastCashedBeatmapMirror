@@ -85,14 +85,12 @@ func main() {
 			"apiCount":              *banchoCroller.ApiCount,
 		})
 	})
-	e.GET("/latency", Route.LatencyTest)
 
 	// 맵 파일 다운로드 ===================================================================================================
 	e.GET("/d/:setId", Route.DownloadBeatmapSet)
 	e.GET("/beatmap/:mapId", Route.DownloadBeatmapSet)
 	e.GET("/beatmapset/:setId", Route.DownloadBeatmapSet)
 	//TODO 맵아이디, 맵셋아이디 지원
-	//e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.LoadBalancer)
 
 	// 비트맵 리스트 검색용 ================================================================================================
 	e.GET("/search", Route.Search)

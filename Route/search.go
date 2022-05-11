@@ -128,11 +128,18 @@ func (s *SearchQuery) parsePage() {
 
 func (s *SearchQuery) parseNsfw() {
 	ss := strings.ToLower(s.Nsfw)
+
 	switch ss {
-	case "1", "all":
+	case "1", "true", "all":
 		s.Nsfw = "all"
+	case "0", "false":
+
 	default:
-		s.Nsfw = "0"
+		if s.OptionB&(searchOption["cks"]|searchOption["m"]|searchOption["s"]) > 0 {
+			s.Nsfw = "all"
+		} else {
+			s.Nsfw = "0"
+		}
 	}
 	return
 }
@@ -194,10 +201,10 @@ func (v *minMax) minMaxIsNil() (isNil bool) {
 	return v == nil || (v.Min == 0 && v.Max == 0)
 }
 func (s *SearchQuery) parseQuery() {
+	s.parseOption()
 	s.parseNsfw()
 	s.parsePage()
 	s.parseExtra()
-	s.parseOption()
 
 }
 func (s *SearchQuery) parseRankedStatus() (status []int) {
@@ -486,8 +493,6 @@ func Search(c echo.Context) (err error) {
 				Message: "time Parse error",
 			}))
 		}
-		//pterm.Info.Println(*set.Id, src.FileList[*set.Id].Unix() >= lu.Unix())
-		//pterm.Info.Println((*set.Id)*-1, src.FileList[(*set.Id)*-1].Unix() >= lu.Unix())
 		set.Cache.Video = src.FileList[*set.Id].Unix() >= lu.Unix()
 		set.Cache.NoVideo = src.FileList[(*set.Id)*-1].Unix() >= lu.Unix()
 
@@ -548,7 +553,6 @@ func Search(c echo.Context) (err error) {
 			go pterm.Info.Println(string(*utils.ToJsonIndentString(Map)))
 		}
 	}
-	go pterm.Info.Println(string(*utils.ToJsonIndentString(sets[0])))
 	return c.JSON(http.StatusOK, sets)
 
 }
