@@ -16,8 +16,11 @@ require (
 )
 
 require (
+	github.com/antchfx/htmlquery v1.2.4 // indirect
+	github.com/antchfx/xpath v1.2.0 // indirect
 	github.com/atomicgo/cursor v0.0.1 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
+	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/gookit/color v1.4.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
