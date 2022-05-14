@@ -207,6 +207,7 @@ func getGraveyardMap() {
 	*cs = data.CursorString
 	return
 }
+
 func getUpdatedMapDesc() {
 	var err error
 	defer func() {
@@ -356,91 +357,91 @@ func upsertMap(m osu.BeatmapIN) {
 
 const (
 	UpsertBeatmap = `/* UPSERT BEATMAP */
-	INSERT INTO osu.beatmap
+	INSERT INTO BEATMAP
 		(
-			beatmap_id,beatmapset_id,mode,mode_int,status,	ranked,total_length,max_combo,difficulty_rating,version,
-			accuracy,ar,cs,drain,bpm,` + "`convert`" + `,count_circles,count_sliders,count_spinners,deleted_at,
-			hit_length,is_scoreable,last_updated,passcount,playcount,	checksum,user_id
+			BEATMAP_ID,BEATMAPSET_ID,MODE,MODE_INT,STATUS,	RANKED,TOTAL_LENGTH,MAX_COMBO,DIFFICULTY_RATING,VERSION,
+			ACCURACY,AR,CS,DRAIN,BPM,` + "`CONVERT`" + `,COUNT_CIRCLES,COUNT_SLIDERS,COUNT_SPINNERS,DELETED_AT,
+			HIT_LENGTH,IS_SCOREABLE,LAST_UPDATED,PASSCOUNT,PLAYCOUNT,	CHECKSUM,USER_ID
 		)VALUES(
 			?,?,?,?,?,	?,?,?,?,?,
 			?,?,?,?,?,	?,?,?,?,?,
 			?,?,?,?,?,	?,?
 		)ON DUPLICATE KEY UPDATE 
-			beatmapset_id = VALUES(beatmapset_id), mode = VALUES(mode), mode_int = VALUES(mode_int), status = VALUES(status), 
-			ranked = VALUES(ranked), total_length = VALUES(total_length), max_combo = VALUES(max_combo), difficulty_rating = VALUES(difficulty_rating), 
-			version = VALUES(version), 	accuracy = VALUES(accuracy), ar = VALUES(ar), cs = VALUES(cs), drain = VALUES(drain), bpm = VALUES(bpm),` +
-		"`convert` = VALUES(`convert`" + `), count_circles = VALUES(count_circles), count_sliders = VALUES(count_sliders), 
-			count_spinners = VALUES(count_spinners), deleted_at = VALUES(deleted_at), 	hit_length = VALUES(hit_length), 
-			is_scoreable = VALUES(is_scoreable), last_updated = VALUES(last_updated), passcount = VALUES(passcount), playcount = VALUES(playcount), 
-			checksum = VALUES(checksum), user_id = VALUES(user_id);`
+			BEATMAPSET_ID = VALUES(BEATMAPSET_ID), MODE = VALUES(MODE), MODE_INT = VALUES(MODE_INT), STATUS = VALUES(STATUS), 
+			RANKED = VALUES(RANKED), TOTAL_LENGTH = VALUES(TOTAL_LENGTH), MAX_COMBO = VALUES(MAX_COMBO), DIFFICULTY_RATING = VALUES(DIFFICULTY_RATING), 
+			VERSION = VALUES(VERSION), 	ACCURACY = VALUES(ACCURACY), AR = VALUES(AR), CS = VALUES(CS), DRAIN = VALUES(DRAIN), BPM = VALUES(BPM),` +
+		"`CONVERT` = VALUES(`CONVERT`" + `), COUNT_CIRCLES = VALUES(COUNT_CIRCLES), COUNT_SLIDERS = VALUES(COUNT_SLIDERS), 
+			COUNT_SPINNERS = VALUES(COUNT_SPINNERS), DELETED_AT = VALUES(DELETED_AT), 	HIT_LENGTH = VALUES(HIT_LENGTH), 
+			IS_SCOREABLE = VALUES(IS_SCOREABLE), LAST_UPDATED = VALUES(LAST_UPDATED), PASSCOUNT = VALUES(PASSCOUNT), PLAYCOUNT = VALUES(PLAYCOUNT), 
+			CHECKSUM = VALUES(CHECKSUM), USER_ID = VALUES(USER_ID);`
 
 	setUpsert = `/* UPSERT BEATMAPSET */
-		INSERT INTO osu.beatmapset (
-			beatmapset_id,artist,artist_unicode,creator,favourite_count,
-			nsfw,play_count,source,
-			status,title,title_unicode,user_id,video,
-			availability_download_disabled,availability_more_information,bpm,can_be_hyped,discussion_enabled,
-			discussion_locked,is_scoreable,last_updated,legacy_thread_url,nominations_summary_current,
-			nominations_summary_required,ranked,ranked_date,storyboard,submitted_date,
-			tags,has_favourited )
+		INSERT INTO BEATMAPSET (
+			BEATMAPSET_ID,ARTIST,ARTIST_UNICODE,CREATOR,FAVOURITE_COUNT,
+			NSFW,PLAY_COUNT,SOURCE,
+			STATUS,TITLE,TITLE_UNICODE,USER_ID,VIDEO,
+			AVAILABILITY_DOWNLOAD_DISABLED,AVAILABILITY_MORE_INFORMATION,BPM,CAN_BE_HYPED,DISCUSSION_ENABLED,
+			DISCUSSION_LOCKED,IS_SCOREABLE,LAST_UPDATED,LEGACY_THREAD_URL,NOMINATIONS_SUMMARY_CURRENT,
+			NOMINATIONS_SUMMARY_REQUIRED,RANKED,RANKED_DATE,STORYBOARD,SUBMITTED_DATE,
+			TAGS,HAS_FAVOURITED )
 		VALUES %s ON DUPLICATE KEY UPDATE 
-			artist = VALUES(artist), artist_unicode = VALUES(artist_unicode), creator = VALUES(creator), favourite_count = VALUES(favourite_count), 
-			nsfw = VALUES(nsfw), play_count = VALUES(play_count), source = VALUES(source), 
-			status = VALUES(status), title = VALUES(title), title_unicode = VALUES(title_unicode), user_id = VALUES(user_id), video = VALUES(video), 
-			availability_download_disabled = VALUES(availability_download_disabled), availability_more_information = VALUES(availability_more_information), 
-			bpm = VALUES(bpm), can_be_hyped = VALUES(can_be_hyped), discussion_enabled = VALUES(discussion_enabled), 
-			discussion_locked = VALUES(discussion_locked), is_scoreable = VALUES(is_scoreable), last_updated = VALUES(last_updated), 
-			legacy_thread_url = VALUES(legacy_thread_url), nominations_summary_current = VALUES(nominations_summary_current), 
-			nominations_summary_required = VALUES(nominations_summary_required), ranked = VALUES(ranked), ranked_date = VALUES(ranked_date), 
-			storyboard = VALUES(storyboard), submitted_date = VALUES(submitted_date), 
-			tags = VALUES(tags), has_favourited = VALUES(has_favourited);`
+			ARTIST = VALUES(ARTIST), ARTIST_UNICODE = VALUES(ARTIST_UNICODE), CREATOR = VALUES(CREATOR), FAVOURITE_COUNT = VALUES(FAVOURITE_COUNT), 
+			NSFW = VALUES(NSFW), PLAY_COUNT = VALUES(PLAY_COUNT), SOURCE = VALUES(SOURCE), 
+			STATUS = VALUES(STATUS), TITLE = VALUES(TITLE), TITLE_UNICODE = VALUES(TITLE_UNICODE), USER_ID = VALUES(USER_ID), VIDEO = VALUES(VIDEO), 
+			AVAILABILITY_DOWNLOAD_DISABLED = VALUES(AVAILABILITY_DOWNLOAD_DISABLED), AVAILABILITY_MORE_INFORMATION = VALUES(AVAILABILITY_MORE_INFORMATION), 
+			BPM = VALUES(BPM), CAN_BE_HYPED = VALUES(CAN_BE_HYPED), DISCUSSION_ENABLED = VALUES(DISCUSSION_ENABLED), 
+			DISCUSSION_LOCKED = VALUES(DISCUSSION_LOCKED), IS_SCOREABLE = VALUES(IS_SCOREABLE), LAST_UPDATED = VALUES(LAST_UPDATED), 
+			LEGACY_THREAD_URL = VALUES(LEGACY_THREAD_URL), NOMINATIONS_SUMMARY_CURRENT = VALUES(NOMINATIONS_SUMMARY_CURRENT), 
+			NOMINATIONS_SUMMARY_REQUIRED = VALUES(NOMINATIONS_SUMMARY_REQUIRED), RANKED = VALUES(RANKED), RANKED_DATE = VALUES(RANKED_DATE), 
+			STORYBOARD = VALUES(STORYBOARD), SUBMITTED_DATE = VALUES(SUBMITTED_DATE), 
+			TAGS = VALUES(TAGS), HAS_FAVOURITED = VALUES(HAS_FAVOURITED);`
 	setValues = `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)` //30
 
 	mapUpsert = `/* UPSERT BEATMAP */
-		INSERT INTO osu.beatmap (	
-			beatmap_id,beatmapset_id,mode,mode_int,status,	ranked,total_length,max_combo,difficulty_rating,version,
-			accuracy,ar,cs,drain,bpm,` + "`convert`" + `,count_circles,count_sliders,count_spinners,deleted_at,
-			hit_length,is_scoreable,last_updated,passcount,playcount,	checksum,user_id
+		INSERT INTO BEATMAP (	
+			BEATMAP_ID,BEATMAPSET_ID,MODE,MODE_INT,STATUS,	RANKED,TOTAL_LENGTH,MAX_COMBO,DIFFICULTY_RATING,VERSION,
+			ACCURACY,AR,CS,DRAIN,BPM,` + "`CONVERT`" + `,COUNT_CIRCLES,COUNT_SLIDERS,COUNT_SPINNERS,DELETED_AT,
+			HIT_LENGTH,IS_SCOREABLE,LAST_UPDATED,PASSCOUNT,PLAYCOUNT,	CHECKSUM,USER_ID
 		)VALUES %s ON DUPLICATE KEY UPDATE 
-			beatmapset_id = VALUES(beatmapset_id), mode = VALUES(mode), mode_int = VALUES(mode_int), status = VALUES(status), 
-			ranked = VALUES(ranked), total_length = VALUES(total_length), max_combo = VALUES(max_combo), 
-			difficulty_rating = VALUES(difficulty_rating), version = VALUES(version), 
-			accuracy = VALUES(accuracy), ar = VALUES(ar), cs = VALUES(cs), drain = VALUES(drain), bpm = VALUES(bpm), 
-			` + "`convert` = VALUES(`convert`" + `), count_circles = VALUES(count_circles), count_sliders = VALUES(count_sliders),
-			count_spinners = VALUES(count_spinners), deleted_at = VALUES(deleted_at), 
-			hit_length = VALUES(hit_length), is_scoreable = VALUES(is_scoreable), last_updated = VALUES(last_updated), 
-			passcount = VALUES(passcount), playcount = VALUES(playcount), 
-			checksum = VALUES(checksum), user_id = VALUES(user_id);`
+			BEATMAPSET_ID = VALUES(BEATMAPSET_ID), MODE = VALUES(MODE), MODE_INT = VALUES(MODE_INT), STATUS = VALUES(STATUS), 
+			RANKED = VALUES(RANKED), TOTAL_LENGTH = VALUES(TOTAL_LENGTH), MAX_COMBO = VALUES(MAX_COMBO), 
+			DIFFICULTY_RATING = VALUES(DIFFICULTY_RATING), VERSION = VALUES(VERSION), 
+			ACCURACY = VALUES(ACCURACY), AR = VALUES(AR), CS = VALUES(CS), DRAIN = VALUES(DRAIN), BPM = VALUES(BPM), 
+			` + "`CONVERT` = VALUES(`CONVERT`" + `), COUNT_CIRCLES = VALUES(COUNT_CIRCLES), COUNT_SLIDERS = VALUES(COUNT_SLIDERS),
+			COUNT_SPINNERS = VALUES(COUNT_SPINNERS), DELETED_AT = VALUES(DELETED_AT), 
+			HIT_LENGTH = VALUES(HIT_LENGTH), IS_SCOREABLE = VALUES(IS_SCOREABLE), LAST_UPDATED = VALUES(LAST_UPDATED), 
+			PASSCOUNT = VALUES(PASSCOUNT), PLAYCOUNT = VALUES(PLAYCOUNT), 
+			CHECKSUM = VALUES(CHECKSUM), USER_ID = VALUES(USER_ID);`
 	mapValues         = `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)` //27
-	selectDeletedMaps = `select beatmap_id from osu.beatmap where beatmapset_id in (%s) AND beatmap_id not in (%s)`
-	deleteMap         = `delete from osu.beatmap where beatmap_id in (%s);`
+	selectDeletedMaps = `SELECT BEATMAP_ID FROM BEATMAP WHERE BEATMAPSET_ID IN (%s) AND BEATMAP_ID NOT IN (%s)`
+	deleteMap         = `DELETE FROM BEATMAP WHERE BEATMAP_ID IN (%s);`
 	UpsertBeatmapSet  = `
 /* UPSERT BEATMAPSET */
-INSERT INTO osu.beatmapset(
-	beatmapset_id,artist,artist_unicode,creator,favourite_count,
-	hype_current,hype_required,nsfw,play_count,source,
-	status,title,title_unicode,user_id,video,
-	availability_download_disabled,availability_more_information,bpm,can_be_hyped,discussion_enabled,
-	discussion_locked,is_scoreable,last_updated,legacy_thread_url,nominations_summary_current,
-	nominations_summary_required,ranked,ranked_date,storyboard,submitted_date,
-	tags,has_favourited,description,genre_id,genre_name,
-	language_id,language_name,ratings
+INSERT INTO BEATMAPSET(
+	BEATMAPSET_ID,ARTIST,ARTIST_UNICODE,CREATOR,FAVOURITE_COUNT,
+	HYPE_CURRENT,HYPE_REQUIRED,NSFW,PLAY_COUNT,SOURCE,
+	STATUS,TITLE,TITLE_UNICODE,USER_ID,VIDEO,
+	AVAILABILITY_DOWNLOAD_DISABLED,AVAILABILITY_MORE_INFORMATION,BPM,CAN_BE_HYPED,DISCUSSION_ENABLED,
+	DISCUSSION_LOCKED,IS_SCOREABLE,LAST_UPDATED,LEGACY_THREAD_URL,NOMINATIONS_SUMMARY_CURRENT,
+	NOMINATIONS_SUMMARY_REQUIRED,RANKED,RANKED_DATE,STORYBOARD,SUBMITTED_DATE,
+	TAGS,HAS_FAVOURITED,DESCRIPTION,GENRE_ID,GENRE_NAME,
+	LANGUAGE_ID,LANGUAGE_NAME,RATINGS
 )VALUES(
 	?,?,?,?,?,	?,?,?,?,?,
 	?,?,?,?,?,	?,?,?,?,?,
 	?,?,?,?,?,	?,?,?,?,?,
 	?,?,?,?,?,	?,?,?
 )ON DUPLICATE KEY UPDATE 
-	artist= VALUES(artist), artist_unicode= VALUES(artist_unicode), creator= VALUES(creator), favourite_count= VALUES(favourite_count), 
-	hype_current= VALUES(hype_current), hype_required= VALUES(hype_required), nsfw= VALUES(nsfw), play_count= VALUES(play_count), source= VALUES(source), 
-	status= VALUES(status), title= VALUES(title), title_unicode= VALUES(title_unicode), user_id= VALUES(user_id), video= VALUES(video), 
-	availability_download_disabled= VALUES(availability_download_disabled), availability_more_information= VALUES(availability_more_information), 
-	bpm= VALUES(bpm), can_be_hyped= VALUES(can_be_hyped), discussion_enabled= VALUES(discussion_enabled), 
-	discussion_locked= VALUES(discussion_locked), is_scoreable= VALUES(is_scoreable), last_updated= VALUES(last_updated), legacy_thread_url= VALUES(legacy_thread_url), 
-	nominations_summary_current= VALUES(nominations_summary_current), 	nominations_summary_required= VALUES(nominations_summary_required), 
-	ranked= VALUES(ranked), ranked_date= VALUES(ranked_date), storyboard= VALUES(storyboard), submitted_date= VALUES(submitted_date), 
-	tags= VALUES(tags), has_favourited= VALUES(has_favourited), description= VALUES(description), genre_id= VALUES(genre_id), genre_name= VALUES(genre_name), 
-	language_id= VALUES(language_id), language_name= VALUES(language_name), ratings= VALUES(ratings)
+	ARTIST= VALUES(ARTIST), ARTIST_UNICODE= VALUES(ARTIST_UNICODE), CREATOR= VALUES(CREATOR), FAVOURITE_COUNT= VALUES(FAVOURITE_COUNT), 
+	HYPE_CURRENT= VALUES(HYPE_CURRENT), HYPE_REQUIRED= VALUES(HYPE_REQUIRED), NSFW= VALUES(NSFW), PLAY_COUNT= VALUES(PLAY_COUNT), SOURCE= VALUES(SOURCE), 
+	STATUS= VALUES(STATUS), TITLE= VALUES(TITLE), TITLE_UNICODE= VALUES(TITLE_UNICODE), USER_ID= VALUES(USER_ID), VIDEO= VALUES(VIDEO), 
+	AVAILABILITY_DOWNLOAD_DISABLED= VALUES(AVAILABILITY_DOWNLOAD_DISABLED), AVAILABILITY_MORE_INFORMATION= VALUES(AVAILABILITY_MORE_INFORMATION), 
+	BPM= VALUES(BPM), CAN_BE_HYPED= VALUES(CAN_BE_HYPED), DISCUSSION_ENABLED= VALUES(DISCUSSION_ENABLED), 
+	DISCUSSION_LOCKED= VALUES(DISCUSSION_LOCKED), IS_SCOREABLE= VALUES(IS_SCOREABLE), LAST_UPDATED= VALUES(LAST_UPDATED), LEGACY_THREAD_URL= VALUES(LEGACY_THREAD_URL), 
+	NOMINATIONS_SUMMARY_CURRENT= VALUES(NOMINATIONS_SUMMARY_CURRENT), 	NOMINATIONS_SUMMARY_REQUIRED= VALUES(NOMINATIONS_SUMMARY_REQUIRED), 
+	RANKED= VALUES(RANKED), RANKED_DATE= VALUES(RANKED_DATE), STORYBOARD= VALUES(STORYBOARD), SUBMITTED_DATE= VALUES(SUBMITTED_DATE), 
+	TAGS= VALUES(TAGS), HAS_FAVOURITED= VALUES(HAS_FAVOURITED), DESCRIPTION= VALUES(DESCRIPTION), GENRE_ID= VALUES(GENRE_ID), GENRE_NAME= VALUES(GENRE_NAME), 
+	LANGUAGE_ID= VALUES(LANGUAGE_ID), LANGUAGE_NAME= VALUES(LANGUAGE_NAME), RATINGS= VALUES(RATINGS)
 ;
 `
 )

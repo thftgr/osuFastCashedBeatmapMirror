@@ -46,9 +46,9 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	var row *sql.Row
 	if request.SetId != 0 {
 		go banchoCroller.ManualUpdateBeatmapSet(request.SetId)
-		row = db.Maria.QueryRow(`SELECT beatmapset_id,artist,title,last_updated,video FROM osu.beatmapset WHERE beatmapset_id = ?`, request.SetId)
+		row = db.Maria.QueryRow(`SELECT BEATMAPSET_ID,ARTIST,TITLE,LAST_UPDATED,VIDEO FROM BEATMAPSET WHERE BEATMAPSET_ID = ?`, request.SetId)
 	} else if request.MapId != 0 {
-		row = db.Maria.QueryRow(`SELECT beatmapset_id,artist,title,last_updated,video FROM osu.beatmapset WHERE beatmapset_id = (SELECT beatmapset_id FROM osu.beatmap WHERE beatmap_id = ?);`, request.MapId)
+		row = db.Maria.QueryRow(`SELECT BEATMAPSET_ID,ARTIST,TITLE,LAST_UPDATED,VIDEO FROM BEATMAPSET WHERE BEATMAPSET_ID = (SELECT BEATMAPSET_ID FROM BEATMAP WHERE BEATMAP_ID = ?);`, request.MapId)
 	} else {
 		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
 			Code:        "DownloadBeatmapSet-001-1",

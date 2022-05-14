@@ -37,7 +37,7 @@ func UpdateAllPackList() {
 		var dbPackId string
 		page := 0
 
-		row := db.Maria.QueryRow(`SELECT PACK_ID FROM osu.BEATMAP_PACK WHERE TYPE = ? ORDER BY PACK_ID DESC LIMIT 1`, packType[i])
+		row := db.Maria.QueryRow(`SELECT PACK_ID FROM BEATMAP_PACK WHERE TYPE = ? ORDER BY PACK_ID DESC LIMIT 1`, packType[i])
 		if err := row.Err(); err != nil {
 			if err != sql.ErrNoRows {
 				log.Println(err)
@@ -78,7 +78,7 @@ func UpdateAllPackList() {
 }
 
 const upsertPackSql = `
-INSERT INTO osu.BEATMAP_PACK(PACK_ID,TYPE,NAME,CREATOR,DATE)
+INSERT INTOBEATMAP_PACK(PACK_ID,TYPE,NAME,CREATOR,DATE)
 VALUES %s
 ON DUPLICATE KEY UPDATE 
 TYPE = VALUES(TYPE),NAME = VALUES(NAME),CREATOR = VALUES(CREATOR),DATE = VALUES(DATE);`

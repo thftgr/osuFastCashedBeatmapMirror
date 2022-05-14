@@ -55,33 +55,39 @@ func insertStringIndex(data []osu.BeatmapSetsIN) {
 
 	for _, in := range data {
 
-		artist := splitString(*in.Artist)
-		creator := splitString(*in.Creator)
-		title := splitString(*in.Title)
-		tags := splitString(*in.Tags)
+		artist := splitStringUnique(*in.Artist)
+
+		creator := splitStringUnique(*in.Creator)
+
+		title := splitStringUnique(*in.Title)
+
+		tags := splitStringUnique(*in.Tags)
+
 		insertDataa.Artist = append(insertDataa.Artist, row{
-			KEY:          utils.MakeArrayUnique(&artist),
+			KEY:          artist,
 			BeatmapsetId: in.Id,
 		})
 		insertDataa.Creator = append(insertDataa.Creator, row{
-			KEY:          utils.MakeArrayUnique(&creator),
+			KEY:          creator,
 			BeatmapsetId: in.Id,
 		})
 		insertDataa.Title = append(insertDataa.Title, row{
-			KEY:          utils.MakeArrayUnique(&title),
+			KEY:          title,
 			BeatmapsetId: in.Id,
 		})
 		insertDataa.Tags = append(insertDataa.Tags, row{
-			KEY:          utils.MakeArrayUnique(&tags),
+			KEY:          tags,
 			BeatmapsetId: in.Id,
 		})
 		insertDataa.Strbuf = append(insertDataa.Strbuf, artist...)
 		insertDataa.Strbuf = append(insertDataa.Strbuf, creator...)
 		insertDataa.Strbuf = append(insertDataa.Strbuf, title...)
 		insertDataa.Strbuf = append(insertDataa.Strbuf, tags...)
+
 		insertDataa.Strbuf = append(insertDataa.Strbuf, strconv.Itoa(in.Id))
 		for _, beatmapIN := range *in.Beatmaps {
-			other := splitString(*beatmapIN.Version)
+			other := splitStringUnique(*beatmapIN.Version)
+
 			insertDataa.Strbuf = append(insertDataa.Strbuf, other...)
 			insertDataa.Strbuf = append(insertDataa.Strbuf, strconv.Itoa(beatmapIN.Id))
 			insertDataa.Other = append(insertDataa.Other, row{
@@ -141,6 +147,7 @@ func insertStringIndex(data []osu.BeatmapSetsIN) {
 
 func toIndexKV(data []row) (AA []interface{}) {
 	for _, A := range data {
+
 		for _, K := range A.KEY {
 			AA = append(AA, K, A.BeatmapsetId)
 		}
@@ -156,4 +163,9 @@ func splitString(input string) (ss []string) {
 		ss = append(ss, s, porter2.Stemmer.Stem(s))
 	}
 	return
+}
+
+func splitStringUnique(input string) (ss []string) {
+	ip := splitString(input)
+	return utils.MakeStringArrayUniqueAndCheckLength(&ip, 254)
 }

@@ -63,7 +63,7 @@ func main() {
 
 	e.Use(
 		middleware.Logger(),
-		//middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
+		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
 		//middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
 		middleware.RequestID(),
 		middleware.Recover(),
@@ -71,7 +71,7 @@ func main() {
 
 	// docs ============================================================================================================
 	e.GET("/", func(c echo.Context) error {
-		return c.Redirect(http.StatusPermanentRedirect, `https://nerinyan.stoplight.io/studio/nerinyan-api`)
+		return c.Redirect(http.StatusPermanentRedirect, `https://nerinyan.stoplight.io/docs/nerinyan-api`)
 	})
 
 	// 서버상태 체크용 ====================================================================================================
@@ -85,30 +85,19 @@ func main() {
 			"apiCount":              *banchoCroller.ApiCount,
 		})
 	})
-	e.GET("/latency", Route.LatencyTest)
 
 	// 맵 파일 다운로드 ===================================================================================================
 	e.GET("/d/:setId", Route.DownloadBeatmapSet)
 	e.GET("/beatmap/:mapId", Route.DownloadBeatmapSet)
 	e.GET("/beatmapset/:setId", Route.DownloadBeatmapSet)
 	//TODO 맵아이디, 맵셋아이디 지원
-	//e.GET("/d/:id", Route.DownloadBeatmapSet, middleWareFunc.LoadBalancer)
 
 	// 비트맵 리스트 검색용 ================================================================================================
 	e.GET("/search", Route.Search)
-	e.GET("/search/beatmap/:mi", Route.SearchByBeatmapId)
-	e.GET("/search/beatmapset/:si", Route.SearchByBeatmapSetId)
-
-	// 서버 데이터 강제 업데이트용. ==========================================================================================
-	// TODO 맵 굳이 한개씩 강제업데이트할 이유가 없음. 맵셋으로 업데이트만 지원
-	//e.GET("/update/beatmapset/:id", func(c echo.Context) error {
-	//
-	//	//src.ManualUpdateBeatmapSet()
-	//	return nil
-	//})
 
 	// 개발중 || 테스트중 ===================================================================================================
 
+	// ====================================================================================================================
 	pterm.Info.Println("ECHO STARTED AT", config.Config.Port)
 	e.Logger.Fatal(e.Start(":" + config.Config.Port))
 

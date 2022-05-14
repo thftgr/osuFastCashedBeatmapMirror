@@ -18,20 +18,7 @@ type config struct {
 		} `json:"webhook"`
 	} `json:"discord"`
 	Sql struct {
-		Id     string `json:"id"`
-		Passwd string `json:"passwd"`
-		Url    string `json:"url"`
-		Table  struct {
-			Log                    string `json:"log"`
-			Beatmap                string `json:"beatmap"`
-			BeatmapSet             string `json:"beatmapSet"`
-			SearchCacheArtist      string `json:"searchCacheArtist"`
-			SearchCacheCreator     string `json:"searchCacheCreator"`
-			SearchCacheStringIndex string `json:"searchCacheStringIndex"`
-			SearchCacheTag         string `json:"searchCacheTag"`
-			SearchCacheTitle       string `json:"searchCacheTitle"`
-			ServerCacheKVJson      string `json:"serverCacheKVJson"`
-		} `json:"table"`
+		Url string `json:"url"`
 	} `json:"sql"`
 	Osu struct {
 		Username string `json:"username"`
@@ -44,18 +31,12 @@ type config struct {
 		} `json:"token"`
 		BeatmapUpdate struct {
 			UpdatedAsc struct {
-				//LastUpdate   string `json:"last_update"`
-				//Id           string `json:"_id"`
 				CursorString string `json:"cursor_string"`
 			} `json:"updated_asc"`
 			UpdatedDesc struct {
-				//LastUpdate   string `json:"last_update"`
-				//Id           string `json:"_id"`
 				CursorString string `json:"cursor_string"`
 			} `json:"updated_desc"`
 			GraveyardAsc struct {
-				//LastUpdate   string `json:"last_update"`
-				//Id           string `json:"_id"`
 				CursorString string `json:"cursor_string"`
 			} `json:"graveyard_asc"`
 		} `json:"beatmapUpdate"`
