@@ -16,3 +16,4 @@ Nerinyan-APIV2-MULTI
 /.idea/*
 /_script/beatmapMirror.sql
 /Nerinyan-APIV2_ARM64
+/config.yaml

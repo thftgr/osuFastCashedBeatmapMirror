@@ -6,13 +6,13 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/banchoCroller"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/middlewareFunc"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pterm/pterm"
 	"log"
 	"net/http"
-	"os"
 	"runtime"
 )
 
@@ -28,8 +28,8 @@ import (
 // TODO DOING 서버 자체적으로 10분당 150건 이내만 다운로드 가능하게 셋팅
 // 		END	  검색 쿼리시 서버에 캐싱되어있는 비트맵인지 여부
 // TODO DOING /status에 들어갈 상태값 추가.
-// TODO END 반쵸에서 가져온 데이터 검색캐싱에 추가
-// TODO DOING 디스코드 웹훅
+// TODO END   반쵸에서 가져온 데이터 검색캐싱에 추가
+// TODO END   디스코드 웹훅
 func init() {
 	ch := make(chan struct{})
 	config.LoadConfig()
@@ -37,18 +37,22 @@ func init() {
 	db.ConnectMaria()
 	go banchoCroller.LoadBancho(ch)
 	_ = <-ch
-	go banchoCroller.RunGetBeatmapDataASBancho()
 
-	if os.Getenv("debug") != "true" {
-		//go banchoCroller.RunGetBeatmapDataASBancho()
+	if config.Config.Debug {
+		//go banchoCroller.UpdateAllPackList()
 	} else {
+		go banchoCroller.RunGetBeatmapDataASBancho()
 	}
-	//go banchoCroller.UpdateAllPackList()
+
 }
 
 func main() {
 	e := echo.New()
 	e.HideBanner = true
+	e.HTTPErrorHandler = middlewareFunc.CustomHTTPErrorHandler
+
+	e.Renderer = &Route.Renderer
+
 	go func() {
 		for {
 			<-logger.Ch
@@ -58,10 +62,9 @@ func main() {
 	}()
 
 	e.Pre(
-		middleware.RemoveTrailingSlash(),
-	)
+		middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)),
 
-	e.Use(
+		middleware.RemoveTrailingSlash(),
 		middleware.Logger(),
 		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
 		//middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
@@ -87,7 +90,7 @@ func main() {
 	})
 
 	// 맵 파일 다운로드 ===================================================================================================
-	e.GET("/d/:setId", Route.DownloadBeatmapSet)
+	e.GET("/d/:setId", Route.DownloadBeatmapSet, Route.Embed)
 	e.GET("/beatmap/:mapId", Route.DownloadBeatmapSet)
 	e.GET("/beatmapset/:setId", Route.DownloadBeatmapSet)
 	//TODO 맵아이디, 맵셋아이디 지원
@@ -96,6 +99,9 @@ func main() {
 	e.GET("/search", Route.Search)
 
 	// 개발중 || 테스트중 ===================================================================================================
+	e.GET("/test", func(c echo.Context) error {
+		return echo.NewHTTPError(400, "test bad request")
+	})
 
 	// ====================================================================================================================
 	pterm.Info.Println("ECHO STARTED AT", config.Config.Port)

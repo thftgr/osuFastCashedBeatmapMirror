@@ -15,6 +15,7 @@ type InsertQueue struct {
 }
 
 var InsertQueueChannel chan InsertQueue
+var queryNameRegex, _ = regexp.Compile("^(/[*])(.+?)([*]/)")
 
 func AddInsertQueue(query string, args ...any) {
 	InsertQueueChannel <- InsertQueue{
@@ -27,7 +28,6 @@ func init() {
 	go func() {
 		for {
 			InsertQueueChannel = make(chan InsertQueue)
-			var queryNameRegex, _ = regexp.Compile("^(/[*])(.+?)([*]/)")
 			for ins := range InsertQueueChannel {
 				st := time.Now().UnixMilli()
 				result := Gorm.Exec(ins.Query, ins.Args...)
@@ -50,9 +50,7 @@ func init() {
 						pterm.Error.Println(queryName+err.Error(), ins.Query)
 					}
 				}()
-
 			}
 		}
-
 	}()
 }

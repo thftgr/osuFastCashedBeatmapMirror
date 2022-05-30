@@ -11,6 +11,7 @@ type config struct {
 	Port         string   `json:"port"`
 	TargetDir    string   `json:"targetDir"`
 	SlaveServers []string `json:"slave"`
+	Debug        bool     `json:"debug"`
 	Discord      struct {
 		Webhook struct {
 			Info  string `json:"info"`

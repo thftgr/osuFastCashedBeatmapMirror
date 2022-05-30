@@ -34,6 +34,7 @@ func apiCountReset() {
 	api.count = 0
 	api.mutex.Unlock()
 }
+
 func RunGetBeatmapDataASBancho() {
 
 	go func() {

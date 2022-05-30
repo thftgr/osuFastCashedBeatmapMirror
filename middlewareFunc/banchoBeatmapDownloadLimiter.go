@@ -1,4 +1,4 @@
-package middleWareFunc
+package middlewareFunc
 
 import (
 	"github.com/labstack/echo/v4"
