@@ -1,7 +1,7 @@
 package config
 
 import (
-	"encoding/json"
+	"github.com/goccy/go-json"
 	"github.com/pterm/pterm"
 	"io/ioutil"
 	"os"

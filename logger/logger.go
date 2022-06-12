@@ -1,11 +1,11 @@
 package logger
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
 	"github.com/Nerinyan/Nerinyan-APIV2/utils"
 	"github.com/Nerinyan/Nerinyan-APIV2/webhook"
+	"github.com/goccy/go-json"
 	"github.com/jasonlvhit/gocron"
 	"github.com/labstack/echo/v4"
 	"github.com/pterm/pterm"

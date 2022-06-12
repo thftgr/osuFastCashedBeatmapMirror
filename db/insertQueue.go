@@ -8,17 +8,17 @@ import (
 	"time"
 )
 
-type InsertQueue struct {
+type ExecQueue struct {
 	Ch    chan error
 	Query string
 	Args  []any
 }
 
-var InsertQueueChannel chan InsertQueue
+var InsertQueueChannel chan ExecQueue
 var queryNameRegex, _ = regexp.Compile("^(/[*])(.+?)([*]/)")
 
 func AddInsertQueue(query string, args ...any) {
-	InsertQueueChannel <- InsertQueue{
+	InsertQueueChannel <- ExecQueue{
 		Query: query,
 		Args:  args,
 	}
@@ -27,7 +27,7 @@ func AddInsertQueue(query string, args ...any) {
 func init() {
 	go func() {
 		for {
-			InsertQueueChannel = make(chan InsertQueue)
+			InsertQueueChannel = make(chan ExecQueue)
 			for ins := range InsertQueueChannel {
 				st := time.Now().UnixMilli()
 				result := Gorm.Exec(ins.Query, ins.Args...)

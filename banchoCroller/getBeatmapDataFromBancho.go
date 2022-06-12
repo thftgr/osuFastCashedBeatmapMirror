@@ -1,11 +1,12 @@
 package banchoCroller
 
 import (
-	"encoding/json"
+	"database/sql"
 	"fmt"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
+	"github.com/goccy/go-json"
 	"github.com/pkg/errors"
 	"github.com/pterm/pterm"
 	"io/ioutil"
@@ -312,7 +313,7 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 	//	language_id,language_name,ratings
 
 	r := *s.Ratings
-	db.InsertQueueChannel <- db.InsertQueue{ //DB 큐에 전송
+	db.InsertQueueChannel <- db.ExecQueue{ //DB 큐에 전송
 		Query: UpsertBeatmapSet,
 		Args: []any{s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, s.Hype.Current, s.Hype.Required, s.Nsfw, s.PlayCount, s.Source, s.Status, s.Title, s.TitleUnicode, s.UserId,
 			s.Video, s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled, s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl,
@@ -341,7 +342,7 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 }
 
 func upsertMap(m osu.BeatmapIN) {
-	db.InsertQueueChannel <- db.InsertQueue{ //DB 큐에 전송
+	db.InsertQueueChannel <- db.ExecQueue{ //DB 큐에 전송
 		Query: UpsertBeatmap,
 		Args: []any{
 			m.Id, m.BeatmapsetId, m.Mode, m.ModeInt, m.Status, m.Ranked, m.TotalLength, m.MaxCombo, m.DifficultyRating, m.Version, m.Accuracy, m.Ar, m.Cs, m.Drain, m.Bpm, m.Convert,
@@ -468,7 +469,6 @@ func updateSearchBeatmaps(data []osu.BeatmapSetsIN) (err error) {
 		mapInsertBuf []interface{}
 		beatmapSets  []int
 		beatmaps     []int
-		deletedMaps  []int
 	)
 
 	for _, s := range data {
@@ -481,42 +481,47 @@ func updateSearchBeatmaps(data []osu.BeatmapSetsIN) (err error) {
 		}
 	}
 	//맵셋
-	db.InsertQueueChannel <- db.InsertQueue{ //맵셋
+	db.InsertQueueChannel <- db.ExecQueue{ //맵셋
 		Query: fmt.Sprintf(setUpsert, buildSqlValues(setValues, len(beatmapSets))),
 		Args:  setInsertBuf,
 	}
 
-	db.InsertQueueChannel <- db.InsertQueue{ //맵
+	db.InsertQueueChannel <- db.ExecQueue{ //맵
 		Query: fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))),
 		Args:  mapInsertBuf,
 	}
 
-	//TODO 한방쿼리로 수정
-	selectDeletedMaps := `SELECT BEATMAP_ID FROM BEATMAP WHERE BEATMAPSET_ID IN (%s) AND BEATMAP_ID NOT IN (%s)`
-	deleteMap := `DELETE FROM BEATMAP WHERE BEATMAP_ID IN (%s);`
-	//삭제된 맵 제거
-	sets := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmapSets)), ","), "[]")
-	maps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmaps)), ","), "[]")
-	rows, err := db.Maria.Query(fmt.Sprintf(selectDeletedMaps, sets, maps))
-	if err != nil {
-		pterm.Error.Println(err)
-		return err
+	db.InsertQueueChannel <- db.ExecQueue{ //삭제된맵 삭제
+		Query: `DELETE FROM BEATMAP WHERE BEATMAP_ID IN (SELECT BEATMAP_ID FROM BEATMAP WHERE BEATMAPSET_ID IN  @mapSets  AND BEATMAP_ID NOT IN @maps);`,
+		Args:  []any{sql.Named("mapSets", beatmapSets), sql.Named("maps", beatmaps)},
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var i int
-		if err = rows.Scan(&i); err != nil {
-			return err
-		}
-		deletedMaps = append(deletedMaps, i)
-	}
-	if len(deletedMaps) > 1 {
-		pterm.Info.Println(time.Now().Format("02 15:04:05"), "DELETED MAPS:", pterm.LightYellow(deletedMaps))
-		dmaps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(deletedMaps)), ","), "[]")
-		if _, err = db.Maria.Exec(fmt.Sprintf(deleteMap, dmaps)); err != nil {
-			return err
-		}
-	}
+
+	//
+	////TODO 한방쿼리로 수정
+	//deleteMap := `/* DELETEED MAP */ DELETE FROM BEATMAP WHERE BEATMAP_ID IN (SELECT BEATMAP_ID FROM BEATMAP WHERE BEATMAPSET_ID IN  @mapSetID  AND BEATMAP_ID NOT IN @mapID);`
+	////삭제된 맵 제거
+	//sets := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmapSets)), ","), "[]")
+	//maps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmaps)), ","), "[]")
+	//rows, err := db.Maria.Query(fmt.Sprintf(selectDeletedMaps, sets, maps))
+	//if err != nil {
+	//	pterm.Error.Println(err)
+	//	return err
+	//}
+	//defer rows.Close()
+	//for rows.Next() {
+	//	var i int
+	//	if err = rows.Scan(&i); err != nil {
+	//		return err
+	//	}
+	//	deletedMaps = append(deletedMaps, i)
+	//}
+	//if len(deletedMaps) > 1 {
+	//	pterm.Info.Println(time.Now().Format("02 15:04:05"), "DELETED MAPS:", pterm.LightYellow(deletedMaps))
+	//	dmaps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(deletedMaps)), ","), "[]")
+	//	if _, err = db.Maria.Exec(fmt.Sprintf(deleteMap, dmaps)); err != nil {
+	//		return err
+	//	}
+	//}
 
 	return
 }

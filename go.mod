@@ -16,6 +16,7 @@ require (
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/atomicgo/cursor v0.0.1 // indirect
+	github.com/goccy/go-json v0.9.7 // indirect
 	github.com/gofiber/fiber/v2 v2.34.0 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/gookit/color v1.4.2 // indirect

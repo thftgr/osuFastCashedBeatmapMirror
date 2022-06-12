@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/antchfx/htmlquery"
+	"github.com/goccy/go-json"
 	"golang.org/x/net/html"
 	"log"
 	"os"
