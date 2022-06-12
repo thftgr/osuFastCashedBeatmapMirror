@@ -413,10 +413,9 @@ const (
 			HIT_LENGTH = VALUES(HIT_LENGTH), IS_SCOREABLE = VALUES(IS_SCOREABLE), LAST_UPDATED = VALUES(LAST_UPDATED), 
 			PASSCOUNT = VALUES(PASSCOUNT), PLAYCOUNT = VALUES(PLAYCOUNT), 
 			CHECKSUM = VALUES(CHECKSUM), USER_ID = VALUES(USER_ID);`
-	mapValues         = `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)` //27
-	selectDeletedMaps = `SELECT BEATMAP_ID FROM BEATMAP WHERE BEATMAPSET_ID IN (%s) AND BEATMAP_ID NOT IN (%s)`
-	deleteMap         = `DELETE FROM BEATMAP WHERE BEATMAP_ID IN (%s);`
-	UpsertBeatmapSet  = `
+	mapValues = `(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)` //27
+
+	UpsertBeatmapSet = `
 /* UPSERT BEATMAPSET */
 INSERT INTO BEATMAPSET(
 	BEATMAPSET_ID,ARTIST,ARTIST_UNICODE,CREATOR,FAVOURITE_COUNT,
@@ -467,7 +466,6 @@ func updateSearchBeatmaps(data []osu.BeatmapSetsIN) (err error) {
 	var (
 		setInsertBuf []interface{}
 		mapInsertBuf []interface{}
-		coverBuf     []interface{}
 		beatmapSets  []int
 		beatmaps     []int
 		deletedMaps  []int
@@ -476,7 +474,6 @@ func updateSearchBeatmaps(data []osu.BeatmapSetsIN) (err error) {
 	for _, s := range data {
 
 		beatmapSets = append(beatmapSets, s.Id)
-		coverBuf = append(coverBuf, s.Id, s.Covers.Cover, s.Covers.Cover2X, s.Covers.Card, s.Covers.Card2X, s.Covers.List, s.Covers.List2X, s.Covers.Slimcover, s.Covers.Slimcover2X)
 		setInsertBuf = append(setInsertBuf, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, s.Nsfw, s.PlayCount, s.Source, s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video, s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled, s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current, s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate, s.Tags, s.HasFavourited)
 		for _, m := range *s.Beatmaps {
 			beatmaps = append(beatmaps, m.Id)
@@ -484,23 +481,19 @@ func updateSearchBeatmaps(data []osu.BeatmapSetsIN) (err error) {
 		}
 	}
 	//맵셋
-	db.InsertQueueChannel <- db.InsertQueue{ //DB 큐에 전송
+	db.InsertQueueChannel <- db.InsertQueue{ //맵셋
 		Query: fmt.Sprintf(setUpsert, buildSqlValues(setValues, len(beatmapSets))),
 		Args:  setInsertBuf,
 	}
-	//if _, err = db.Maria.Exec(fmt.Sprintf(setUpsert, buildSqlValues(setValues, len(beatmapSets))), setInsertBuf...); err != nil {
-	//	pterm.Error.Println(err)
-	//	return err
-	//}
-	db.InsertQueueChannel <- db.InsertQueue{ //DB 큐에 전송
+
+	db.InsertQueueChannel <- db.InsertQueue{ //맵
 		Query: fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))),
 		Args:  mapInsertBuf,
 	}
-	//if _, err = db.Maria.Exec(fmt.Sprintf(mapUpsert, buildSqlValues(mapValues, len(beatmaps))), mapInsertBuf...); err != nil {
-	//	pterm.Error.Println(err)
-	//	return err
-	//}
 
+	//TODO 한방쿼리로 수정
+	selectDeletedMaps := `SELECT BEATMAP_ID FROM BEATMAP WHERE BEATMAPSET_ID IN (%s) AND BEATMAP_ID NOT IN (%s)`
+	deleteMap := `DELETE FROM BEATMAP WHERE BEATMAP_ID IN (%s);`
 	//삭제된 맵 제거
 	sets := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmapSets)), ","), "[]")
 	maps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmaps)), ","), "[]")

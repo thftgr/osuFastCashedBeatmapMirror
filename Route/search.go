@@ -403,6 +403,9 @@ func splitString(input string) (ss []string) {
 	}
 	return
 }
+
+var banchoMapRegex, _ = regexp.Compile(`(?:https://osu[.]ppy[.]sh/beatmapsets/)(\d+?)(?:\D|$)`)
+
 func Search(c echo.Context) (err error) {
 
 	var sq SearchQuery
@@ -433,6 +436,11 @@ func Search(c echo.Context) (err error) {
 			Error:   err,
 			Message: "request parse error",
 		}))
+	}
+
+	if sq.Option == "" && banchoMapRegex.MatchString(sq.Text) {
+		sq.Option = "s"
+		sq.Text = banchoMapRegex.FindStringSubmatch(sq.Text)[1]
 	}
 
 	q, args := sq.queryBuilder()

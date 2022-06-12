@@ -26,10 +26,8 @@ import (
 // TODO DOING 서버끼리 서로 비트맵파일 동기화 시킬수 있게
 // TODO DOING 반쵸 비트맵 다운로드 제한 10분간 약 200건 10분 정지. (429 too many request) => 10분 내 100건 봇 감지 알고리즘
 // TODO DOING 서버 자체적으로 10분당 150건 이내만 다운로드 가능하게 셋팅
-// 		END	  검색 쿼리시 서버에 캐싱되어있는 비트맵인지 여부
 // TODO DOING /status에 들어갈 상태값 추가.
-// TODO END   반쵸에서 가져온 데이터 검색캐싱에 추가
-// TODO END   디스코드 웹훅
+
 func init() {
 	ch := make(chan struct{})
 	config.LoadConfig()
@@ -66,10 +64,56 @@ func main() {
 
 		middleware.RemoveTrailingSlash(),
 		middleware.Logger(),
+
 		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
 		//middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
 		middleware.RequestID(),
 		middleware.Recover(),
+		//func(next echo.HandlerFunc) echo.HandlerFunc {
+		//	return func(c echo.Context) (err error) {
+		//		start := time.Now()
+		//		if err = next(c); err != nil {
+		//			c.Error(err)
+		//		}
+		//		stop := time.Now()
+		//
+		//		c.Response().Before(func() {
+		//			_ = time.Now().UnixMilli()                           //	"time": "${time_custom}",
+		//			_ = c.Request().Header.Get(echo.HeaderXRequestID)    //	"id": "${id}",
+		//			_ = c.Response().Header().Get(echo.HeaderXRequestID) //	"id": "${id}",
+		//			_ = c.RealIP()                                       //	"remote_ip": "${remote_ip}",
+		//			_ = c.Request().Host                                 //	"host": "${host}",
+		//			_ = c.Request().RequestURI                           //	"uri": "${uri}",
+		//			_ = c.Request().Method                               //	"method": "${method}",
+		//			_ = c.Request().URL.Path                             //	"uri": "${uri}",
+		//			_ = c.Request().UserAgent()                          //	"user_agent": "${user_agent}",
+		//			_ = c.Response().Status                              //	"status": "${status}",
+		//			_ = func() string {
+		//				if err != nil {
+		//					// Error may contain invalid JSON e.g. `"`
+		//					b, _ := json.Marshal(err.Error())
+		//					return string(b[1 : len(b)-1])
+		//				}
+		//				return ""
+		//			}()                                               //	"error": "${error}",
+		//			_ = strconv.FormatInt(int64(stop.Sub(start)), 10) //	"latency": "${latency}",
+		//			_ = stop.Sub(start).String()                      //	"latency_human": "${latency_human}",
+		//			_ = func() string {
+		//				cl := c.Request().Header.Get(echo.HeaderContentLength)
+		//				if cl == "" {
+		//					cl = "0"
+		//				}
+		//				return cl
+		//			}()                                          //	"bytes_in": "${bytes_in}",
+		//			_ = strconv.FormatInt(c.Response().Size, 10) //	"bytes_out": "${bytes_out}"
+		//
+		//			//=========================================================================
+		//			c.Request()
+		//
+		//		})
+		//		return next(c)
+		//	}
+		//},
 	)
 
 	// docs ============================================================================================================
