@@ -1,4 +1,4 @@
-package Route
+package route
 
 import (
 	"embed"
@@ -101,7 +101,7 @@ func Embed(next echo.HandlerFunc) echo.HandlerFunc {
 				var res string
 				//Ranked osu! beatmap by Kyuukai.
 				res += status[set.RANKED] + " osu! beatmap by " + set.CREATOR + "\n"
-				//               ⏫ Ranked             · 📚               9                Difficulties · 🎵                                190         · ❤️ 601
+				//               ⏫ Ranked             · 📚               9                Difficulties · 🎵                       190                  · ❤️ 601
 				res += statusWithIcon[set.RANKED] + " · 📚 " + strconv.Itoa(len(Map)) + " Difficulties · 🎵 " + fmt.Sprintf("%.0f", set.BPM) + " · ❤ " + set.FAVOURITE_COUNT + "\n"
 				res += "\n"
 				for _, m := range Map {

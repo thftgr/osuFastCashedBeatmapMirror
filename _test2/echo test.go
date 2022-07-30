@@ -105,6 +105,30 @@ func main() {
 	e.GET("/", func(c echo.Context) error {
 		return c.NoContent(http.StatusOK)
 	})
+	e.Pre(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Response().Before(func() {
 
+				println("before response")
+			})
+			c.Response().After(func() {
+				println("after response")
+			})
+
+			return next(c)
+		}
+	})
+	e.GET("/1", func(c echo.Context) error {
+		c.String(http.StatusOK, "ok")
+		c.String(http.StatusOK, "ok")
+		println("response")
+		return nil
+	})
+	go func() {
+		time.Sleep(time.Second * 2)
+		res, _ := http.Get("http://127.0.0.1:80/1")
+		defer res.Body.Close()
+		println("response client")
+	}()
 	log.Fatalln(e.Start(":80"))
 }

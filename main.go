@@ -2,11 +2,11 @@ package main
 
 import (
 	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
-	"github.com/Nerinyan/Nerinyan-APIV2/Route"
 	"github.com/Nerinyan/Nerinyan-APIV2/banchoCroller"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/middlewareFunc"
+	"github.com/Nerinyan/Nerinyan-APIV2/route"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -32,7 +32,7 @@ func init() {
 	ch := make(chan struct{})
 	config.LoadConfig()
 	src.StartIndex()
-	db.ConnectMaria()
+	db.ConnectRDBMS()
 	go banchoCroller.LoadBancho(ch)
 	_ = <-ch
 
@@ -41,7 +41,6 @@ func init() {
 	} else {
 		go banchoCroller.RunGetBeatmapDataASBancho()
 	}
-
 }
 
 func main() {
@@ -49,7 +48,7 @@ func main() {
 	e.HideBanner = true
 	e.HTTPErrorHandler = middlewareFunc.CustomHTTPErrorHandler
 
-	e.Renderer = &Route.Renderer
+	e.Renderer = &route.Renderer
 
 	go func() {
 		for {
@@ -123,8 +122,8 @@ func main() {
 
 	// 서버상태 체크용 ====================================================================================================
 
-	e.GET("/health", Route.Health)
-	e.GET("/robots.txt", Route.Robots)
+	e.GET("/health", route.Health)
+	e.GET("/robots.txt", route.Robots)
 	e.GET("/status", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{
 			"CpuThreadCount":        runtime.NumCPU(),
@@ -134,13 +133,13 @@ func main() {
 	})
 
 	// 맵 파일 다운로드 ===================================================================================================
-	e.GET("/d/:setId", Route.DownloadBeatmapSet, Route.Embed)
-	e.GET("/beatmap/:mapId", Route.DownloadBeatmapSet)
-	e.GET("/beatmapset/:setId", Route.DownloadBeatmapSet)
+	e.GET("/d/:setId", route.DownloadBeatmapSet, route.Embed)
+	e.GET("/beatmap/:mapId", route.DownloadBeatmapSet)
+	e.GET("/beatmapset/:setId", route.DownloadBeatmapSet)
 	//TODO 맵아이디, 맵셋아이디 지원
 
 	// 비트맵 리스트 검색용 ================================================================================================
-	e.GET("/search", Route.Search)
+	e.GET("/search", route.Search)
 
 	// 개발중 || 테스트중 ===================================================================================================
 	e.GET("/test", func(c echo.Context) error {

@@ -496,32 +496,5 @@ func updateSearchBeatmaps(data []osu.BeatmapSetsIN) (err error) {
 		Args:  []any{sql.Named("mapSets", beatmapSets), sql.Named("maps", beatmaps)},
 	}
 
-	//
-	////TODO 한방쿼리로 수정
-	//deleteMap := `/* DELETEED MAP */ DELETE FROM BEATMAP WHERE BEATMAP_ID IN (SELECT BEATMAP_ID FROM BEATMAP WHERE BEATMAPSET_ID IN  @mapSetID  AND BEATMAP_ID NOT IN @mapID);`
-	////삭제된 맵 제거
-	//sets := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmapSets)), ","), "[]")
-	//maps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(beatmaps)), ","), "[]")
-	//rows, err := db.Maria.Query(fmt.Sprintf(selectDeletedMaps, sets, maps))
-	//if err != nil {
-	//	pterm.Error.Println(err)
-	//	return err
-	//}
-	//defer rows.Close()
-	//for rows.Next() {
-	//	var i int
-	//	if err = rows.Scan(&i); err != nil {
-	//		return err
-	//	}
-	//	deletedMaps = append(deletedMaps, i)
-	//}
-	//if len(deletedMaps) > 1 {
-	//	pterm.Info.Println(time.Now().Format("02 15:04:05"), "DELETED MAPS:", pterm.LightYellow(deletedMaps))
-	//	dmaps := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(deletedMaps)), ","), "[]")
-	//	if _, err = db.Maria.Exec(fmt.Sprintf(deleteMap, dmaps)); err != nil {
-	//		return err
-	//	}
-	//}
-
 	return
 }

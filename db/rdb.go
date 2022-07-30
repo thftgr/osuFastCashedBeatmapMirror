@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
+	"github.com/Nerinyan/Nerinyan-APIV2/utils"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pterm/pterm"
 	"gorm.io/driver/mysql"
@@ -13,11 +14,7 @@ import (
 var Maria *sql.DB
 var Gorm *gorm.DB
 
-//TODO my.cnf 에 innodb_autoinc_lock_mode=0 추가해야함
-//TODO
-//TODO
-//TODO
-func ConnectMaria() {
+func ConnectRDBMS() {
 
 	db, err := sql.Open("mysql", config.Config.Sql.Url)
 	if Maria = db; db != nil {
@@ -37,9 +34,10 @@ func ConnectMaria() {
 
 	orm, err := gorm.Open(mysql.New(mysql.Config{Conn: Maria}), &gorm.Config{
 		AllowGlobalUpdate: true,
-		//Logger:            logger.Default.LogMode(logger.Info),
-		Logger:          logger.Default.LogMode(logger.Error),
-		CreateBatchSize: 100,
+		//                                        config.Config.Debug ? debug : error
+		Logger:                                   logger.Default.LogMode(utils.TernaryOperator(config.Config.Debug, logger.Info, logger.Error)),
+		CreateBatchSize:                          100,
+		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if Gorm = orm; orm != nil {
 		pterm.Success.Println("RDBMS orm connected")

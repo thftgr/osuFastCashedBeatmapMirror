@@ -1,4 +1,4 @@
-package Route
+package route
 
 import (
 	"bytes"
@@ -527,7 +527,6 @@ func Search(c echo.Context) (err error) {
 				Error:   err,
 				Message: "not in database",
 			}))
-
 		}
 		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
 			Code:    "SEARCH-008",
