@@ -21,10 +21,12 @@ import (
 )
 
 type downloadBeatmapSet_requestBody struct {
-	NoVideo  bool `query:"noVideo"`
-	NoVideo2 bool `query:"nv"`
-	MapId    int  `param:"mapId"`
-	SetId    int  `param:"setId"`
+	NoVideo    bool `query:"noVideo"`
+	NoVideo2   bool `query:"nv"`
+	NoBg  	   bool `query:"noBg"`
+	NoHitsound bool `query:"NoHitsound"`
+	MapId      int  `param:"mapId"`
+	SetId      int  `param:"setId"`
 }
 
 func DownloadBeatmapSet(c echo.Context) (err error) {
@@ -42,6 +44,19 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		}))
 	}
 	request.NoVideo = request.NoVideo || request.NoVideo2
+
+	redirecturl := fmt.Sprintf("https://subapi.nerinyan.moe/d/%d", request.SetId)
+	// NoBg 또는 NoHitsound 요청시 서브API로 리다이렉트
+	if request.NoBg == true && request.NoHitsound == true {
+		redirecturl = redirecturl + "?noBg=1&noHitsound=1"
+		return c.Redirect(http.StatusPermanentRedirect, redirecturl)
+	} else if request.NoBg == true && request.NoHitsound == false {
+		redirecturl = redirecturl + "?noBg=1"
+		return c.Redirect(http.StatusPermanentRedirect, redirecturl)
+	} else if request.NoBg == false && request.NoHitsound == true {
+		redirecturl = redirecturl + "?noHitsound=1"
+		return c.Redirect(http.StatusPermanentRedirect, redirecturl)
+	}
 
 	var row *sql.Row
 	if request.SetId != 0 {
@@ -162,7 +177,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 			Path:      c.Path(),
 			RequestId: c.Response().Header().Get("X-Request-ID"),
 			Error:     err,
-			Message:   "Bancho request Build Erro",
+			Message:   "Bancho request Build Error",
 		}))
 	}
 	defer res.Body.Close()
