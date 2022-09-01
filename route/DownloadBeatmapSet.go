@@ -21,12 +21,16 @@ import (
 )
 
 type downloadBeatmapSet_requestBody struct {
-	NoVideo    bool `query:"noVideo"`
-	NoVideo2   bool `query:"nv"`
-	NoBg  	   bool `query:"noBg"`
-	NoHitsound bool `query:"NoHitsound"`
-	MapId      int  `param:"mapId"`
-	SetId      int  `param:"setId"`
+	NoVideo     	bool `query:"noVideo"`
+	NoVideo2    	bool `query:"nv"`
+	NoBg  	    	bool `query:"noBg"`
+	NoBg2  	    	bool `query:"nb"`
+	NoHitsound  	bool `query:"noHitsound"`
+	NoHitsound2 	bool `query:"nh"`
+	NoStoryboard	bool `query:"noStoryboard"`
+	NoStoryboard2	bool `query:"nsb"`
+	MapId       	int  `param:"mapId"`
+	SetId       	int  `param:"setId"`
 }
 
 func DownloadBeatmapSet(c echo.Context) (err error) {
@@ -45,16 +49,57 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	}
 	request.NoVideo = request.NoVideo || request.NoVideo2
 
+	request.NoBg = request.NoBg || request.NoBg2
+	request.NoHitsound = request.NoHitsound || request.NoHitsound2
+	request.NoStoryboard = request.NoStoryboard || request.NoStoryboard2
+
 	redirecturl := fmt.Sprintf("https://subapi.nerinyan.moe/d/%d", request.SetId)
 	// NoBg 또는 NoHitsound 요청시 서브API로 리다이렉트
-	if request.NoBg == true && request.NoHitsound == true {
-		redirecturl = redirecturl + "?noBg=1&noHitsound=1"
-		return c.Redirect(http.StatusPermanentRedirect, redirecturl)
-	} else if request.NoBg == true && request.NoHitsound == false {
-		redirecturl = redirecturl + "?noBg=1"
-		return c.Redirect(http.StatusPermanentRedirect, redirecturl)
-	} else if request.NoBg == false && request.NoHitsound == true {
-		redirecturl = redirecturl + "?noHitsound=1"
+	// NoBG NoHitsound NoStoryboard
+	if request.NoBg == true && request.NoHitsound == true && request.NoStoryboard == true {
+		redirecturl = redirecturl + "?nb=1&nh=1&nsb=1"
+		if request.NoVideo == true {
+			redirecturl = redirecturl + "&nv=1"
+		}
+	// NoBG NoHitsound
+	} else if request.NoBg == true && request.NoHitsound == true && request.NoStoryboard == false {
+		redirecturl = redirecturl + "?nb=1&nh=1"
+		if request.NoVideo == true {
+			redirecturl = redirecturl + "&nv=1"
+		}
+	// NoBG NoStoryboard
+	} else if request.NoBg == true && request.NoHitsound == false && request.NoStoryboard == true {
+		redirecturl = redirecturl + "?nb=1&nsb=1"
+		if request.NoVideo == true {
+			redirecturl = redirecturl + "&nv=1"
+		}
+	// NoHitsound NoStoryboard
+	} else if request.NoBg == false && request.NoHitsound == true && request.NoStoryboard == true {
+		redirecturl = redirecturl + "?nh=1&nsb=1"
+		if request.NoVideo == true {
+			redirecturl = redirecturl + "&nv=1"
+		}
+	// NoBG 
+	} else if request.NoBg == true && request.NoHitsound == false && request.NoStoryboard == false {
+		redirecturl = redirecturl + "?nb=1"
+		if request.NoVideo == true {
+			redirecturl = redirecturl + "&nv=1"
+		}
+	// NoHitsound
+	} else if request.NoBg == false && request.NoHitsound == true && request.NoStoryboard == false {
+		redirecturl = redirecturl + "?nh=1"
+		if request.NoVideo == true {
+			redirecturl = redirecturl + "&nv=1"
+		}
+	// NoStoryboard
+	} else if request.NoBg == false && request.NoHitsound == false && request.NoStoryboard == true {
+		redirecturl = redirecturl + "?nsb=1"
+		if request.NoVideo == true {
+			redirecturl = redirecturl + "&nv=1"
+		}
+	}
+
+	if request.NoBg == true || request.NoHitsound == true || request.NoStoryboard == true {
 		return c.Redirect(http.StatusPermanentRedirect, redirecturl)
 	}
 
