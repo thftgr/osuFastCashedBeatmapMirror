@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"os"
 )
 
 var api = struct {
@@ -107,13 +108,17 @@ func ManualUpdateBeatmapSet(id int) {
 			pterm.Error.Println(err)
 		}
 	}()
-	url := fmt.Sprintf("https://osu.ppy.sh/api/v2/beatmapsets/%d", id)
+	url := fmt.Sprintf("https://osu.ppy.sh/api/v2/beatmapsets/search?nsfw=true&s=any&q=%d", id)
 
-	var data osu.BeatmapSetsIN
+	var data osu.BeatmapsetsSearch
 	if err = stdGETBancho(url, &data); err != nil {
 		return
 	}
-	updateMapset(&data)
+	// updateMapset(&data)
+	
+	if err = updateSearchBeatmaps(*data.Beatmapsets); err != nil {
+		return
+	}
 }
 
 func getUpdatedMapRanked() {
@@ -297,7 +302,15 @@ func stdGETBancho(url string, str interface{}) (err error) {
 		return
 	}
 
+	f1, err := os.Create("./f2.json")
+	if err != nil {
+		return
+	}
+	defer f1.Close()
+	fmt.Fprintf(f1, string(body))
+
 	return json.Unmarshal(body, &str)
+	// return json.NewDecoder(res.Body).Decode(&str)
 
 }
 
@@ -313,12 +326,10 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 	//	language_id,language_name,ratings
 
 	r := *s.Ratings
+
 	db.InsertQueueChannel <- db.ExecQueue{ //DB 큐에 전송
 		Query: UpsertBeatmapSet,
-		Args: []any{s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, s.Hype.Current, s.Hype.Required, s.Nsfw, s.PlayCount, s.Source, s.Status, s.Title, s.TitleUnicode, s.UserId,
-			s.Video, s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled, s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl,
-			s.NominationsSummary.Current, s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate, s.Tags, s.HasFavourited, s.Description.Description, s.Genre.Id,
-			s.Genre.Name, s.Language.Id, s.Language.Name, fmt.Sprintf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10]),
+		Args: []any{s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, *s.Hype.Current, *s.Hype.Required, s.Nsfw, s.PlayCount, s.Source, s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video, s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled, s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current, s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate, s.Tags, s.HasFavourited, s.Description.Description, s.Genre.Id, s.Genre.Name, s.Language.Id, s.Language.Name, fmt.Sprintf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10]),
 		},
 	}
 	//_, err := db.Maria.Exec(UpsertBeatmapSet, s.Id, s.Artist, s.ArtistUnicode, s.Creator, s.FavouriteCount, s.Hype.Current, s.Hype.Required, s.Nsfw, s.PlayCount, s.Source, s.Status, s.Title, s.TitleUnicode, s.UserId, s.Video, s.Availability.DownloadDisabled, s.Availability.MoreInformation, s.Bpm, s.CanBeHyped, s.DiscussionEnabled, s.DiscussionLocked, s.IsScoreable, s.LastUpdated, s.LegacyThreadUrl, s.NominationsSummary.Current, s.NominationsSummary.Required, s.Ranked, s.RankedDate, s.Storyboard, s.SubmittedDate, s.Tags, s.HasFavourited, s.Description.Description, s.Genre.Id, s.Genre.Name, s.Language.Id, s.Language.Name, fmt.Sprintf("%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d", r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10]))
@@ -331,10 +342,12 @@ func updateMapset(s *osu.BeatmapSetsIN) {
 	//	log.Error(err)
 	//	pterm.Error.Println(err)
 	//}
+	fmt.Println("22222222222222222222222")
 	if *s.Beatmaps == nil {
 		return
 	}
 
+	fmt.Println("333333333333")
 	for _, m := range *s.Beatmaps {
 		go upsertMap(m)
 	}
@@ -456,7 +469,6 @@ func buildSqlValues(s string, count int) (r string) {
 }
 
 func updateSearchBeatmaps(data []osu.BeatmapSetsIN) (err error) {
-
 	if data == nil {
 		return
 	}

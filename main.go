@@ -138,6 +138,12 @@ func main() {
 	e.GET("/beatmapset/:setId", route.DownloadBeatmapSet)
 	//TODO 맵아이디, 맵셋아이디 지원
 
+	// 비트맵 BG  =========================================================================================================
+	e.GET("/bg/:setId", func(c echo.Context) error {
+		redirectUrl := "https://subapi.nerinyan.moe/bg/" + c.Param("setId")
+		return c.Redirect(http.StatusPermanentRedirect, redirectUrl)
+	})
+
 	// 비트맵 리스트 검색용 ================================================================================================
 	e.GET("/search", route.Search)
 

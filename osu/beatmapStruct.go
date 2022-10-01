@@ -14,7 +14,7 @@ type BeatmapIN struct {
 	Ar               float64     `json:"ar"`
 	BeatmapsetId     int         `json:"beatmapset_id"`
 	Bpm              interface{} `json:"bpm"`
-	Convert          bool        `json:"convert"`
+	Convert          *bool        `json:"convert"`
 	CountCircles     int         `json:"count_circles"`
 	CountSliders     int         `json:"count_sliders"`
 	CountSpinners    int         `json:"count_spinners"`
@@ -22,7 +22,7 @@ type BeatmapIN struct {
 	DeletedAt        *time.Time  `json:"deleted_at"`
 	Drain            float64     `json:"drain"`
 	HitLength        int         `json:"hit_length"`
-	IsScoreable      bool        `json:"is_scoreable"`
+	IsScoreable      *bool        `json:"is_scoreable"`
 	LastUpdated      *time.Time  `json:"last_updated"`
 	ModeInt          int         `json:"mode_int"`
 	Passcount        int         `json:"passcount"`
