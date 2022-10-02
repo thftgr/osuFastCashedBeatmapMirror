@@ -217,6 +217,7 @@ func (s *SearchQuery) parseRankedStatus() (status []int) {
 	if len(status) < 1 {
 		status = ranked["default"]
 	}
+
 	return utils.MakeArrayUnique(&status)
 }
 
@@ -275,9 +276,9 @@ func (s *SearchQuery) queryBuilder() (qs string, args []interface{}) {
 	text := splitString(s.Text)
 	text = utils.MakeArrayUnique(&text)
 
-	if s.Ranked != "all" {
+	if s.Ranked != "all" && s.Ranked != "" {
 		setAnd = append(setAnd, "RANKED IN @ranked")
-		args = append(args, sql.Named("ranked", utils.TernaryOperator(ranked[s.Ranked] != nil, ranked[s.Ranked], ranked["default"])))
+		args = append(args, sql.Named("ranked", s.parseRankedStatus()))
 	}
 	if s.Nsfw != "all" {
 		setAnd = append(setAnd, "NSFW = "+s.Nsfw)
