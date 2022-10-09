@@ -62,4 +62,6 @@ type BeatmapOUT struct {
 	Url              *string  `json:"url"`
 	Checksum         *string  `json:"checksum"`
 	MaxCombo         *int     `json:"max_combo"`
+	
+	OsuFile 		 string	`json:"osu_file"`
 }

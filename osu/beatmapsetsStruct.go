@@ -32,7 +32,7 @@ type BeatmapSetsIN struct {
 	UserId       int     `json:"user_id"`
 	Video        bool    `json:"video"`
 	Availability *struct {
-		DownloadDisabled int    `json:"download_disabled"`
+		DownloadDisabled *bool    `json:"download_disabled"`
 		MoreInformation  *string `json:"more_information"`
 	} `json:"availability"`
 	Bpm                float64    `json:"bpm"`
