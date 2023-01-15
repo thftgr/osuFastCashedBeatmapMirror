@@ -8,6 +8,7 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/middlewareFunc"
 	"github.com/Nerinyan/Nerinyan-APIV2/route"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
+	"github.com/Nerinyan/Nerinyan-APIV2/webhook"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pterm/pterm"
@@ -49,6 +50,7 @@ func main() {
 	e.HTTPErrorHandler = middlewareFunc.CustomHTTPErrorHandler
 
 	e.Renderer = &route.Renderer
+	webhook.DiscordInfoStartUP()
 
 	go func() {
 		for {

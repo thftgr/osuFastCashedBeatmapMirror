@@ -14,6 +14,7 @@ type config struct {
 	Debug        bool     `json:"debug"`
 	Discord      struct {
 		Webhook struct {
+			Startup  string `json:"startup"`
 			Info  string `json:"info"`
 			Error string `json:"error"`
 		} `json:"webhook"`

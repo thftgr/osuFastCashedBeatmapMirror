@@ -19,3 +19,4 @@ Nerinyan-APIV2-MULTI
 /config.yaml
 /_testDGO/
 *.txt
+.config.json.swp

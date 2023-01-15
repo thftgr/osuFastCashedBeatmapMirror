@@ -284,7 +284,7 @@ func (s *SearchQuery) queryBuilder() (qs string, args []interface{}) {
 	text := splitString(s.Text)
 	text = utils.MakeArrayUnique(&text)
 
-	if s.Ranked != "all" || s.Ranked !="any" {
+	if s.Ranked != "all" && s.Ranked != "any" {
 		setAnd = append(setAnd, "RANKED IN @ranked")
 		args = append(args, sql.Named("ranked", s.parseRankedStatus()))
 	}
@@ -415,6 +415,7 @@ func splitString(input string) (ss []string) {
 
 var banchoMapRegex, _ = regexp.Compile(`(?:https://osu[.]ppy[.]sh/beatmapsets/)(\d+?)(?:\D|$)`)
 var maniaKeyRegex, _ = regexp.Compile(`(\[[0-9]K\] )`)
+var NotAllowedString =  strings.NewReplacer("\\", "", "/", "", "|", "", ":", "", "?", "", "*", "", "<", "", ">", "", "\"", "")
 
 func Search(c echo.Context) (err error) {
 
@@ -561,7 +562,7 @@ func Search(c echo.Context) (err error) {
 			}))
 		}
 		tmp = append(tmp, *Map.BeatmapsetId)
-		OsuFile := fmt.Sprintf("%s - %s (%s) [%s].osu", DerefString(sets[index[*Map.BeatmapsetId]].Artist), DerefString(sets[index[*Map.BeatmapsetId]].Title), DerefString(sets[index[*Map.BeatmapsetId]].Creator), maniaKeyRegex.ReplaceAllString(DerefString(Map.Version), ""))
+		OsuFile := fmt.Sprintf("%s - %s (%s) [%s].osu", DerefString(sets[index[*Map.BeatmapsetId]].Artist), DerefString(sets[index[*Map.BeatmapsetId]].Title), DerefString(sets[index[*Map.BeatmapsetId]].Creator), NotAllowedString.Replace(maniaKeyRegex.ReplaceAllString(DerefString(Map.Version), "")))
 		Map.OsuFile = OsuFile
 		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
 

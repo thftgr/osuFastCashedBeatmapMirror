@@ -83,3 +83,23 @@ func DiscordInfo(v *bodyStruct.ErrorStruct) {
 
 	http.Post(config.Config.Discord.Webhook.Info, "application/json", bytes.NewReader(*utils.ToJsonString(body)))
 }
+func DiscordInfoStartUP() {
+	now := time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
+
+	body := discordWebhookBody{
+		Embeds: []embeds{
+			{
+				Title:       "Nerinyan API Server has been started",
+				Description: "Startup Time: " + string(now),
+				Color:       65535,
+				Footer:		footer{
+								Text: "Start UP",
+							},
+				Timestamp: now,
+			},
+		},
+		Username: "Nerinyan-APIv2",
+	}
+
+	http.Post(config.Config.Discord.Webhook.Startup, "application/json", bytes.NewReader(*utils.ToJsonString(body)))
+}
