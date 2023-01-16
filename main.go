@@ -131,6 +131,10 @@ func main() {
 			"CpuThreadCount":        runtime.NumCPU(),
 			"RunningGoroutineCount": runtime.NumGoroutine(),
 			"apiCount":              *banchoCroller.ApiCount,
+			"storage": 				 map[string]interface{}{
+				"fileCount":	len(src.FileList),
+				"size":			src.FileSizeToString,
+			},
 		})
 	})
 

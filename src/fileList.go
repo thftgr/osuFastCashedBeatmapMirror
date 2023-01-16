@@ -15,6 +15,7 @@ import (
 type FileIndex map[int]time.Time
 
 var FileList = make(FileIndex)
+var FileSizeToString = totalFileSize()
 var fileSize uint64
 
 const goos = runtime.GOOS
@@ -47,6 +48,7 @@ func FileListUpdate() {
 			fileSize += uint64(file.Size())
 		}
 	}
+	FileSizeToString = totalFileSize()
 	FileList = tmp
 	pterm.Info.Printfln(
 		"%s File List Indexing : %s files [%s]",
