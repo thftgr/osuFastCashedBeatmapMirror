@@ -14,7 +14,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"os"
 )
 
 var api = struct {
@@ -301,14 +300,6 @@ func stdGETBancho(url string, str interface{}) (err error) {
 	if err != nil {
 		return
 	}
-
-	f1, err := os.Create("./f2.json")
-	if err != nil {
-		return
-	}
-	defer f1.Close()
-	fmt.Fprintf(f1, string(body))
-
 	return json.Unmarshal(body, &str)
 	// return json.NewDecoder(res.Body).Decode(&str)
 
