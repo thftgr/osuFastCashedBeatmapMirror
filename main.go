@@ -128,13 +128,11 @@ func main() {
 	e.GET("/robots.txt", route.Robots)
 	e.GET("/status", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"CpuThreadCount":        runtime.NumCPU(),
-			"RunningGoroutineCount": runtime.NumGoroutine(),
-			"apiCount":              *banchoCroller.ApiCount,
-			"storage": 				 map[string]interface{}{
-				"fileCount":	len(src.FileList),
-				"size":			src.FileSizeToString,
-			},
+			"CpuThreadCount":        	runtime.NumCPU(),
+			"RunningGoroutineCount": 	runtime.NumGoroutine(),
+			"apiCount":              	*banchoCroller.ApiCount,
+			"fileCount": 				len(src.FileList),
+			"fileSize":					src.FileSizeToString,
 		})
 	})
 

@@ -562,7 +562,7 @@ func Search(c echo.Context) (err error) {
 			}))
 		}
 		tmp = append(tmp, *Map.BeatmapsetId)
-		OsuFile := fmt.Sprintf("%s - %s (%s) [%s].osu", DerefString(sets[index[*Map.BeatmapsetId]].Artist), DerefString(sets[index[*Map.BeatmapsetId]].Title), DerefString(sets[index[*Map.BeatmapsetId]].Creator), NotAllowedString.Replace(maniaKeyRegex.ReplaceAllString(DerefString(Map.Version), "")))
+		OsuFile := fmt.Sprintf("%s - %s (%s) [%s].osu", NotAllowedString.Replace(DerefString(sets[index[*Map.BeatmapsetId]].Artist)), NotAllowedString.Replace(DerefString(sets[index[*Map.BeatmapsetId]].Title)), NotAllowedString.Replace(DerefString(sets[index[*Map.BeatmapsetId]].Creator)), NotAllowedString.Replace(maniaKeyRegex.ReplaceAllString(DerefString(Map.Version), "")))
 		Map.OsuFile = OsuFile
 		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
 
