@@ -118,23 +118,29 @@ func main() {
 	)
 
 	// docs ============================================================================================================
-	e.GET("/", func(c echo.Context) error {
-		return c.Redirect(http.StatusPermanentRedirect, `https://nerinyan.stoplight.io/docs/nerinyan-api`)
-	})
+	e.GET(
+		"/", func(c echo.Context) error {
+			return c.Redirect(http.StatusPermanentRedirect, `https://nerinyan.stoplight.io/docs/nerinyan-api`)
+		},
+	)
 
 	// 서버상태 체크용 ====================================================================================================
 
 	e.GET("/health", route.Health)
 	e.GET("/robots.txt", route.Robots)
-	e.GET("/status", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, map[string]interface{}{
-			"CpuThreadCount":        	runtime.NumCPU(),
-			"RunningGoroutineCount": 	runtime.NumGoroutine(),
-			"apiCount":              	*banchoCroller.ApiCount,
-			"fileCount": 				len(src.FileList),
-			"fileSize":					src.FileSizeToString,
-		})
-	})
+	e.GET(
+		"/status", func(c echo.Context) error {
+			return c.JSON(
+				http.StatusOK, map[string]interface{}{
+					"CpuThreadCount":        runtime.NumCPU(),
+					"RunningGoroutineCount": runtime.NumGoroutine(),
+					"apiCount":              *banchoCroller.ApiCount,
+					"fileCount":             len(src.FileList),
+					"fileSize":              src.FileSizeToString,
+				},
+			)
+		},
+	)
 
 	// 맵 파일 다운로드 ===================================================================================================
 	e.GET("/d/:setId", route.DownloadBeatmapSet, route.Embed)
@@ -143,18 +149,23 @@ func main() {
 	//TODO 맵아이디, 맵셋아이디 지원
 
 	// 비트맵 BG  =========================================================================================================
-	e.GET("/bg/:setId", func(c echo.Context) error {
-		redirectUrl := "https://subapi.nerinyan.moe/bg/" + c.Param("setId")
-		return c.Redirect(http.StatusPermanentRedirect, redirectUrl)
-	})
+	e.GET(
+		"/bg/:setId", func(c echo.Context) error {
+			redirectUrl := "https://subapi.nerinyan.moe/bg/" + c.Param("setId")
+			return c.Redirect(http.StatusPermanentRedirect, redirectUrl)
+		},
+	)
 
 	// 비트맵 리스트 검색용 ================================================================================================
 	e.GET("/search", route.Search)
+	e.POST("/search", route.Search)
 
 	// 개발중 || 테스트중 ===================================================================================================
-	e.GET("/test", func(c echo.Context) error {
-		return echo.NewHTTPError(400, "test bad request")
-	})
+	e.GET(
+		"/test", func(c echo.Context) error {
+			return echo.NewHTTPError(400, "test bad request")
+		},
+	)
 
 	// ====================================================================================================================
 	pterm.Info.Println("ECHO STARTED AT", config.Config.Port)
