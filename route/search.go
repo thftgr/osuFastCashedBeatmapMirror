@@ -6,9 +6,9 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/osu"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/Nerinyan/Nerinyan-APIV2/utils"
@@ -102,11 +102,11 @@ var (
 )
 
 func DerefString(s *string) string {
-    if s != nil {
-        return *s
-    }
+	if s != nil {
+		return *s
+	}
 
-    return ""
+	return ""
 }
 
 func (s *SearchQuery) parsePage() {
@@ -415,7 +415,7 @@ func splitString(input string) (ss []string) {
 
 var banchoMapRegex, _ = regexp.Compile(`(?:https://osu[.]ppy[.]sh/beatmapsets/)(\d+?)(?:\D|$)`)
 var maniaKeyRegex, _ = regexp.Compile(`(\[[0-9]K\] )`)
-var NotAllowedString =  strings.NewReplacer("\\", "", "/", "", "|", "", ":", "", "?", "", "*", "", "<", "", ">", "", "\"", "")
+var NotAllowedString = strings.NewReplacer("\\", "", "/", "", "|", "", ":", "", "?", "", "*", "", "<", "", ">", "", "\"", "")
 
 func Search(c echo.Context) (err error) {
 
@@ -425,28 +425,40 @@ func Search(c echo.Context) (err error) {
 	if sq.B64 != "" {
 		b6, err := base64.StdEncoding.DecodeString(sq.B64)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:    "SEARCH-000-0",
-				Error:   err,
-				Message: "request parm 'b64' base64 decode fail.",
-			}))
+			return c.JSON(
+				http.StatusInternalServerError, logger.Error(
+					c, &bodyStruct.ErrorStruct{
+						Code:    "SEARCH-000-0",
+						Error:   err,
+						Message: "request parm 'b64' base64 decode fail.",
+					},
+				),
+			)
 		}
 		err = json.Unmarshal(b6, &sq)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:    "SEARCH-000-1",
-				Error:   err,
-				Message: "request parm 'b64' json parse fail.",
-			}))
+			return c.JSON(
+				http.StatusInternalServerError, logger.Error(
+					c, &bodyStruct.ErrorStruct{
+						Code:    "SEARCH-000-1",
+						Error:   err,
+						Message: "request parm 'b64' json parse fail.",
+					},
+				),
+			)
 		}
 	}
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:    "SEARCH-001",
-			Error:   err,
-			Message: "request parse error",
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:    "SEARCH-001",
+					Error:   err,
+					Message: "request parse error",
+				},
+			),
+		)
 	}
 
 	if sq.Option == "" && banchoMapRegex.MatchString(sq.Text) {
@@ -461,18 +473,26 @@ func Search(c echo.Context) (err error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:    "SEARCH-003",
-				Error:   err,
-				Message: "not in database",
-			}))
+			return c.JSON(
+				http.StatusNotFound, logger.Error(
+					c, &bodyStruct.ErrorStruct{
+						Code:    "SEARCH-003",
+						Error:   err,
+						Message: "not in database",
+					},
+				),
+			)
 
 		}
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:    "SEARCH-004",
-			Error:   err,
-			Message: "database Query error",
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:    "SEARCH-004",
+					Error:   err,
+					Message: "database Query error",
+				},
+			),
+		)
 
 	}
 	defer rows.Close()
@@ -491,22 +511,34 @@ func Search(c echo.Context) (err error) {
 			//nominations_summary_current, nominations_summary_required, ranked, ranked_date, storyboard,
 			//submitted_date, tags, has_favourited, description, genre_id, genre_name, language_id, language_name, ratings
 
-			&set.Id, &set.Artist, &set.ArtistUnicode, &set.Creator, &set.FavouriteCount, &set.Hype.Current, &set.Hype.Required, &set.Nsfw, &set.PlayCount, &set.Source, &set.Status, &set.Title, &set.TitleUnicode, &set.UserId, &set.Video, &set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped, &set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl, &set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard, &set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name, &set.Language.Id, &set.Language.Name, &set.RatingsString)
+			&set.Id, &set.Artist, &set.ArtistUnicode, &set.Creator, &set.FavouriteCount, &set.Hype.Current, &set.Hype.Required, &set.Nsfw, &set.PlayCount, &set.Source, &set.Status, &set.Title, &set.TitleUnicode, &set.UserId, &set.Video,
+			&set.Availability.DownloadDisabled, &set.Availability.MoreInformation, &set.Bpm, &set.CanBeHyped, &set.DiscussionEnabled, &set.DiscussionLocked, &set.IsScoreable, &set.LastUpdated, &set.LegacyThreadUrl,
+			&set.NominationsSummary.Current, &set.NominationsSummary.Required, &set.Ranked, &set.RankedDate, &set.Storyboard, &set.SubmittedDate, &set.Tags, &set.HasFavourited, &set.Description.Description, &set.Genre.Id, &set.Genre.Name,
+			&set.Language.Id, &set.Language.Name, &set.RatingsString,
+		)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:    "SEARCH-005",
-				Error:   err,
-				Message: "database Query scan error",
-			}))
+			return c.JSON(
+				http.StatusInternalServerError, logger.Error(
+					c, &bodyStruct.ErrorStruct{
+						Code:    "SEARCH-005",
+						Error:   err,
+						Message: "database Query scan error",
+					},
+				),
+			)
 		}
 
 		lu, err := time.Parse("2006-01-02 15:04:05", *set.LastUpdated)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:    "SEARCH-005-1",
-				Error:   err,
-				Message: "time Parse error",
-			}))
+			return c.JSON(
+				http.StatusInternalServerError, logger.Error(
+					c, &bodyStruct.ErrorStruct{
+						Code:    "SEARCH-005-1",
+						Error:   err,
+						Message: "time Parse error",
+					},
+				),
+			)
 		}
 		set.Cache.Video = src.FileList[*set.Id].Unix() >= lu.Unix()
 		set.Cache.NoVideo = src.FileList[(*set.Id)*-1].Unix() >= lu.Unix()
@@ -518,32 +550,46 @@ func Search(c echo.Context) (err error) {
 	}
 
 	if len(sets) < 1 {
-		return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:    "SEARCH-006",
-			Error:   errors.New(http.StatusText(http.StatusNotFound)),
-			Message: "not in database",
-		}))
+		return c.JSON(
+			http.StatusNotFound, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:    "SEARCH-006",
+					Error:   errors.New(http.StatusText(http.StatusNotFound)),
+					Message: "not in database",
+				},
+			),
+		)
 	}
 
 	mapids = utils.MakeArrayUnique(&mapids)
 
-	rows, err = db.Gorm.Raw("SELECT BEATMAP_ID, BEATMAPSET_ID, MODE, MODE_INT, STATUS, RANKED, TOTAL_LENGTH, MAX_COMBO, DIFFICULTY_RATING, VERSION, ACCURACY, AR, CS, DRAIN, BPM, "+
-		"`CONVERT`, "+
-		"COUNT_CIRCLES, COUNT_SLIDERS, COUNT_SPINNERS, DELETED_AT, HIT_LENGTH, IS_SCOREABLE, LAST_UPDATED, PASSCOUNT, PLAYCOUNT, CHECKSUM, "+
-		"USER_ID FROM BEATMAP WHERE BEATMAPSET_ID IN @setId ORDER BY DIFFICULTY_RATING;", sql.Named("setId", mapids)).Rows()
+	rows, err = db.Gorm.Raw(
+		"SELECT BEATMAP_ID, BEATMAPSET_ID, MODE, MODE_INT, STATUS, RANKED, TOTAL_LENGTH, MAX_COMBO, DIFFICULTY_RATING, VERSION, ACCURACY, AR, CS, DRAIN, BPM, "+
+			"`CONVERT`, "+
+			"COUNT_CIRCLES, COUNT_SLIDERS, COUNT_SPINNERS, DELETED_AT, HIT_LENGTH, IS_SCOREABLE, LAST_UPDATED, PASSCOUNT, PLAYCOUNT, CHECKSUM, "+
+			"USER_ID FROM BEATMAP WHERE BEATMAPSET_ID IN @setId ORDER BY DIFFICULTY_RATING;", sql.Named("setId", mapids),
+	).Rows()
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:    "SEARCH-007",
-				Error:   err,
-				Message: "not in database",
-			}))
+			return c.JSON(
+				http.StatusNotFound, logger.Error(
+					c, &bodyStruct.ErrorStruct{
+						Code:    "SEARCH-007",
+						Error:   err,
+						Message: "not in database",
+					},
+				),
+			)
 		}
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:    "SEARCH-008",
-			Error:   err,
-			Message: "database Query error",
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:    "SEARCH-008",
+					Error:   err,
+					Message: "database Query error",
+				},
+			),
+		)
 	}
 	defer rows.Close()
 	var tmp []int
@@ -553,16 +599,25 @@ func Search(c echo.Context) (err error) {
 			//beatmap_id, beatmapset_id, mode, mode_int, status, ranked, total_length, max_combo, difficulty_rating,
 			//version, accuracy, ar, cs, drain, bpm, convert, count_circles, count_sliders, count_spinners, deleted_at,
 			//hit_length, is_scoreable, last_updated, passcount, playcount, checksum, user_id
-			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert, &Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId)
+			&Map.Id, &Map.BeatmapsetId, &Map.Mode, &Map.ModeInt, &Map.Status, &Map.Ranked, &Map.TotalLength, &Map.MaxCombo, &Map.DifficultyRating, &Map.Version, &Map.Accuracy, &Map.Ar, &Map.Cs, &Map.Drain, &Map.Bpm, &Map.Convert,
+			&Map.CountCircles, &Map.CountSliders, &Map.CountSpinners, &Map.DeletedAt, &Map.HitLength, &Map.IsScoreable, &Map.LastUpdated, &Map.Passcount, &Map.Playcount, &Map.Checksum, &Map.UserId,
+		)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:    "SEARCH-009",
-				Error:   err,
-				Message: "database Query scan error",
-			}))
+			return c.JSON(
+				http.StatusInternalServerError, logger.Error(
+					c, &bodyStruct.ErrorStruct{
+						Code:    "SEARCH-009",
+						Error:   err,
+						Message: "database Query scan error",
+					},
+				),
+			)
 		}
 		tmp = append(tmp, *Map.BeatmapsetId)
-		OsuFile := fmt.Sprintf("%s - %s (%s) [%s].osu", NotAllowedString.Replace(DerefString(sets[index[*Map.BeatmapsetId]].Artist)), NotAllowedString.Replace(DerefString(sets[index[*Map.BeatmapsetId]].Title)), NotAllowedString.Replace(DerefString(sets[index[*Map.BeatmapsetId]].Creator)), NotAllowedString.Replace(maniaKeyRegex.ReplaceAllString(DerefString(Map.Version), "")))
+		OsuFile := fmt.Sprintf(
+			"%s - %s (%s) [%s].osu", NotAllowedString.Replace(DerefString(sets[index[*Map.BeatmapsetId]].Artist)), NotAllowedString.Replace(DerefString(sets[index[*Map.BeatmapsetId]].Title)),
+			NotAllowedString.Replace(DerefString(sets[index[*Map.BeatmapsetId]].Creator)), NotAllowedString.Replace(maniaKeyRegex.ReplaceAllString(DerefString(Map.Version), "")),
+		)
 		Map.OsuFile = OsuFile
 		sets[index[*Map.BeatmapsetId]].Beatmaps = append(sets[index[*Map.BeatmapsetId]].Beatmaps, Map)
 

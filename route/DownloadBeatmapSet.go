@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"database/sql"
 	"fmt"
-	"github.com/Nerinyan/Nerinyan-APIV2/Logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/banchoCroller"
 	"github.com/Nerinyan/Nerinyan-APIV2/bodyStruct"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
+	"github.com/Nerinyan/Nerinyan-APIV2/logger"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -21,16 +21,16 @@ import (
 )
 
 type downloadBeatmapSet_requestBody struct {
-	NoVideo     	bool `query:"noVideo"`
-	NoVideo2    	bool `query:"nv"`
-	NoBg  	    	bool `query:"noBg"`
-	NoBg2  	    	bool `query:"nb"`
-	NoHitsound  	bool `query:"noHitsound"`
-	NoHitsound2 	bool `query:"nh"`
-	NoStoryboard	bool `query:"noStoryboard"`
-	NoStoryboard2	bool `query:"nsb"`
-	MapId       	int  `param:"mapId"`
-	SetId       	int  `param:"setId"`
+	NoVideo       bool `query:"noVideo"`
+	NoVideo2      bool `query:"nv"`
+	NoBg          bool `query:"noBg"`
+	NoBg2         bool `query:"nb"`
+	NoHitsound    bool `query:"noHitsound"`
+	NoHitsound2   bool `query:"nh"`
+	NoStoryboard  bool `query:"noStoryboard"`
+	NoStoryboard2 bool `query:"nsb"`
+	MapId         int  `param:"mapId"`
+	SetId         int  `param:"setId"`
 }
 
 func DownloadBeatmapSet(c echo.Context) (err error) {
@@ -38,14 +38,18 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	err = c.Bind(&request)
 	if err != nil {
 
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:        "DownloadBeatmapSet-001",
-			Path:        c.Path(),
-			RequestId:   c.Response().Header().Get("X-Request-ID"),
-			Error:       err,
-			Message:     "request parse error",
-			RequestData: request,
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:        "DownloadBeatmapSet-001",
+					Path:        c.Path(),
+					RequestId:   c.Response().Header().Get("X-Request-ID"),
+					Error:       err,
+					Message:     "request parse error",
+					RequestData: request,
+				},
+			),
+		)
 	}
 	request.NoVideo = request.NoVideo || request.NoVideo2
 
@@ -61,37 +65,37 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		if request.NoVideo == true {
 			redirecturl = redirecturl + "&nv=1"
 		}
-	// NoBG NoHitsound
+		// NoBG NoHitsound
 	} else if request.NoBg == true && request.NoHitsound == true && request.NoStoryboard == false {
 		redirecturl = redirecturl + "?nb=1&nh=1"
 		if request.NoVideo == true {
 			redirecturl = redirecturl + "&nv=1"
 		}
-	// NoBG NoStoryboard
+		// NoBG NoStoryboard
 	} else if request.NoBg == true && request.NoHitsound == false && request.NoStoryboard == true {
 		redirecturl = redirecturl + "?nb=1&nsb=1"
 		if request.NoVideo == true {
 			redirecturl = redirecturl + "&nv=1"
 		}
-	// NoHitsound NoStoryboard
+		// NoHitsound NoStoryboard
 	} else if request.NoBg == false && request.NoHitsound == true && request.NoStoryboard == true {
 		redirecturl = redirecturl + "?nh=1&nsb=1"
 		if request.NoVideo == true {
 			redirecturl = redirecturl + "&nv=1"
 		}
-	// NoBG 
+		// NoBG
 	} else if request.NoBg == true && request.NoHitsound == false && request.NoStoryboard == false {
 		redirecturl = redirecturl + "?nb=1"
 		if request.NoVideo == true {
 			redirecturl = redirecturl + "&nv=1"
 		}
-	// NoHitsound
+		// NoHitsound
 	} else if request.NoBg == false && request.NoHitsound == true && request.NoStoryboard == false {
 		redirecturl = redirecturl + "?nh=1"
 		if request.NoVideo == true {
 			redirecturl = redirecturl + "&nv=1"
 		}
-	// NoStoryboard
+		// NoStoryboard
 	} else if request.NoBg == false && request.NoHitsound == false && request.NoStoryboard == true {
 		redirecturl = redirecturl + "?nsb=1"
 		if request.NoVideo == true {
@@ -110,35 +114,47 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	} else if request.MapId != 0 {
 		row = db.Maria.QueryRow(`SELECT BEATMAPSET_ID,ARTIST,TITLE,LAST_UPDATED,VIDEO FROM BEATMAPSET WHERE BEATMAPSET_ID = (SELECT BEATMAPSET_ID FROM BEATMAP WHERE BEATMAP_ID = ?);`, request.MapId)
 	} else {
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:        "DownloadBeatmapSet-001-1",
-			Path:        c.Path(),
-			RequestId:   c.Response().Header().Get("X-Request-ID"),
-			Error:       nil,
-			Message:     "set id & map id not found",
-			RequestData: request,
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:        "DownloadBeatmapSet-001-1",
+					Path:        c.Path(),
+					RequestId:   c.Response().Header().Get("X-Request-ID"),
+					Error:       nil,
+					Message:     "set id & map id not found",
+					RequestData: request,
+				},
+			),
+		)
 	}
 
 	if err = row.Err(); err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:        "DownloadBeatmapSet-002",
-				Path:        c.Path(),
-				RequestId:   c.Response().Header().Get("X-Request-ID"),
-				Error:       err,
-				Message:     "not in database",
-				RequestData: request,
-			}))
+			return c.JSON(
+				http.StatusNotFound, logger.Error(
+					c, &bodyStruct.ErrorStruct{
+						Code:        "DownloadBeatmapSet-002",
+						Path:        c.Path(),
+						RequestId:   c.Response().Header().Get("X-Request-ID"),
+						Error:       err,
+						Message:     "not in database",
+						RequestData: request,
+					},
+				),
+			)
 		}
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:        "DownloadBeatmapSet-003",
-			Path:        c.Path(),
-			RequestId:   c.Response().Header().Get("X-Request-ID"),
-			Error:       err,
-			Message:     "database Query error",
-			RequestData: request,
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:        "DownloadBeatmapSet-003",
+					Path:        c.Path(),
+					RequestId:   c.Response().Header().Get("X-Request-ID"),
+					Error:       err,
+					Message:     "database Query error",
+					RequestData: request,
+				},
+			),
+		)
 	}
 
 	var a struct {
@@ -151,36 +167,48 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 
 	if err = row.Scan(&a.Id, &a.Artist, &a.Title, &a.LastUpdated, &a.Video); err != nil {
 		if err == sql.ErrNoRows {
-			return c.JSON(http.StatusNotFound, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:        "DownloadBeatmapSet-004",
-				Path:        c.Path(),
-				RequestId:   c.Response().Header().Get("X-Request-ID"),
-				Error:       err,
-				Message:     "not in database",
-				RequestData: request,
-			}))
+			return c.JSON(
+				http.StatusNotFound, logger.Error(
+					c, &bodyStruct.ErrorStruct{
+						Code:        "DownloadBeatmapSet-004",
+						Path:        c.Path(),
+						RequestId:   c.Response().Header().Get("X-Request-ID"),
+						Error:       err,
+						Message:     "not in database",
+						RequestData: request,
+					},
+				),
+			)
 
 		}
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:        "DownloadBeatmapSet-005",
-			Path:        c.Path(),
-			RequestId:   c.Response().Header().Get("X-Request-ID"),
-			Error:       err,
-			Message:     "database Query error",
-			RequestData: request,
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:        "DownloadBeatmapSet-005",
+					Path:        c.Path(),
+					RequestId:   c.Response().Header().Get("X-Request-ID"),
+					Error:       err,
+					Message:     "database Query error",
+					RequestData: request,
+				},
+			),
+		)
 	}
 
 	lu, err := time.Parse("2006-01-02 15:04:05", a.LastUpdated)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:        "DownloadBeatmapSet-006",
-			Path:        c.Path(),
-			RequestId:   c.Response().Header().Get("X-Request-ID"),
-			Error:       err,
-			Message:     "time Parse error",
-			RequestData: request,
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:        "DownloadBeatmapSet-006",
+					Path:        c.Path(),
+					RequestId:   c.Response().Header().Get("X-Request-ID"),
+					Error:       err,
+					Message:     "time Parse error",
+					RequestData: request,
+				},
+			),
+		)
 	}
 
 	url := fmt.Sprintf("https://osu.ppy.sh/api/v2/beatmapsets/%d/download", request.SetId)
@@ -205,36 +233,48 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:      "DownloadBeatmapSet-007",
-			Path:      c.Path(),
-			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err,
-			Message:   "Bancho request Build Error",
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:      "DownloadBeatmapSet-007",
+					Path:      c.Path(),
+					RequestId: c.Response().Header().Get("X-Request-ID"),
+					Error:     err,
+					Message:   "Bancho request Build Error",
+				},
+			),
+		)
 	}
 	req.Header.Add("Authorization", config.Config.Osu.Token.TokenType+" "+config.Config.Osu.Token.AccessToken)
 
 	res, err := client.Do(req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:      "DownloadBeatmapSet-008",
-			Path:      c.Path(),
-			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     err,
-			Message:   "Bancho request Build Error",
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:      "DownloadBeatmapSet-008",
+					Path:      c.Path(),
+					RequestId: c.Response().Header().Get("X-Request-ID"),
+					Error:     err,
+					Message:   "Bancho request Build Error",
+				},
+			),
+		)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-			Code:      "DownloadBeatmapSet-009",
-			Path:      c.Path(),
-			RequestId: c.Response().Header().Get("X-Request-ID"),
-			Error:     errors.New(http.StatusText(res.StatusCode)),
-			Message:   "Bancho request Error. :" + res.Status,
-		}))
+		return c.JSON(
+			http.StatusInternalServerError, logger.Error(
+				c, &bodyStruct.ErrorStruct{
+					Code:      "DownloadBeatmapSet-009",
+					Path:      c.Path(),
+					RequestId: c.Response().Header().Get("X-Request-ID"),
+					Error:     errors.New(http.StatusText(res.StatusCode)),
+					Message:   "Bancho request Error. :" + res.Status,
+				},
+			),
+		)
 	}
 
 	pterm.Info.Println("beatmapSet Downloading at", serverFileName)
@@ -261,13 +301,17 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 			if !clientError {
 				if _, ee := c.Response().Write(b[:n]); ee != nil {
 					clientError = true // write response 에러 발생시
-					err = c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-						Code:      "DownloadBeatmapSet-010",
-						Path:      c.Path(),
-						RequestId: c.Response().Header().Get("X-Request-ID"),
-						Error:     ee,
-						Message:   "write response stream error",
-					}))
+					err = c.JSON(
+						http.StatusInternalServerError, logger.Error(
+							c, &bodyStruct.ErrorStruct{
+								Code:      "DownloadBeatmapSet-010",
+								Path:      c.Path(),
+								RequestId: c.Response().Header().Get("X-Request-ID"),
+								Error:     ee,
+								Message:   "write response stream error",
+							},
+						),
+					)
 				}
 			}
 
@@ -276,13 +320,17 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		if e == io.EOF {
 			break
 		} else if e != nil { //에러처리
-			return c.JSON(http.StatusInternalServerError, logger.Error(c, &bodyStruct.ErrorStruct{
-				Code:      "DownloadBeatmapSet-011",
-				Path:      c.Path(),
-				RequestId: c.Response().Header().Get("X-Request-ID"),
-				Error:     e,
-				Message:   "fail to read Bancho Stream",
-			}))
+			return c.JSON(
+				http.StatusInternalServerError, logger.Error(
+					c, &bodyStruct.ErrorStruct{
+						Code:      "DownloadBeatmapSet-011",
+						Path:      c.Path(),
+						RequestId: c.Response().Header().Get("X-Request-ID"),
+						Error:     e,
+						Message:   "fail to read Bancho Stream",
+					},
+				),
+			)
 		}
 	}
 	if cLen == buf.Len() {

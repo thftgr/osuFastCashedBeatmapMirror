@@ -2,7 +2,8 @@
 FROM golang:1.20.3 AS build
 
 WORKDIR /src
-
+#COPY go.mod go.sum ./
+#RUN go get
 COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app .
