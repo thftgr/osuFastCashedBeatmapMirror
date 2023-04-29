@@ -8,7 +8,8 @@ on:
     
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: nerinyan
+  IMAGE_NAME: nerinyan-apiv2
+  REPOSITORY_OWNER: nerinyan
 
 jobs:
   build_and_push:
@@ -42,7 +43,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.REPOSITORY_OWNER }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=local,src=/tmp/.build-cache
           cache-to: type=local,dest=/tmp/.build-cache
           target: build
