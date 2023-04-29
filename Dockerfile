@@ -1,7 +1,15 @@
-# Run command below to build binary.
-#   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -ldflags '-w -s' -o main main.go
+# Build stage
+FROM golang:1.20.3 AS build
 
-FROM scratch
-WORKDIR /usr/src/app
+WORKDIR /src
+
 COPY . .
-CMD ["main"]
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /app .
+
+# Final stage
+FROM scratch
+
+COPY --from=build /app /app
+
+ENTRYPOINT ["/app"]
