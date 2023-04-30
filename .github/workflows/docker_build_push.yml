@@ -35,8 +35,9 @@ jobs:
                 CGO_ENABLED=0; 
                 GOARCH=$(echo "$platform" | cut -d '/' -f 2)
                 GOOS=$(echo "$platform" | cut -d '/' -f 1)
-                echo build start go build -ldflags="-w -s" -o ./app-${GOOS}-${GOARCH} && ${GOOS}/${GOARCH} build end
+                echo build start go build -ldflags="-w -s" -o ./app-${GOOS}-${GOARCH}
                 go build -ldflags="-w -s" -o ./app-${GOOS}-${GOARCH}
+                echo build end ./app-${GOOS}-${GOARCH}
             done
         
       - name: Set up Docker Buildx
