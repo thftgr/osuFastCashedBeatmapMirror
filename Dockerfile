@@ -1,11 +1,12 @@
 # Build stage
 FROM golang:1.20.3 AS build
-ARG TARGETARCH
-ARG TARGETOS
+ARG TARGETARCH=amd64
+ARG TARGETOS=linux
 
 WORKDIR /src
-#COPY go.mod go.sum ./
-#RUN go get
+COPY go.mod go.sum ./
+RUN go mod download
+
 COPY . .
 
 RUN echo "Building for architecture: ${TARGETARCH}, OS: ${TARGETOS}"
