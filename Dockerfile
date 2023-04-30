@@ -11,7 +11,7 @@ COPY . .
 
 RUN echo "Building for architecture: ${TARGETARCH}, OS: ${TARGETOS}"
 #RUN go env
-RUN CGO_ENABLED=0 GOARCH=${TARGETARCH} GOOS=${TARGETOS} go build -ldflags="-w -s" -o /app .
+RUN CGO_ENABLED=0; GOARCH=${TARGETARCH}; GOOS=${TARGETOS}; go build -ldflags="-w -s" -o /app .
 
 # Final stage
 FROM scratch
