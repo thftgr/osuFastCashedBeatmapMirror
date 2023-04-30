@@ -2,9 +2,12 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "master","release" ]
-  pull_request:
-    branches: [ "master","release" ]
+    branches:
+#       - 'master'
+      - 'release'
+    tags:
+      - 'v*.*.*'
+      - 'v*.*.*-*'
     
 env:
   REGISTRY: ghcr.io
@@ -27,10 +30,9 @@ jobs:
       - name: build-amd64
         run: |
             go mod download
-            # CGO_ENABLED=0; GOARCH=amd64; GOOS=linux; go build -ldflags="-w -s" -o ./app-${GOOS}-${GOARCH}
-            # CGO_ENABLED=0; GOARCH=arm64; GOOS=linux; go build -ldflags="-w -s" -o ./app-${GOOS}-${GOARCH}
             CGO_ENABLED=0; 
             IFS=',' read -ra PLATFORMS <<< "${{ env.PLATFORMS }}"
+
             for platform in "${PLATFORMS[@]}"; do
                 CGO_ENABLED=0; 
                 GOARCH=$(echo "$platform" | cut -d '/' -f 2)
