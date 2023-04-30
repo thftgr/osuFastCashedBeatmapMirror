@@ -1,8 +1,7 @@
-# Accept build-time arguments for the architecture and OS
-ARG TARGETARCH
-ARG TARGETOS
 # Build stage
 FROM golang:1.20.3 AS build
+ARG TARGETARCH
+ARG TARGETOS
 
 WORKDIR /src
 #COPY go.mod go.sum ./
