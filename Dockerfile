@@ -10,8 +10,9 @@ RUN go mod download
 COPY . .
 
 RUN echo "Building for architecture: ${TARGETARCH}, OS: ${TARGETOS}"
-#RUN go env GOARCH=${TARGETARCH}; GOOS=${TARGETOS};
-RUN CGO_ENABLED=0; go build -ldflags="-w -s" -o /app .
+#RUN echo "Building for architecture: ${GOOS}, OS: ${GOARCH}"
+#RUN go env GOARCH=${TARGETARCH}; GOOS=${TARGETOS}; //-ldflags="-w -s"
+RUN CGO_ENABLED=0; GOARCH=${TARGETARCH}; GOOS=${TARGETOS}; go build -ldflags="-w -s" -o /app .
 
 # Final stage
 FROM scratch
