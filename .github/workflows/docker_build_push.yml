@@ -27,9 +27,9 @@ jobs:
         run: go mod download
         
       - name: build-amd64
-        run: CGO_ENABLED=0; GOARCH=amd64; GOOS=linux; go build -ldflags="-w -s" -o /app-${GOOS}-${GOARCH} .
+        run: CGO_ENABLED=0; GOARCH=amd64; GOOS=linux; go build -ldflags="-w -s" -o /app-${GOOS}-${GOARCH}
       - name: build-arm64
-        run: CGO_ENABLED=0; GOARCH=arm64; GOOS=linux; go build -ldflags="-w -s" -o /app-${GOOS}-${GOARCH} .
+        run: CGO_ENABLED=0; GOARCH=arm64; GOOS=linux; go build -ldflags="-w -s" -o /app-${GOOS}-${GOARCH}
         
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2.5.0
