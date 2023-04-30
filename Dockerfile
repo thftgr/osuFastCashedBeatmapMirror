@@ -1,7 +1,7 @@
 # Build stage
 FROM golang:1.20.3 AS build
-ARG TARGETARCH=amd64
-ARG TARGETOS=linux
+ARG TARGETARCH
+ARG TARGETOS
 
 WORKDIR /src
 COPY go.mod go.sum ./
