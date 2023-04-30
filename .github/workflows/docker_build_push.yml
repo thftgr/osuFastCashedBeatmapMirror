@@ -3,12 +3,8 @@ name: Docker Image CI
 on:
   push:
     branches:
-#       - 'master'
       - 'release'
-    tags:
-      - 'v*.*.*'
-      - 'v*.*.*-*'
-    
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: nerinyan-apiv2
@@ -18,6 +14,8 @@ env:
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
+
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3.5.2
@@ -34,8 +32,10 @@ jobs:
             IFS=',' read -ra PLATFORMS <<< "${{ env.PLATFORMS }}"
 
             for platform in "${PLATFORMS[@]}"; do
-                CGO_ENABLED=0; 
-                GOARCH=$(echo "$platform" | cut -d '/' -f 2)
+              platform="${platform#"${platform%%[![:space:]]*}"}"
+              platform="${platform%"${platform##*[![:space:]]}"}"
+          
+              GOARCH=$(echo "$platform" | cut -d '/' -f 2)
                 GOOS=$(echo "$platform" | cut -d '/' -f 1)
                 echo build start go build -ldflags="-w -s" -o ./app-${GOOS}-${GOARCH}
                 go build -ldflags="-w -s" -o ./app-${GOOS}-${GOARCH}
@@ -59,4 +59,6 @@ jobs:
           platforms: ${{ env.PLATFORMS }}
           file: ./Dockerfile.github
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.REPOSITORY_OWNER }}/${{ env.IMAGE_NAME }}:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.REPOSITORY_OWNER }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.REPOSITORY_OWNER }}/${{ env.IMAGE_NAME }}:${{github.run_number}}
