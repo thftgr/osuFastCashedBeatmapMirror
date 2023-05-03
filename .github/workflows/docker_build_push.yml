@@ -28,6 +28,7 @@ jobs:
       - name: build-amd64
         run: |
             #ls -al /etc/ssl/certs/
+            cp /etc/ssl/certs/ca-certificates.crt .
             go mod download
             IFS=',' read -ra PLATFORMS <<< "${{ env.PLATFORMS }}"
             CGO_ENABLED=0
