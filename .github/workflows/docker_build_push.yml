@@ -29,17 +29,18 @@ jobs:
         run: |
             go mod download
             IFS=',' read -ra PLATFORMS <<< "${{ env.PLATFORMS }}"
-
+            CGO_ENABLED=0
             for platform in "${PLATFORMS[@]}"; do
               platform="${platform#"${platform%%[![:space:]]*}"}"
               platform="${platform%"${platform##*[![:space:]]}"}"
               
-              CGO_ENABLED=0
+              
               GOARCH=$(echo "$platform" | cut -d '/' -f 2)
               GOOS=$(echo "$platform" | cut -d '/' -f 1)
-              echo build start CGO_ENABLED=$CGO_ENABLED go build -a -ldflags '-w -extldflags "-static"' -o ./app-${GOOS}-${GOARCH}
-              go build -a -ldflags '-w -extldflags "-static"' -o ./app-${GOOS}-${GOARCH}
+              echo build start CGO_ENABLED=$CGO_ENABLED go build -a -ldflags="-s -w" -o ./app-${GOOS}-${GOARCH}
+              CGO_ENABLED=0 go build -a -ldflags="-s -w" -o ./app-${GOOS}-${GOARCH}
               echo build end ./app-${GOOS}-${GOARCH}
+              ldd ./app-${GOOS}-${GOARCH}
             done
         
       - name: Set up Docker Buildx
