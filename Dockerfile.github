@@ -1,6 +1,6 @@
 FROM scratch
 ARG TARGETARCH
 ARG TARGETOS
-COPY /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY ./ca-certificates.crt /etc/ssl/certs/
 COPY ./app-${TARGETOS}-${TARGETARCH} /app
 ENTRYPOINT ["/app"]
