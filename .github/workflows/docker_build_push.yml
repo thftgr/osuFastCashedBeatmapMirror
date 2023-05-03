@@ -27,7 +27,7 @@ jobs:
 
       - name: build-amd64
         run: |
-            ls -al /etc/ssl/certs/
+            #ls -al /etc/ssl/certs/
             go mod download
             IFS=',' read -ra PLATFORMS <<< "${{ env.PLATFORMS }}"
             CGO_ENABLED=0
@@ -41,7 +41,7 @@ jobs:
               echo build start CGO_ENABLED=$CGO_ENABLED go build -a -ldflags="-s -w" -o ./app-${GOOS}-${GOARCH}
               CGO_ENABLED=0 go build -a -ldflags="-s -w" -o ./app-${GOOS}-${GOARCH}
               echo build end ./app-${GOOS}-${GOARCH}
-              ldd ./app-${GOOS}-${GOARCH} || true
+              #ldd ./app-${GOOS}-${GOARCH} || true
             done
         
       - name: Set up Docker Buildx
