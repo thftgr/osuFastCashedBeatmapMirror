@@ -1,6 +1,7 @@
-FROM scratch
+FROM ubuntu:latest
 WORKDIR /
 ARG TARGETARCH
 ARG TARGETOS
 COPY ./app-${TARGETOS}-${TARGETARCH} /app
+RUN ls -al
 ENTRYPOINT ["/app"]
