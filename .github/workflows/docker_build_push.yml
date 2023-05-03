@@ -37,8 +37,8 @@ jobs:
           
               GOARCH=$(echo "$platform" | cut -d '/' -f 2)
                 GOOS=$(echo "$platform" | cut -d '/' -f 1)
-                echo build start go build -a -ldflags '-w -s' -o ./app-${GOOS}-${GOARCH}
-                go build -a -ldflags '-w -s' -o ./app-${GOOS}-${GOARCH}
+                echo build start go build -a -ldflags '-w -extldflags "-static"' -o ./app-${GOOS}-${GOARCH}
+                go build -a -ldflags '-w -extldflags "-static"' -o ./app-${GOOS}-${GOARCH}
                 echo build end ./app-${GOOS}-${GOARCH}
             done
         
