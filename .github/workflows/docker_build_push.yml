@@ -41,6 +41,7 @@ jobs:
                 go build -ldflags="-w -s" -o ./app-${GOOS}-${GOARCH}
                 echo build end ./app-${GOOS}-${GOARCH}
             done
+            ls -al
         
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2.5.0
