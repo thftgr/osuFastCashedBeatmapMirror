@@ -28,18 +28,18 @@ jobs:
       - name: build-amd64
         run: |
             go mod download
-            CGO_ENABLED=0; 
             IFS=',' read -ra PLATFORMS <<< "${{ env.PLATFORMS }}"
 
             for platform in "${PLATFORMS[@]}"; do
               platform="${platform#"${platform%%[![:space:]]*}"}"
               platform="${platform%"${platform##*[![:space:]]}"}"
-          
+              
+              CGO_ENABLED=0
               GOARCH=$(echo "$platform" | cut -d '/' -f 2)
-                GOOS=$(echo "$platform" | cut -d '/' -f 1)
-                echo build start go build -a -ldflags '-w -extldflags "-static"' -o ./app-${GOOS}-${GOARCH}
-                go build -a -ldflags '-w -extldflags "-static"' -o ./app-${GOOS}-${GOARCH}
-                echo build end ./app-${GOOS}-${GOARCH}
+              GOOS=$(echo "$platform" | cut -d '/' -f 1)
+              echo build start CGO_ENABLED=$CGO_ENABLED go build -a -ldflags '-w -extldflags "-static"' -o ./app-${GOOS}-${GOARCH}
+              go build -a -ldflags '-w -extldflags "-static"' -o ./app-${GOOS}-${GOARCH}
+              echo build end ./app-${GOOS}-${GOARCH}
             done
         
       - name: Set up Docker Buildx
