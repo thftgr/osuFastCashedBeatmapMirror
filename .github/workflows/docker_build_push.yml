@@ -25,7 +25,7 @@ jobs:
         with:
           go-version: '1.20.3'
 
-      - name: build-amd64
+      - name: build
         run: |
             #ls -al /etc/ssl/certs/
             cp /etc/ssl/certs/ca-certificates.crt .
