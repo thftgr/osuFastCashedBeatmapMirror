@@ -90,28 +90,30 @@ func Embed(next echo.HandlerFunc) echo.HandlerFunc {
 		var set setEmbed
 		var Map []mapEmbed
 		db.Gorm.Raw("SELECT TITLE, CREATOR, RANKED, BPM, FAVOURITE_COUNT FROM BEATMAPSET WHERE BEATMAPSET_ID = ?", setId).Scan(&set)
-		db.Gorm.Raw("SELECT MODE_INT, VERSION, DIFFICULTY_RATING, TOTAL_LENGTH, CS, AR FROM BEATMAP WHERE BEATMAPSET_ID = ? ORDER BY DIFFICULTY_RATING", setId).Scan(&Map)
+		db.Gorm.Raw("SELECT MODE_INT, VERSION, DIFFICULTY_RATING, TOTAL_LENGTH, CS, AR FROM BEATMAP WHERE DELETED_AT IS NULL AND BEATMAPSET_ID = ? ORDER BY DIFFICULTY_RATING", setId).Scan(&Map)
 		pterm.Info.Println(set)
 		pterm.Info.Println(Map)
 		pterm.Info.Println("================")
-		return c.Render(http.StatusOK, "embed.html", map[string]interface{}{
-			"setId": setId,
-			"title": set.TITLE,
-			"content": func() (content string) {
-				var res string
-				//Ranked osu! beatmap by Kyuukai.
-				res += status[set.RANKED] + " osu! beatmap by " + set.CREATOR + "\n"
-				//               ⏫ Ranked             · 📚               9                Difficulties · 🎵                       190                  · ❤️ 601
-				res += statusWithIcon[set.RANKED] + " · 📚 " + strconv.Itoa(len(Map)) + " Difficulties · 🎵 " + fmt.Sprintf("%.0f", set.BPM) + " · ❤ " + set.FAVOURITE_COUNT + "\n"
-				res += "\n"
-				for _, m := range Map {
-					//                       (osu!) Normal - ⭐ 2.07 · ⏳ 2:17 | CS 3.2 · AR 4.5
-					res += fmt.Sprintf("(%s) %s - ⭐ %.2f · ⏳ %s | CS %.1f · AR  %.1f \n", modeString[m.MODE_INT], m.VERSION, m.DIFFICULTY_RATING, parseTime(m.TOTAL_LENGTH), m.CS, m.AR)
-				}
+		return c.Render(
+			http.StatusOK, "embed.html", map[string]interface{}{
+				"setId": setId,
+				"title": set.TITLE,
+				"content": func() (content string) {
+					var res string
+					//Ranked osu! beatmap by Kyuukai.
+					res += status[set.RANKED] + " osu! beatmap by " + set.CREATOR + "\n"
+					//               ⏫ Ranked             · 📚               9                Difficulties · 🎵                       190                  · ❤️ 601
+					res += statusWithIcon[set.RANKED] + " · 📚 " + strconv.Itoa(len(Map)) + " Difficulties · 🎵 " + fmt.Sprintf("%.0f", set.BPM) + " · ❤ " + set.FAVOURITE_COUNT + "\n"
+					res += "\n"
+					for _, m := range Map {
+						//                       (osu!) Normal - ⭐ 2.07 · ⏳ 2:17 | CS 3.2 · AR 4.5
+						res += fmt.Sprintf("(%s) %s - ⭐ %.2f · ⏳ %s | CS %.1f · AR  %.1f \n", modeString[m.MODE_INT], m.VERSION, m.DIFFICULTY_RATING, parseTime(m.TOTAL_LENGTH), m.CS, m.AR)
+					}
 
-				return res
-			}(),
-		})
+					return res
+				}(),
+			},
+		)
 	}
 }
 

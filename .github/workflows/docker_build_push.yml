@@ -9,7 +9,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: nerinyan-apiv2
   REPOSITORY_OWNER: nerinyan
-  PLATFORMS: linux/amd64,linux/arm64
+  PLATFORMS: linux/amd64 #,linux/arm64
   
 jobs:
   build_and_push:
@@ -60,7 +60,7 @@ jobs:
         with:
           context: .
           platforms: ${{ env.PLATFORMS }}
-          file: ./Dockerfile.github
+          file: ./Dockerfile
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.REPOSITORY_OWNER }}/${{ env.IMAGE_NAME }}:latest 
