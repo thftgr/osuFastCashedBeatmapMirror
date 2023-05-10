@@ -16,9 +16,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"time"
 )
+
+var cannotUseFilename, _ = regexp.Compile(`([\\/:*?"<>|])`)
 
 type downloadBeatmapSet_requestBody struct {
 	NoVideo       bool `query:"noVideo"`
@@ -219,10 +222,10 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	}
 
 	serverFileName := fmt.Sprintf("%s/%d.osz", config.Config.TargetDir, request.SetId)
-
+	realFilename := cannotUseFilename.ReplaceAllString(fmt.Sprintf("%s %s - %s.osz", a.Id, a.Artist, a.Title), "_")
 	if src.FileList[request.SetId].Unix() >= lu.Unix() { // 맵이 최신인경우
 		c.Response().Header().Set("Content-Type", "application/x-osu-beatmap-archive")
-		return c.Attachment(serverFileName, fmt.Sprintf("%s %s - %s.osz", a.Id, a.Artist, a.Title))
+		return c.Attachment(serverFileName, realFilename)
 	}
 
 	//==========================================
@@ -281,7 +284,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 
 	cLen, _ := strconv.Atoi(res.Header.Get("Content-Length"))
 	c.Response().Header().Set("Content-Length", res.Header.Get("Content-Length"))
-	c.Response().Header().Set("Content-Disposition", res.Header.Get("Content-Disposition"))
+	c.Response().Header().Set("Content-Disposition", realFilename)
 	c.Response().Header().Set("Content-Type", "application/x-osu-beatmap-archive")
 
 	var buf bytes.Buffer
