@@ -153,6 +153,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 
 	serverFileName := fmt.Sprintf("%s/%d.osz", config.Config.TargetDir, request.SetId)
 	realFilename := cannotUseFilename.ReplaceAllString(fmt.Sprintf("%s %s - %s.osz", a.Id, a.Artist, a.Title), "_")
+	c.Response().Header().Set("FileName", realFilename)
 	if src.FileList[request.SetId].Unix() >= lu.Unix() { // 맵이 최신인경우
 		c.Response().Header().Set("Content-Type", "application/x-osu-beatmap-archive")
 		c.Response().Header().Set("Content-Source", "nerinyan.moe")
