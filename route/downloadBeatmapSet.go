@@ -18,6 +18,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -84,47 +85,21 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	redirecturl := fmt.Sprintf("https://subapi.nerinyan.moe/d/%d", request.SetId)
 	// NoBg 또는 NoHitsound 요청시 서브API로 리다이렉트
 	// NoBG NoHitsound NoStoryboard
-	if request.NoBg == true && request.NoHitsound == true && request.NoStoryboard == true {
-		redirecturl = redirecturl + "?nb=1&nh=1&nsb=1"
-		if request.NoVideo == true {
-			redirecturl = redirecturl + "&nv=1"
-		}
-		// NoBG NoHitsound
-	} else if request.NoBg == true && request.NoHitsound == true && request.NoStoryboard == false {
-		redirecturl = redirecturl + "?nb=1&nh=1"
-		if request.NoVideo == true {
-			redirecturl = redirecturl + "&nv=1"
-		}
-		// NoBG NoStoryboard
-	} else if request.NoBg == true && request.NoHitsound == false && request.NoStoryboard == true {
-		redirecturl = redirecturl + "?nb=1&nsb=1"
-		if request.NoVideo == true {
-			redirecturl = redirecturl + "&nv=1"
-		}
-		// NoHitsound NoStoryboard
-	} else if request.NoBg == false && request.NoHitsound == true && request.NoStoryboard == true {
-		redirecturl = redirecturl + "?nh=1&nsb=1"
-		if request.NoVideo == true {
-			redirecturl = redirecturl + "&nv=1"
-		}
-		// NoBG
-	} else if request.NoBg == true && request.NoHitsound == false && request.NoStoryboard == false {
-		redirecturl = redirecturl + "?nb=1"
-		if request.NoVideo == true {
-			redirecturl = redirecturl + "&nv=1"
-		}
-		// NoHitsound
-	} else if request.NoBg == false && request.NoHitsound == true && request.NoStoryboard == false {
-		redirecturl = redirecturl + "?nh=1"
-		if request.NoVideo == true {
-			redirecturl = redirecturl + "&nv=1"
-		}
-		// NoStoryboard
-	} else if request.NoBg == false && request.NoHitsound == false && request.NoStoryboard == true {
-		redirecturl = redirecturl + "?nsb=1"
-		if request.NoVideo == true {
-			redirecturl = redirecturl + "&nv=1"
-		}
+	var subParams = []string{}
+	if request.NoBg == true {
+		subParams = append(subParams, "nb=1")
+	}
+	if request.NoHitsound == true {
+		subParams = append(subParams, "nh=1")
+	}
+	if request.NoStoryboard == true {
+		subParams = append(subParams, "nsb=1")
+	}
+	if request.NoVideo == true {
+		subParams = append(subParams, "nv=1")
+	}
+	if len(subParams) > 0 {
+		redirecturl += "?" + strings.Join(subParams, "&")
 	}
 
 	if request.NoBg == true || request.NoHitsound == true || request.NoStoryboard == true {
