@@ -15,6 +15,7 @@ import (
 	"log"
 	"net/http"
 	"runtime"
+	"time"
 )
 
 // TODO DOING DB 테이블 없으면 자동으로 생성하게
@@ -67,7 +68,15 @@ func main() {
 	}()
 
 	e.Pre(
-		middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(100)),
+		middleware.RateLimiter(
+			middleware.NewRateLimiterMemoryStoreWithConfig(
+				middleware.RateLimiterMemoryStoreConfig{
+					Rate:      50,
+					Burst:     100,
+					ExpiresIn: time.Minute * 60,
+				},
+			),
+		),
 
 		middleware.RemoveTrailingSlash(),
 		middleware.Logger(),

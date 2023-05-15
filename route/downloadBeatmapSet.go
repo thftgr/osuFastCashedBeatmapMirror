@@ -18,6 +18,7 @@ import (
 	"os"
 	"regexp"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -36,6 +37,26 @@ type downloadBeatmapSet_requestBody struct {
 	SetId         int  `param:"setId"`
 }
 
+var downloadCount int
+var mutex = sync.Mutex{}
+
+func isLimitedDownload() bool {
+	mutex.Lock()
+	defer mutex.Unlock()
+	return downloadCount > 80
+}
+func init() {
+	ticker := time.NewTicker(time.Minute * 10)
+	go func() {
+		for range ticker.C {
+			mutex.Lock()
+			downloadCount = 0
+			mutex.Unlock()
+			pterm.Info.Println("reset download count")
+		}
+	}()
+
+}
 func DownloadBeatmapSet(c echo.Context) (err error) {
 	var request downloadBeatmapSet_requestBody
 	err = c.Bind(&request)
@@ -166,22 +187,32 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	//==========================================
 	//=        비트맵 파일이 서버에 없는경우        =
 	//==========================================
+	var req *http.Request
+	var res *http.Response
+	var client *http.Client
+	if !isLimitedDownload() {
+		client = &http.Client{}
+		req, err = http.NewRequest("GET", url, nil)
 
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		req.Header.Add("Authorization", config.Config.Osu.Token.TokenType+" "+config.Config.Osu.Token.AccessToken)
 
-	if err != nil {
-		return errors.WithStack(err)
+		res, err = client.Do(req)
+		if err != nil {
+			return errors.New("Bancho request Build Error")
+		}
+		if res.StatusCode != http.StatusOK {
+			pterm.Error.Println("Bancho request Error. :" + res.Status)
+			res.Body.Close()
+		}
+		mutex.Lock()
+		downloadCount++
+		mutex.Unlock()
 	}
-	req.Header.Add("Authorization", config.Config.Osu.Token.TokenType+" "+config.Config.Osu.Token.AccessToken)
 
-	res, err := client.Do(req)
-	if err != nil {
-		return errors.New("Bancho request Build Error")
-	}
-
-	if res.StatusCode == http.StatusTooManyRequests {
-		res.Body.Close()
+	if res == nil || res.StatusCode != http.StatusOK {
 		client = &http.Client{}
 		req, err = http.NewRequest("GET", fmt.Sprintf("https://beatconnect.io/b/%d", request.SetId), nil)
 
@@ -194,8 +225,6 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 			return errors.New("Bancho request Build Error")
 		}
 		defer res.Body.Close()
-	} else if res.StatusCode != http.StatusOK {
-		return errors.New("Bancho request Error. :" + res.Status)
 	}
 
 	pterm.Info.Println("beatmapSet Download Source", req.Host)
