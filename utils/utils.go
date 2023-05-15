@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/goccy/go-json"
 	"log"
+	"runtime"
 	"strings"
 )
 
@@ -81,4 +83,8 @@ func StringRepeatJoin(str, sep string, count int) string {
 	}
 	return strings.Join(repeatBuf, sep)
 
+}
+func GetFileLine() string {
+	_, file, line, _ := runtime.Caller(1)
+	return fmt.Sprintf("%s:%d ", file, line)
 }

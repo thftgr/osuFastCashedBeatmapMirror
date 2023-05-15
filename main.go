@@ -5,12 +5,12 @@ import (
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
 	"github.com/Nerinyan/Nerinyan-APIV2/db"
 	"github.com/Nerinyan/Nerinyan-APIV2/logger"
-	"github.com/Nerinyan/Nerinyan-APIV2/middlewareFunc"
 	"github.com/Nerinyan/Nerinyan-APIV2/route"
 	"github.com/Nerinyan/Nerinyan-APIV2/src"
 	"github.com/Nerinyan/Nerinyan-APIV2/webhook"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
 	"github.com/pterm/pterm"
 	"log"
 	"net/http"
@@ -42,12 +42,18 @@ func init() {
 	} else {
 		go banchoCroller.RunGetBeatmapDataASBancho()
 	}
+
 }
 
 func main() {
 	e := echo.New()
 	e.HideBanner = true
-	e.HTTPErrorHandler = middlewareFunc.CustomHTTPErrorHandler
+	e.HTTPErrorHandler = func(err error, c echo.Context) {
+		if err != nil {
+			pterm.Error.Printfln("%+v", err)
+			_ = c.String(http.StatusInternalServerError, err.Error())
+		}
+	}
 
 	e.Renderer = &route.Renderer
 	webhook.DiscordInfoStartUP()
@@ -61,60 +67,15 @@ func main() {
 	}()
 
 	e.Pre(
-		middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)),
+		middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(100)),
 
 		middleware.RemoveTrailingSlash(),
 		middleware.Logger(),
 
-		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD}}),
+		middleware.CORSWithConfig(middleware.CORSConfig{AllowOrigins: []string{"*"}, AllowMethods: []string{echo.GET, echo.HEAD, echo.POST}}),
 		//middleware.RateLimiterWithConfig(middleWareFunc.RateLimiterConfig),
 		middleware.RequestID(),
 		middleware.Recover(),
-		//func(next echo.HandlerFunc) echo.HandlerFunc {
-		//	return func(c echo.Context) (err error) {
-		//		start := time.Now()
-		//		if err = next(c); err != nil {
-		//			c.Error(err)
-		//		}
-		//		stop := time.Now()
-		//
-		//		c.Response().Before(func() {
-		//			_ = time.Now().UnixMilli()                           //	"time": "${time_custom}",
-		//			_ = c.Request().Header.Get(echo.HeaderXRequestID)    //	"id": "${id}",
-		//			_ = c.Response().Header().Get(echo.HeaderXRequestID) //	"id": "${id}",
-		//			_ = c.RealIP()                                       //	"remote_ip": "${remote_ip}",
-		//			_ = c.Request().Host                                 //	"host": "${host}",
-		//			_ = c.Request().RequestURI                           //	"uri": "${uri}",
-		//			_ = c.Request().Method                               //	"method": "${method}",
-		//			_ = c.Request().URL.Path                             //	"uri": "${uri}",
-		//			_ = c.Request().UserAgent()                          //	"user_agent": "${user_agent}",
-		//			_ = c.Response().Status                              //	"status": "${status}",
-		//			_ = func() string {
-		//				if err != nil {
-		//					// Error may contain invalid JSON e.g. `"`
-		//					b, _ := json.Marshal(err.Error())
-		//					return string(b[1 : len(b)-1])
-		//				}
-		//				return ""
-		//			}()                                               //	"error": "${error}",
-		//			_ = strconv.FormatInt(int64(stop.Sub(start)), 10) //	"latency": "${latency}",
-		//			_ = stop.Sub(start).String()                      //	"latency_human": "${latency_human}",
-		//			_ = func() string {
-		//				cl := c.Request().Header.Get(echo.HeaderContentLength)
-		//				if cl == "" {
-		//					cl = "0"
-		//				}
-		//				return cl
-		//			}()                                          //	"bytes_in": "${bytes_in}",
-		//			_ = strconv.FormatInt(c.Response().Size, 10) //	"bytes_out": "${bytes_out}"
-		//
-		//			//=========================================================================
-		//			c.Request()
-		//
-		//		})
-		//		return next(c)
-		//	}
-		//},
 	)
 
 	// docs ============================================================================================================
@@ -163,7 +124,8 @@ func main() {
 	// 개발중 || 테스트중 ===================================================================================================
 	e.GET(
 		"/test", func(c echo.Context) error {
-			return echo.NewHTTPError(400, "test bad request")
+			return errors.New("zz")
+			//return errors.New(utils.GetFileLine() + "SEBAL ERROR")
 		},
 	)
 
