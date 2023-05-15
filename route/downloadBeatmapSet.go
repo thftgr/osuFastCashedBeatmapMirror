@@ -212,7 +212,7 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 	cLen, _ := strconv.Atoi(res.Header.Get("Content-Length"))
 	c.Response().Header().Set("Content-Source", req.Host)
 	c.Response().Header().Set("Content-Length", res.Header.Get("Content-Length"))
-	c.Response().Header().Set("Content-Disposition", realFilename)
+	c.Response().Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, realFilename))
 	c.Response().Header().Set("Content-Type", "application/x-osu-beatmap-archive")
 
 	var buf bytes.Buffer
