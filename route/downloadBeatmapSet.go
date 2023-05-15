@@ -217,12 +217,16 @@ func DownloadBeatmapSet(c echo.Context) (err error) {
 		req, err = http.NewRequest("GET", fmt.Sprintf("https://beatconnect.io/b/%d", request.SetId), nil)
 
 		if err != nil {
-			return errors.New("Bancho request Build Error")
+			return errors.New("beatconnect request Build Error")
 		}
 
 		res, err = client.Do(req)
 		if err != nil {
-			return errors.New("Bancho request Build Error")
+			return errors.New("beatconnect request Build Error")
+		}
+		if res.StatusCode != http.StatusOK {
+			res.Body.Close()
+			return errors.New("beatconnect request Error. :" + res.Status)
 		}
 		defer res.Body.Close()
 	}
