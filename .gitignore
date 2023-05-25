@@ -13,6 +13,11 @@ osuFastCashedBeatmapMirror
 Nerinyan-APIV2
 Nerinyan-APIV2-MULTI
 /Nerinyan-APIV2.7z
+.idea/*
 /.idea/*
 /_script/beatmapMirror.sql
 /Nerinyan-APIV2_ARM64
+/config.yaml
+/_testDGO/
+*.txt
+.config.json.swp

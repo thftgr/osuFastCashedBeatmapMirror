@@ -106,7 +106,8 @@ func insertStringIndex(data []osu.BeatmapSetsIN) {
 
 	}
 	if idata := utils.MakeArrayUniqueInterface(&insertDataa.Strbuf); len(idata) > 0 {
-		AddInsertQueue("/* INSERT SEARCH_CACHE_STRING_INDEX */ INSERT INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES "+utils.StringRepeatJoin("(?)", ",", len(idata))+" ON DUPLICATE KEY UPDATE TMP = 1;",
+		AddInsertQueue("/* INSERT SEARCH_CACHE_STRING_INDEX */ INSERT INTO SEARCH_CACHE_STRING_INDEX (STRING) VALUES "+
+			utils.StringRepeatJoin("(?)", ",", len(idata))+" ON DUPLICATE KEY UPDATE TMP = 1;",
 			idata...,
 		)
 	}

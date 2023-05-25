@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="syno" uuid="c3277fe0-e7f7-4cad-bfef-fc3def00fc4e">
-      <driver-ref>mariadb</driver-ref>
+    <data-source source="LOCAL" name="defaultdb@ko2.nerinyan.moe" uuid="5c4ea1d8-3a7f-47d7-aef5-f7d99612a0b6">
+      <driver-ref>cockroach</driver-ref>
       <synchronize>true</synchronize>
-      <jdbc-driver>org.mariadb.jdbc.Driver</jdbc-driver>
-      <jdbc-url>jdbc:mariadb://192.168.0.50:3306</jdbc-url>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://ko2.nerinyan.moe:26257/defaultdb?sslmode=verify-full&amp;sslrootcert=certs%2Fca.crt</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>

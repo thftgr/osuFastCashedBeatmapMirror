@@ -1,7 +1,7 @@
 package config
 
 import (
-	"encoding/json"
+	"github.com/goccy/go-json"
 	"github.com/pterm/pterm"
 	"io/ioutil"
 	"os"
@@ -11,8 +11,10 @@ type config struct {
 	Port         string   `json:"port"`
 	TargetDir    string   `json:"targetDir"`
 	SlaveServers []string `json:"slave"`
+	Debug        bool     `json:"debug"`
 	Discord      struct {
 		Webhook struct {
+			Startup  string `json:"startup"`
 			Info  string `json:"info"`
 			Error string `json:"error"`
 		} `json:"webhook"`

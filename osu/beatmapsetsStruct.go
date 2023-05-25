@@ -17,9 +17,9 @@ type BeatmapSetsIN struct {
 	} `json:"covers"`
 	Creator        *string `json:"creator"`
 	FavouriteCount int     `json:"favourite_count"`
-	Hype           struct {
-		Current  int `json:"current"`
-		Required int `json:"required"`
+	Hype           *struct {
+		Current  *int `json:"current"`
+		Required *int `json:"required"`
 	} `json:"hype"`
 	Id           int     `json:"id"`
 	Nsfw         bool    `json:"nsfw"`
@@ -32,7 +32,7 @@ type BeatmapSetsIN struct {
 	UserId       int     `json:"user_id"`
 	Video        bool    `json:"video"`
 	Availability *struct {
-		DownloadDisabled bool    `json:"download_disabled"`
+		DownloadDisabled *bool    `json:"download_disabled"`
 		MoreInformation  *string `json:"more_information"`
 	} `json:"availability"`
 	Bpm                float64    `json:"bpm"`

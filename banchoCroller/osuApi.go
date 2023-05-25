@@ -3,8 +3,8 @@ package banchoCroller
 import (
 	"bytes"
 	"encoding/base64"
-	"encoding/json"
 	"github.com/Nerinyan/Nerinyan-APIV2/config"
+	"github.com/goccy/go-json"
 	"github.com/pterm/pterm"
 	"io/ioutil"
 	"mime/multipart"

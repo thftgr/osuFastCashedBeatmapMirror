@@ -73,7 +73,6 @@ func UpdateAllPackList() {
 			upsertPack(packType[i], packId, packName, packCreator, packDate)
 
 		}
-
 	}
 }
 

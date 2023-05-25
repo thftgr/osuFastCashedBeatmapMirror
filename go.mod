@@ -1,40 +1,40 @@
 module github.com/Nerinyan/Nerinyan-APIV2
 
-go 1.18
+go 1.20
 
 require (
 	github.com/dchest/stemmer v0.0.0-20161207102402-66719a20c4b5
-	github.com/go-sql-driver/mysql v1.6.0
-	github.com/gorilla/websocket v1.5.0
+	github.com/go-sql-driver/mysql v1.7.1
+	github.com/goccy/go-json v0.10.2
 	github.com/jasonlvhit/gocron v0.0.1
-	github.com/labstack/echo/v4 v4.6.3
-	github.com/labstack/gommon v0.3.1
+	github.com/labstack/echo/v4 v4.10.2
 	github.com/pkg/errors v0.9.1
-	github.com/pterm/pterm v0.12.33
-	gorm.io/driver/mysql v1.3.2
-	gorm.io/gorm v1.23.4
+	github.com/pterm/pterm v0.12.59
+	gorm.io/driver/mysql v1.5.0
+	gorm.io/gorm v1.25.0
 )
 
 require (
-	github.com/antchfx/htmlquery v1.2.4 // indirect
-	github.com/antchfx/xpath v1.2.0 // indirect
-	github.com/atomicgo/cursor v0.0.1 // indirect
+	atomicgo.dev/cursor v0.1.1 // indirect
+	atomicgo.dev/keyboard v0.2.9 // indirect
+	github.com/containerd/console v1.0.3 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
-	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
-	github.com/gookit/color v1.4.2 // indirect
+	github.com/gookit/color v1.5.3 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/mattn/go-colorable v0.1.11 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
-	github.com/mattn/go-runewidth v0.0.13 // indirect
-	github.com/rivo/uniseg v0.2.0 // indirect
+	github.com/labstack/gommon v0.4.0 // indirect
+	github.com/lithammer/fuzzysearch v1.1.6 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.18 // indirect
+	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/valyala/fasttemplate v1.2.1 // indirect
-	github.com/xo/terminfo v0.0.0-20210125001918-ca9a967f8778 // indirect
-	golang.org/x/crypto v0.0.0-20220131195533-30dcbda58838 // indirect
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
-	golang.org/x/sys v0.0.0-20220204135822-1c1b9b1eba6a // indirect
-	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
-	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20201208040808-7e3f01d25324 // indirect
+	github.com/valyala/fasttemplate v1.2.2 // indirect
+	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	golang.org/x/crypto v0.8.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/term v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/time v0.3.0 // indirect
 )
